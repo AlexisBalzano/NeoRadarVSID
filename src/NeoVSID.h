@@ -1,0 +1,71 @@
+// NeoVSID.h
+#pragma once
+#include <memory>
+#include <thread>
+#include <vector>
+#include "SDK.h"
+#include "core/NeoVSIDCommandProvider.h"
+
+using namespace PluginSDK;
+
+namespace vsid {
+
+    class NeoVSIDCommandProvider;
+
+    class NeoVSID : public BasePlugin
+    {
+    public:
+        NeoVSID();
+        ~NeoVSID();
+
+        void Initialize(const PluginMetadata& metadata, CoreAPI* coreAPI, ClientInformation info) override;
+        void Shutdown() override;
+        PluginMetadata GetMetadata() const override;
+
+        void DisplayMessage(const std::string& message, const std::string& sender = "");
+        void SetGroundState(const std::string& callsign, const ControllerData::GroundStatus groundstate);
+
+        // Scope events
+        void OnAirportConfigurationsUpdated(const Airport::AirportConfigurationsUpdatedEvent* event) override;
+        void OnTimer(int Counter);
+        /* void OnFlightPlanFlightPlanDataUpdate(EuroScopePlugIn::CFlightPlan FlightPlan) override;
+        void OnFlightPlanControllerAssignedDataUpdate(EuroScopePlugIn::CFlightPlan FlightPlan, int DataType) override;*/
+        void OnTagAction(const Tag::TagActionEvent* event) override;
+        void OnTagDropdownAction(const Tag::DropdownActionEvent* event) override;
+        void UpdateTagItems();
+        /*    bool OnCompileCommand(const char *sCommandLine) override;*/
+
+        // Command handling
+        void TagProcessing(const std::string& callsign, const std::string& actionId, const std::string& userInput = "");
+
+    private:
+        bool initialized_ = false;
+        PluginMetadata metadata_;
+        ClientInformation clientInfo_;
+        Aircraft::AircraftAPI* aircraftAPI_ = nullptr;
+        Airport::AirportAPI* airportAPI_ = nullptr;
+        Chat::ChatAPI* chatAPI_ = nullptr;
+        Flightplan::FlightplanAPI* flightplanAPI_ = nullptr;
+        Fsd::FsdAPI* fsdAPI_ = nullptr;
+        PluginSDK::Logger::LoggerAPI* logger_ = nullptr;
+        PluginSDK::ControllerData::ControllerDataAPI* controllerDataAPI_ = nullptr;
+        Tag::TagInterface* tagInterface_ = nullptr;
+
+        std::optional<Aircraft::Aircraft> GetAircraftByCallsign(const std::string& callsign);
+
+
+        void runScopeUpdate();
+
+        void RegisterTagItems();
+        void RegisterTagActions();
+        void RegisterCommand();
+
+
+        std::thread m_worker;
+        bool m_stop;
+        void run();
+
+        std::shared_ptr<NeoVSIDCommandProvider> CommandProvider_;
+    };
+
+} // namespace vsid
