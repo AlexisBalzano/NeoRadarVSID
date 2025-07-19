@@ -66,6 +66,9 @@ namespace vsid {
         void run();
 
         std::shared_ptr<NeoVSIDCommandProvider> CommandProvider_;
+
+		// TAG Items IDs
+		std::string cflId_;
     };
 
 } // namespace vsid
