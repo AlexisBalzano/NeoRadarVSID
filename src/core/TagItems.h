@@ -28,7 +28,19 @@ void NeoVSID::RegisterTagItems()
 }
 
 void NeoVSID::UpdateTagItems() {
+	// Update the CFL tag item with the current value
+    // How to get a vector of all callsigns inside departure list ?
+    std::vector<std::string> callsigns;
 
+    for (auto callsign : callsigns)
+    {
+		// Update CFL value in tag item
+        int cfl = controllerDataAPI_->getByCallsign(callsign)->clearedFlightLevel;
+		std::string cfl_string = std::to_string(cfl);
+		Tag::TagContext tagContext;
+		tagContext.callsign = callsign;
 
+        tagInterface_->UpdateTagValue(cflId_, cfl_string, tagContext);
     }
+}
 }  // namespace vsid
