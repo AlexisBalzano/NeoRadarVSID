@@ -1,6 +1,12 @@
 # Prerequisites
 *.d
 
+# Visual Studio files
+.vs/
+
+#ignore build directories
+out/
+
 # Compiled Object files
 *.slo
 *.lo
