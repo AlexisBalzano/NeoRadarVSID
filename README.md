@@ -3,7 +3,6 @@ vSID adaptation for NeoRadar ATC Client
 
 
 # TODO
-- Add TAG Function
 - Add TAG logic
 
 # Functionnalities
