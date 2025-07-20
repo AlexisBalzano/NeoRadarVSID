@@ -103,6 +103,11 @@ void vsid::NeoVSID::OnAircraftTemporaryAltitudeChanged(const ControllerData::Air
     UpdateTagItems(event->callsign);
 }
 
+void vsid::NeoVSID::OnFlightplanUpdated(const Flightplan::FlightplanUpdatedEvent* event)
+{
+    UpdateTagItems(event->callsign);
+}
+
 void NeoVSID::run() {
     int counter = 1;
     while (true) {

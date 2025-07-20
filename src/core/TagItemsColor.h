@@ -22,9 +22,9 @@ namespace vsid::tagitems {
             else return Colors::orange;
         }
     
-		static std::optional<std::array<unsigned int, 3>> colorizeRwy(const std::string& rwy, const std::string& vsidRwy) {
+		static std::optional<std::array<unsigned int, 3>> colorizeRwy(const std::string& rwy, const std::string& vsidRwy, const bool& isDepRwy) {
             if (rwy == "") return Colors::white;
-            if (rwy == vsidRwy) return Colors::green;
+            if (rwy == vsidRwy && isDepRwy) return Colors::green;
             else return Colors::orange;
         }
 		static std::optional<std::array<unsigned int, 3>> colorizeSid(const std::string& sid, const std::string& vsidSid) {
