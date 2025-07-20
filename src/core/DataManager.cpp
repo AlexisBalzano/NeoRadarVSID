@@ -1,4 +1,41 @@
+#include <fstream>
+#include <algorithm>
+
+#if defined(_WIN32)
+#include <Windows.h>
+#elif defined(__APPLE__) || defined(__linux__)
+#include <dlfcn.h>
+#endif
+
 #include "DataManager.h"
+
+DataManager::DataManager(Aircraft::AircraftAPI* aircraftAPI, Flightplan::FlightplanAPI* flightplanAPI, Airport::AirportAPI* airportAPI)
+    : aircraftAPI_(aircraftAPI), flightplanAPI_(flightplanAPI), airportAPI_(airportAPI) {
+    configPath_ = getDllDirectory();
+}
+
+
+std::filesystem::path DataManager::getDllDirectory()
+{
+#if defined(_WIN32)
+    wchar_t buffer[MAX_PATH];
+    HMODULE hModule = nullptr;
+    // Use the address of this function to get the module handle
+    GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, reinterpret_cast<LPCWSTR>(&getDllDirectory), &hModule);
+    GetModuleFileNameW(hModule, buffer, MAX_PATH);
+    return std::filesystem::path(buffer).parent_path();
+#elif defined(__APPLE__)
+    Dl_info dl_info;
+    dladdr((void*)&getDllDirectory, &dl_info);
+    return std::filesystem::path(dl_info.dli_fname).parent_path();
+#elif defined(__linux__)
+    Dl_info dl_info;
+    dladdr((void*)&getDllDirectory, &dl_info);
+    return std::filesystem::path(dl_info.dli_fname).parent_path();
+#else
+    return std::filesystem::path(); // Return an empty path for unsupported platforms
+#endif
+}
 
 void DataManager::populateActiveAirports()
 {
@@ -12,6 +49,48 @@ void DataManager::populateActiveAirports()
             activeAirports.push_back(airport.icao);
         }
 	}
+}
+
+int DataManager::fetchCFLfromJson(const Flightplan::Flightplan& flightplan)
+{
+    std::string oaci = flightplan.origin;
+    if (!configJson_.contains(oaci) || configJson_.empty()) {
+        if (retrieveConfigJson(oaci) == -1) {
+			return -1; // Return -1 if the JSON file could not be retrieved
+        }
+    }
+  
+
+    std::transform(oaci.begin(), oaci.end(), oaci.begin(), ::toupper); //Convert to uppercase
+    std::string sid = flightplan.route.suggestedSid;
+    std::string waypoint = sid.substr(0, sid.length() - 2);
+    std::string indicator = sid.substr(sid.length() - 2, 1);
+    std::string letter = sid.substr(sid.length() - 1, 1);;
+
+    if (configJson_.contains(oaci) && configJson_[oaci]["sids"].contains(waypoint) && configJson_[oaci]["sids"][waypoint].contains(letter) && configJson_[oaci]["sids"][waypoint][letter].contains(indicator)) {
+        return configJson_[oaci]["sids"][waypoint][letter][indicator]["initial"].get<int>();
+    }
+
+    return -1;
+}
+
+int DataManager::retrieveConfigJson(const std::string& oaci)
+{
+    std::string fileName = oaci + ".json";
+    std::filesystem::path jsonPath = configPath_ / fileName;
+
+    std::ifstream config(jsonPath);
+    if (!config.is_open()) {
+        //TODO: displaying of error messages
+        return -1;
+    }
+
+    try {
+        config >> configJson_;
+    }
+    catch (...) {
+        return -1;
+    }
 }
 
 Pilot DataManager::getPilotByCallsign(std::string callsign) const
@@ -53,7 +132,8 @@ std::vector<std::string> DataManager::getAllDepartureCallsigns() {
         if (std::find(callsigns.begin(), callsigns.end(), flightplan.callsign) == callsigns.end())
         {
             callsigns.push_back(flightplan.callsign);
-			pilots.push_back(Pilot{ flightplan.callsign, flightplan.route.suggestedDepRunway, flightplan.route.suggestedSid, 13000 }); // Create a new Pilot object, TODO: Get the correct altitude from .json
+            //int vsidCfl = fetchCFLfromJson(flightplan); //DEBUG needed
+			pilots.push_back(Pilot{ flightplan.callsign, flightplan.route.suggestedDepRunway, flightplan.route.suggestedSid, 13000 }); // Create a new Pilot object
         }
     }
 	return callsigns;

@@ -73,4 +73,4 @@ if(${CMAKE_HOST_APPLE})
 endif()
 
 # move config file to output dir, allows loading of DLL from output dir
-#file(COPY ${CMAKE_SOURCE_DIR}/src/config/vacdm.txt DESTINATION ${CMAKE_BINARY_DIR})
+file(COPY ${CMAKE_SOURCE_DIR}/src/config/lfmn.json DESTINATION ${CMAKE_BINARY_DIR})
