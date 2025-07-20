@@ -3,8 +3,7 @@
 #include "NeoVSID.h"
 
 using namespace vsid;
-//using namespace vsid::core;
-//using namespace vsid::com;
+
 
 namespace vsid {
 
