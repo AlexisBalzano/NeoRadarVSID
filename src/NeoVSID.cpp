@@ -36,6 +36,7 @@ void NeoVSID::Initialize(const PluginMetadata &metadata, CoreAPI *coreAPI, Clien
     logging::Logger::instance().log(logging::Logger::LogSender::vACDM, "Version " + std::string(PLUGIN_VERSION) + " loaded",
                            logging::Logger::LogLevel::System);
 
+    callsignsScope.clear();
 
     try
     {
@@ -84,7 +85,7 @@ void vsid::NeoVSID::SetGroundState(const std::string &callsign, const Controller
 }
 
 void NeoVSID::runScopeUpdate() {
-    //UpdateTagItems();
+    UpdateTagItems();
 }
 
 
@@ -104,7 +105,14 @@ void vsid::NeoVSID::OnAircraftTemporaryAltitudeChanged(const ControllerData::Air
 
 void vsid::NeoVSID::OnFlightplanUpdated(const Flightplan::FlightplanUpdatedEvent* event)
 {
-    //UpdateTagItems(event->callsign);
+    if (!event || event->callsign.empty())
+        return;
+
+    // Check if callsign is in callsignsScope
+    if (std::find(callsignsScope.begin(), callsignsScope.end(), event->callsign) == callsignsScope.end())
+        return;
+    
+    UpdateTagItems(event->callsign); 
 }
 
 void NeoVSID::run() {
@@ -116,9 +124,6 @@ void NeoVSID::run() {
         if (true == this->m_stop) return;
         
         this->OnTimer(counter);
-
-        // Update tags every five seconds
-        //if (counter % 5 ==0) UpdateTagItems();
     }
     return;
 }

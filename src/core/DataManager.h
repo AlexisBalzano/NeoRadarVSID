@@ -9,6 +9,10 @@ struct Pilot {
 	std::string rwy;
 	std::string sid;
 	int cfl;
+
+	bool empty() const {
+		return callsign.empty();
+	}
 };
 
 
@@ -32,9 +36,8 @@ public:
 	Pilot getPilotByCallsign(std::string callsign) const;
 	std::vector<std::string> getAllDepartureCallsigns();
 	bool isDepartureAirport(const std::string& oaci) const;
+	bool aircraftExists(const std::string& callsign) const;
 	bool pilotExists(const std::string& callsign) const;
-
-	//DELETE: after testing
 	void addPilot(const std::string& callsign);
 
 

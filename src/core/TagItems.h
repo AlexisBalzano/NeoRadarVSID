@@ -1,7 +1,5 @@
 #pragma once
 
-// #include <wtypes.h>
-
 #include <chrono>
 #include <format>
 #include <string>
@@ -39,12 +37,9 @@ void NeoVSID::RegisterTagItems()
 
 void NeoVSID::UpdateTagItems() {
 	// Update the CFL tag item with the current value
-    // 
-	// Get a vector of all callsigns inside departure list for active airports
-    std::vector<std::string> callsigns;
-    callsigns = dataManager_->getAllDepartureCallsigns();
+    callsignsScope = dataManager_->getAllDepartureCallsigns();
 
-    for (auto &callsign : callsigns)
+    for (auto &callsign : callsignsScope)
     {
 		UpdateTagItems(callsign);
     }
@@ -54,6 +49,10 @@ void NeoVSID::UpdateTagItems(std::string callsign) {
     Tag::TagContext tagContext;
     tagContext.callsign = callsign;
 
+    if (dataManager_->pilotExists(callsign) == false) {
+		dataManager_->addPilot(callsign);
+	}
+    
 	Pilot pilot = dataManager_->getPilotByCallsign(callsign);
 
     // Update CFL value in tag item
@@ -86,7 +85,7 @@ void NeoVSID::UpdateTagItems(std::string callsign) {
 
     std::vector<std::string> depRwys = airportAPI_->getConfigurationByIcao(fp->origin)->depRunways;
     bool isDepRwy = false;
-    for (auto rwy_ : depRwys)
+    for (const auto& rwy_ : depRwys)
     {
         if (vsidRwy == rwy_)
             isDepRwy = true;

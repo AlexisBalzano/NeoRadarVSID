@@ -72,7 +72,10 @@ namespace vsid {
 
         std::shared_ptr<NeoVSIDCommandProvider> CommandProvider_;
 
-		// TAG Items IDs
+        // Concerned callsigns
+        std::vector<std::string> callsignsScope;
+
+	    // TAG Items IDs
 		std::string cflId_;
         std::string rwyId_;
         std::string sidId_;

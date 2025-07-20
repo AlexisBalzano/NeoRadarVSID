@@ -63,6 +63,9 @@ int DataManager::fetchCFLfromJson(const Flightplan::Flightplan& flightplan)
 
     std::transform(oaci.begin(), oaci.end(), oaci.begin(), ::toupper); //Convert to uppercase
     std::string sid = flightplan.route.suggestedSid;
+    if (sid.empty() || sid.length() < 2) {
+        return -1; // Return -1 if the SID is empty or too short
+	}
     std::string waypoint = sid.substr(0, sid.length() - 2);
     std::string letter = sid.substr(sid.length() - 1, 1);
 
@@ -117,7 +120,7 @@ std::vector<std::string> DataManager::getAllDepartureCallsigns() {
             continue;
 
         // Ensure the aircraft exists
-        if (!pilotExists(flightplan.callsign))
+        if (!aircraftExists(flightplan.callsign))
             continue;
 
 		// Ensure the flightplan is from a departure airport
@@ -128,13 +131,10 @@ std::vector<std::string> DataManager::getAllDepartureCallsigns() {
         if (aircraftAPI_->getDistanceFromOrigin(flightplan.callsign) > 4.)
             continue;
     
-        // Check if the callsign is already in the vector
-        if (std::find(callsigns.begin(), callsigns.end(), flightplan.callsign) == callsigns.end())
-        {
-            callsigns.push_back(flightplan.callsign);
-            int vsidCfl = fetchCFLfromJson(flightplan);
-			pilots.push_back(Pilot{ flightplan.callsign, flightplan.route.suggestedDepRunway, flightplan.route.suggestedSid, vsidCfl }); // Create a new Pilot object
-        }
+        callsigns.push_back(flightplan.callsign);
+
+        int vsidCfl = fetchCFLfromJson(flightplan);
+	    pilots.push_back(Pilot{ flightplan.callsign, flightplan.route.suggestedDepRunway, flightplan.route.suggestedSid, vsidCfl });
     }
 	return callsigns;
 }
@@ -152,7 +152,7 @@ bool DataManager::isDepartureAirport(const std::string& oaci) const
     return false;
 }
 
-bool DataManager::pilotExists(const std::string& callsign) const
+bool DataManager::aircraftExists(const std::string& callsign) const
 {
     if (callsign.empty())
 		return false;
@@ -162,11 +162,17 @@ bool DataManager::pilotExists(const std::string& callsign) const
     return false;
 }
 
-//DELETE: after testing
+bool DataManager::pilotExists(const std::string& callsign) const
+{
+    if (std::find_if(pilots.begin(), pilots.end(), [&](const Pilot& p) { return p.callsign == callsign; }) != pilots.end())
+        return true;
+	return false;
+}
+
 void DataManager::addPilot(const std::string& callsign)
 {
     Flightplan::Flightplan flightplan = flightplanAPI_->getByCallsign(callsign).value();
-    
+
     if (callsign.empty())
         return;
     // Check if the pilot already exists
