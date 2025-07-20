@@ -49,6 +49,7 @@ void NeoVSID::UpdateTagItems(std::string Callsign) {
     cfl_string = formatCFL(cfl_string);
     Tag::TagContext tagContext;
     tagContext.callsign = Callsign;
+	tagContext.colour = Color::colorizeTag(); // Example of using color function
 
     tagInterface_->UpdateTagValue(cflId_, cfl_string, tagContext);
 }
