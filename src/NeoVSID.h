@@ -5,6 +5,7 @@
 #include <vector>
 #include "SDK.h"
 #include "core/NeoVSIDCommandProvider.h"
+#include "core/DataManager.h"
 
 using namespace PluginSDK;
 
@@ -33,6 +34,7 @@ namespace vsid {
         void OnTagAction(const Tag::TagActionEvent* event) override;
         void OnTagDropdownAction(const Tag::DropdownActionEvent* event) override;
         void UpdateTagItems();
+        void UpdateTagItems(std::string Callsign);
         /*    bool OnCompileCommand(const char *sCommandLine) override;*/
 
         // Command handling
@@ -50,6 +52,7 @@ namespace vsid {
         PluginSDK::Logger::LoggerAPI* logger_ = nullptr;
         PluginSDK::ControllerData::ControllerDataAPI* controllerDataAPI_ = nullptr;
         Tag::TagInterface* tagInterface_ = nullptr;
+		DataManager* dataManager_ = nullptr;
 
         std::optional<Aircraft::Aircraft> GetAircraftByCallsign(const std::string& callsign);
 
@@ -69,6 +72,10 @@ namespace vsid {
 
 		// TAG Items IDs
 		std::string cflId_;
+
+        // TAG Action IDs
+		std::string autoCFLId_;
+
     };
 
 } // namespace vsid

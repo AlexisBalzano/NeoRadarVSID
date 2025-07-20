@@ -28,6 +28,7 @@ void NeoVSID::Initialize(const PluginMetadata &metadata, CoreAPI *coreAPI, Clien
     controllerDataAPI_ = &lcoreAPI->controllerData();
     logger_ = &lcoreAPI->logger();
     tagInterface_ = lcoreAPI->tag().getInterface();
+	dataManager_ = DataManager::instance(aircraftAPI_, flightplanAPI_, airportAPI_);
 
     logging::Logger::instance().setLogger(logger_);
 
@@ -70,7 +71,7 @@ void NeoVSID::Shutdown()
 
 void NeoVSID::DisplayMessage(const std::string &message, const std::string &sender) {
     Chat::ClientTextMessageEvent textMessage;
-    textMessage.sentFrom = "NeoVACDM";
+    textMessage.sentFrom = "NeoVSID";
     (sender.empty()) ? textMessage.message = message : textMessage.message = sender + ": " + message;
     textMessage.useDedicatedChannel = true;
 
@@ -83,7 +84,6 @@ void vsid::NeoVSID::SetGroundState(const std::string &callsign, const Controller
 }
 
 void NeoVSID::runScopeUpdate() {
-
 }
 
 
@@ -93,7 +93,7 @@ void NeoVSID::OnTimer(int Counter) {
 
 
 void NeoVSID::OnAirportConfigurationsUpdated(const Airport::AirportConfigurationsUpdatedEvent* event) {
-
+    dataManager_->populateActiveAirports();
 }
 
 void NeoVSID::run() {
@@ -107,7 +107,7 @@ void NeoVSID::run() {
         this->OnTimer(counter);
 
         // Update tags every five seconds
-        if (counter % 5 ==0) UpdateTagItems();
+        //if (counter % 5 ==0) UpdateTagItems();
     }
     return;
 }

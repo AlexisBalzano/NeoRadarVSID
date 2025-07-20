@@ -8,6 +8,7 @@
 
 #include "TagItemsColor.h"
 #include "NeoVSID.h"
+#include "../utils/Format.h"
 
 using namespace vsid::tagitems;
 
@@ -21,7 +22,7 @@ void NeoVSID::RegisterTagItems()
     PluginSDK::Tag::TagItemDefinition tagDef;
 
     tagDef.name = "CFL";
-    tagDef.defaultValue = "130";
+    tagDef.defaultValue = "---";
 
 	std::string tagID = tagInterface_->RegisterTagItem(tagDef);
     cflId_ = tagID;
@@ -29,18 +30,28 @@ void NeoVSID::RegisterTagItems()
 
 void NeoVSID::UpdateTagItems() {
 	// Update the CFL tag item with the current value
-    // How to get a vector of all callsigns inside departure list ?
+    // 
+	// Get a vector of all callsigns inside departure list for active airports
     std::vector<std::string> callsigns;
+    callsigns = dataManager_->getAllDepartureCallsigns();
 
-    for (auto callsign : callsigns)
+    for (auto &callsign : callsigns)
     {
-		// Update CFL value in tag item
-        int cfl = controllerDataAPI_->getByCallsign(callsign)->clearedFlightLevel;
-		std::string cfl_string = std::to_string(cfl);
-		Tag::TagContext tagContext;
-		tagContext.callsign = callsign;
-
-        tagInterface_->UpdateTagValue(cflId_, cfl_string, tagContext);
+		UpdateTagItems(callsign);
     }
 }
+
+void NeoVSID::UpdateTagItems(std::string Callsign) {
+    // Update CFL value in tag item
+    int cfl = controllerDataAPI_->getByCallsign(Callsign)->clearedFlightLevel;
+    std::string cfl_string = std::to_string(cfl);
+    // Convert CFL from ft to FL format (e.g., 4000 ft -> FL040)
+    cfl_string = formatCFL(cfl_string);
+    Tag::TagContext tagContext;
+    tagContext.callsign = Callsign;
+
+    tagInterface_->UpdateTagValue(cflId_, cfl_string, tagContext);
+}
+
+
 }  // namespace vsid
