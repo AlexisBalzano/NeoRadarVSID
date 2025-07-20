@@ -12,9 +12,6 @@ namespace vsid::tagitems {
         Color& operator=(const Color&) = delete;
         Color& operator=(Color&&) = delete;
 
-		// Example color functions for different tag items
-		static std::optional<std::array<unsigned int, 3>> colorizeRwy() { return Colors::white; }; //TODO: Implement actual color logic
-		static std::optional<std::array<unsigned int, 3>> colorizeSid() { return Colors::white; }; //TODO: Implement actual color logic
     
     
     
@@ -25,7 +22,16 @@ namespace vsid::tagitems {
             else return Colors::orange;
         }
     
-    
+		static std::optional<std::array<unsigned int, 3>> colorizeRwy(const std::string& rwy, const std::string& vsidRwy) {
+            if (rwy == "") return Colors::white;
+            if (rwy == vsidRwy) return Colors::green;
+            else return Colors::orange;
+        }
+		static std::optional<std::array<unsigned int, 3>> colorizeSid(const std::string& sid, const std::string& vsidSid) {
+            if (sid == "") return Colors::white;
+            if (sid == vsidSid) return Colors::green;
+            else return Colors::orange;
+        }
     };
  
 }  // namespace vacdm::tagitems

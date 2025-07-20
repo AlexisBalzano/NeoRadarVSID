@@ -53,7 +53,7 @@ std::vector<std::string> DataManager::getAllDepartureCallsigns() {
         if (std::find(callsigns.begin(), callsigns.end(), flightplan.callsign) == callsigns.end())
         {
             callsigns.push_back(flightplan.callsign);
-			pilots.push_back(Pilot{ flightplan.callsign, "---", "------", 13000}); // Create a new Pilot object with default values
+			pilots.push_back(Pilot{ flightplan.callsign, flightplan.route.suggestedDepRunway, flightplan.route.suggestedSid, 13000 }); // Create a new Pilot object, TODO: Get the correct altitude from .json
         }
     }
 	return callsigns;

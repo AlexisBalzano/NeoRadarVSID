@@ -32,7 +32,7 @@ void NeoVSID::RegisterTagItems()
     rwyId_ = tagID;
 
     tagDef.name = "SID";
-    tagDef.defaultValue = "-----";
+    tagDef.defaultValue = "------";
     tagID = tagInterface_->RegisterTagItem(tagDef);
     sidId_ = tagID;
 }
@@ -50,10 +50,13 @@ void NeoVSID::UpdateTagItems() {
     }
 }
 
-void NeoVSID::UpdateTagItems(std::string Callsign) {
+void NeoVSID::UpdateTagItems(std::string callsign) {
+    Tag::TagContext tagContext;
+    tagContext.callsign = callsign;
+
     // Update CFL value in tag item
-	int vsidCfl = dataManager_->getPilotByCallsign(Callsign).cfl; // Get vsid assigned CFL
-    int cfl = controllerDataAPI_->getByCallsign(Callsign)->clearedFlightLevel;
+	int vsidCfl = dataManager_->getPilotByCallsign(callsign).cfl; // Get vsid assigned CFL
+    int cfl = controllerDataAPI_->getByCallsign(callsign)->clearedFlightLevel;
     std::string cfl_string;
 
     if (cfl == 0) {
@@ -65,12 +68,29 @@ void NeoVSID::UpdateTagItems(std::string Callsign) {
 	}
     
     cfl_string = formatCFL(cfl_string);
-    Tag::TagContext tagContext;
-    tagContext.callsign = Callsign;
     tagContext.colour = Color::colorizeCfl(cfl, vsidCfl);
 
-
     tagInterface_->UpdateTagValue(cflId_, cfl_string, tagContext);
+
+
+    // Update RWY value in tag item
+    std::string vsidRwy = dataManager_->getPilotByCallsign(callsign).rwy;
+    std::string rwy = flightplanAPI_->getByCallsign(callsign)->route.depRunway;
+
+    if (rwy == "") {
+        //TODO: Set RWY value to vsidRwy
+    }
+
+    tagContext.colour = Color::colorizeRwy(rwy, vsidRwy);
+    tagInterface_->UpdateTagValue(rwyId_, vsidRwy, tagContext);
+
+    // Update SID value in tag item
+    std::string vsidSid = dataManager_->getPilotByCallsign(callsign).sid;
+    std::string sid = flightplanAPI_->getByCallsign(callsign)->route.sid;
+
+    tagContext.colour = Color::colorizeSid(sid, vsidSid);
+    tagInterface_->UpdateTagValue(sidId_, vsidSid, tagContext);
+
 }
 
 
