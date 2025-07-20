@@ -43,7 +43,6 @@ void NeoVSID::TagProcessing(const std::string &callsign, const std::string &acti
     if (actionId == confirmCFLId_)
     {
         UpdateTagItems(callsign);
-		DisplayMessage(callsign, "CFL updated based on departure.");
 	}
 }
 

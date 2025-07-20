@@ -79,9 +79,6 @@ void NeoVSID::UpdateTagItems(std::string callsign) {
     std::optional<Flightplan::Flightplan> fp = flightplanAPI_->getByCallsign(callsign);
     std::string rwy = fp->route.depRunway;
 
-    if (rwy == "") {
-        //TODO: Set RWY value to vsidRwy
-    }
 
     std::vector<std::string> depRwys = airportAPI_->getConfigurationByIcao(fp->origin)->depRunways;
     bool isDepRwy = false;
@@ -90,21 +87,26 @@ void NeoVSID::UpdateTagItems(std::string callsign) {
         if (vsidRwy == rwy_)
             isDepRwy = true;
     }
-
     tagContext.colour = Color::colorizeRwy(rwy, vsidRwy, isDepRwy);
-    tagInterface_->UpdateTagValue(rwyId_, vsidRwy, tagContext);
+    if (rwy == "") {
+        //TODO: Set RWY value to vsidRwy
+		rwy = vsidRwy;
+    }
+    tagInterface_->UpdateTagValue(rwyId_, rwy, tagContext);
 
     // Update SID value in tag item
     std::string vsidSid = pilot.sid;
     std::string sid = fp->route.sid;
 
+    tagContext.colour = Color::colorizeSid(sid, vsidSid);
     if (sid == "")
     {
         //TODO: Set SID value to vsidSid
+		sid = vsidSid;
     }
+    tagInterface_->UpdateTagValue(sidId_, sid, tagContext);
+    
 
-    tagContext.colour = Color::colorizeSid(sid, vsidSid);
-    tagInterface_->UpdateTagValue(sidId_, vsidSid, tagContext);
 }
 
 

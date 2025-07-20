@@ -31,8 +31,6 @@ namespace vsid {
         void OnAircraftTemporaryAltitudeChanged(const ControllerData::AircraftTemporaryAltitudeChangedEvent* event) override;
         virtual void OnFlightplanUpdated(const Flightplan::FlightplanUpdatedEvent* event) override;
         void OnTimer(int Counter);
-        /* void OnFlightPlanFlightPlanDataUpdate(EuroScopePlugIn::CFlightPlan FlightPlan) override;
-        void OnFlightPlanControllerAssignedDataUpdate(EuroScopePlugIn::CFlightPlan FlightPlan, int DataType) override;*/
         void OnTagAction(const Tag::TagActionEvent* event) override;
         void OnTagDropdownAction(const Tag::DropdownActionEvent* event) override;
         void UpdateTagItems();
