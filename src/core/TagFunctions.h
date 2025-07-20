@@ -11,10 +11,10 @@ namespace vsid {
 void NeoVSID::RegisterTagActions()
 {
     PluginSDK::Tag::TagActionDefinition tagDef;
-    tagDef.name = "autoCFL";
-	tagDef.description = "Automatically set the CFL based on departure.";
+    tagDef.name = "confirmCFL";
+	tagDef.description = "confirm the CFL based on departure.";
 	tagDef.requiresInput = false; // pas de valeur à entrer (just cliquer sur le tag)
-	autoCFLId_ = tagInterface_->RegisterTagAction(tagDef);
+    confirmCFLId_ = tagInterface_->RegisterTagAction(tagDef);
 }
 
 void NeoVSID::OnTagAction(const PluginSDK::Tag::TagActionEvent *event)
@@ -40,7 +40,7 @@ void NeoVSID::TagProcessing(const std::string &callsign, const std::string &acti
 {
     if (!dataManager_->pilotExists(callsign)) return;
 
-    if (actionId == autoCFLId_)
+    if (actionId == confirmCFLId_)
     {
         UpdateTagItems(callsign);
 		DisplayMessage(callsign, "CFL updated based on departure.");

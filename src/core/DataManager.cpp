@@ -14,9 +14,23 @@ void DataManager::populateActiveAirports()
 	}
 }
 
-std::vector<std::string> DataManager::getAllDepartureCallsigns() const {
+Pilot DataManager::getPilotByCallsign(std::string callsign) const
+{
+	if (callsign.empty())
+		return Pilot{}; // Return an empty Pilot object if the callsign is empty
+    for (auto pilot : pilots)
+    {
+        if (pilot.callsign == callsign)
+			return pilot;
+    }
+    return Pilot{};
+}
+
+std::vector<std::string> DataManager::getAllDepartureCallsigns() {
     std::vector<PluginSDK::Flightplan::Flightplan> flightplans = flightplanAPI_->getAll();
     std::vector<std::string> callsigns;
+
+	pilots.clear(); // Clear the pilots vector to ensure it starts fresh
     
     for (const auto& flightplan : flightplans)
     {
@@ -39,6 +53,7 @@ std::vector<std::string> DataManager::getAllDepartureCallsigns() const {
         if (std::find(callsigns.begin(), callsigns.end(), flightplan.callsign) == callsigns.end())
         {
             callsigns.push_back(flightplan.callsign);
+			pilots.push_back(Pilot{ flightplan.callsign, "---", "------", 13000}); // Create a new Pilot object with default values
         }
     }
 	return callsigns;

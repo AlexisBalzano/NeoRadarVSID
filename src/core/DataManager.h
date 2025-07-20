@@ -3,6 +3,13 @@
 
 #include "SDK.h"
 
+struct Pilot {
+	std::string callsign;
+	std::string rwy;
+	std::string sid;
+	int cfl;
+};
+
 using namespace PluginSDK;
 class DataManager {
 public:
@@ -16,8 +23,9 @@ public:
 	}
 
 	void populateActiveAirports();
-	std::vector<std::string> GetActiveAirports() const { return activeAirports; }
-	std::vector<std::string> getAllDepartureCallsigns() const;
+	std::vector<std::string> getActiveAirports() const { return activeAirports; }
+	Pilot getPilotByCallsign(std::string callsign) const;
+	std::vector<std::string> getAllDepartureCallsigns();
 	bool isDepartureAirport(const std::string& oaci) const;
 	bool pilotExists(const std::string& callsign) const;
 
@@ -28,4 +36,5 @@ private:
 	Airport::AirportAPI* airportAPI_ = nullptr;
 
 	std::vector<std::string> activeAirports;
+	std::vector<Pilot> pilots;
 };

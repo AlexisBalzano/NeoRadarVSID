@@ -96,6 +96,11 @@ void NeoVSID::OnAirportConfigurationsUpdated(const Airport::AirportConfiguration
     dataManager_->populateActiveAirports();
 }
 
+void vsid::NeoVSID::OnAircraftTemporaryAltitudeChanged(const ControllerData::AircraftTemporaryAltitudeChangedEvent* event)
+{
+    UpdateTagItems(event->callsign);
+}
+
 void NeoVSID::run() {
     int counter = 1;
     while (true) {

@@ -28,6 +28,7 @@ namespace vsid {
 
         // Scope events
         void OnAirportConfigurationsUpdated(const Airport::AirportConfigurationsUpdatedEvent* event) override;
+        void OnAircraftTemporaryAltitudeChanged(const ControllerData::AircraftTemporaryAltitudeChangedEvent* event) override;
         void OnTimer(int Counter);
         /* void OnFlightPlanFlightPlanDataUpdate(EuroScopePlugIn::CFlightPlan FlightPlan) override;
         void OnFlightPlanControllerAssignedDataUpdate(EuroScopePlugIn::CFlightPlan FlightPlan, int DataType) override;*/
@@ -72,9 +73,13 @@ namespace vsid {
 
 		// TAG Items IDs
 		std::string cflId_;
+        std::string rwyId_;
+        std::string sidId_;
 
         // TAG Action IDs
-		std::string autoCFLId_;
+        std::string confirmRwyId_;
+        std::string confirmSidId_;
+        std::string confirmCFLId_;
 
     };
 

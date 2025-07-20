@@ -23,9 +23,18 @@ void NeoVSID::RegisterTagItems()
 
     tagDef.name = "CFL";
     tagDef.defaultValue = "---";
-
-	std::string tagID = tagInterface_->RegisterTagItem(tagDef);
+    std::string tagID = tagInterface_->RegisterTagItem(tagDef);
     cflId_ = tagID;
+    
+    tagDef.name = "RWY";
+    tagDef.defaultValue = "---";
+    tagID = tagInterface_->RegisterTagItem(tagDef);
+    rwyId_ = tagID;
+
+    tagDef.name = "SID";
+    tagDef.defaultValue = "-----";
+    tagID = tagInterface_->RegisterTagItem(tagDef);
+    sidId_ = tagID;
 }
 
 void NeoVSID::UpdateTagItems() {
@@ -43,13 +52,25 @@ void NeoVSID::UpdateTagItems() {
 
 void NeoVSID::UpdateTagItems(std::string Callsign) {
     // Update CFL value in tag item
+    std::vector<std::string> callsigns = dataManager_->getAllDepartureCallsigns(); //Delete when auto update is implemented
+
+	int vsidCfl = dataManager_->getPilotByCallsign(Callsign).cfl; // Get vsid assigned CFL
     int cfl = controllerDataAPI_->getByCallsign(Callsign)->clearedFlightLevel;
-    std::string cfl_string = std::to_string(cfl);
-    // Convert CFL from ft to FL format (e.g., 4000 ft -> FL040)
+    DisplayMessage(Callsign + " vsidCFL: " + std::to_string(vsidCfl) + ", CFL: " + std::to_string(cfl));
+    std::string cfl_string;
+
+    if (cfl == 0) {
+        cfl_string = std::to_string(vsidCfl);
+	}
+    else {
+        cfl_string = std::to_string(cfl);
+	}
+    
     cfl_string = formatCFL(cfl_string);
+	DisplayMessage("so CFL: " + cfl_string);
     Tag::TagContext tagContext;
     tagContext.callsign = Callsign;
-	tagContext.colour = Color::colorizeTag(); // Example of using color function
+    tagContext.colour = Color::colorizeCfl(cfl, vsidCfl);
 
     tagInterface_->UpdateTagValue(cflId_, cfl_string, tagContext);
 }
