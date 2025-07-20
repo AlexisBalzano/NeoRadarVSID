@@ -4,13 +4,13 @@
 #include <nlohmann/json.hpp>
 
 #include "SDK.h"
-
 struct Pilot {
 	std::string callsign;
 	std::string rwy;
 	std::string sid;
 	int cfl;
 };
+
 
 using namespace PluginSDK;
 class DataManager {
@@ -33,6 +33,9 @@ public:
 	std::vector<std::string> getAllDepartureCallsigns();
 	bool isDepartureAirport(const std::string& oaci) const;
 	bool pilotExists(const std::string& callsign) const;
+
+	//DELETE: after testing
+	void addPilot(const std::string& callsign);
 
 
 private:

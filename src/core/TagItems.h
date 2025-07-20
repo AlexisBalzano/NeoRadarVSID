@@ -54,8 +54,10 @@ void NeoVSID::UpdateTagItems(std::string callsign) {
     Tag::TagContext tagContext;
     tagContext.callsign = callsign;
 
+	Pilot pilot = dataManager_->getPilotByCallsign(callsign);
+
     // Update CFL value in tag item
-	int vsidCfl = dataManager_->getPilotByCallsign(callsign).cfl; // Get vsid assigned CFL
+	int vsidCfl = pilot.cfl; // Get vsid assigned CFL
     int cfl = controllerDataAPI_->getByCallsign(callsign)->clearedFlightLevel;
     std::string cfl_string;
 
@@ -74,7 +76,7 @@ void NeoVSID::UpdateTagItems(std::string callsign) {
 
 
     // Update RWY value in tag item
-    std::string vsidRwy = dataManager_->getPilotByCallsign(callsign).rwy;
+    std::string vsidRwy = pilot.rwy;
     std::optional<Flightplan::Flightplan> fp = flightplanAPI_->getByCallsign(callsign);
     std::string rwy = fp->route.depRunway;
 
@@ -94,8 +96,8 @@ void NeoVSID::UpdateTagItems(std::string callsign) {
     tagInterface_->UpdateTagValue(rwyId_, vsidRwy, tagContext);
 
     // Update SID value in tag item
-    std::string vsidSid = dataManager_->getPilotByCallsign(callsign).sid;
-    std::string sid = flightplanAPI_->getByCallsign(callsign)->route.sid;
+    std::string vsidSid = pilot.sid;
+    std::string sid = fp->route.sid;
 
     if (sid == "")
     {

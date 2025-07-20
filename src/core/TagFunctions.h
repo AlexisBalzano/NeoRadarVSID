@@ -38,10 +38,12 @@ void NeoVSID::OnTagDropdownAction(const PluginSDK::Tag::DropdownActionEvent *eve
 
 void NeoVSID::TagProcessing(const std::string &callsign, const std::string &actionId, const std::string &userInput)
 {
-    if (!dataManager_->pilotExists(callsign)) return;
+    //if (!dataManager_->pilotExists(callsign)) return;
 
     if (actionId == confirmCFLId_)
     {
+		//DELETE: after testing
+		dataManager_->addPilot(callsign);
         UpdateTagItems(callsign);
 		DisplayMessage(callsign, "CFL updated based on departure.");
 	}

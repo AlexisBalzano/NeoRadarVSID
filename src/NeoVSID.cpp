@@ -84,8 +84,7 @@ void vsid::NeoVSID::SetGroundState(const std::string &callsign, const Controller
 }
 
 void NeoVSID::runScopeUpdate() {
-    dataManager_->getAllDepartureCallsigns();
-    UpdateTagItems();
+    //UpdateTagItems();
 }
 
 
@@ -105,7 +104,7 @@ void vsid::NeoVSID::OnAircraftTemporaryAltitudeChanged(const ControllerData::Air
 
 void vsid::NeoVSID::OnFlightplanUpdated(const Flightplan::FlightplanUpdatedEvent* event)
 {
-    UpdateTagItems(event->callsign);
+    //UpdateTagItems(event->callsign);
 }
 
 void NeoVSID::run() {
