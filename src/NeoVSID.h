@@ -11,6 +11,15 @@ using namespace PluginSDK;
 
 namespace vsid {
 
+    struct tagUpdateParam
+    {
+        std::string callsign;
+        Pilot pilot;
+        PluginSDK::ControllerData::ControllerDataAPI* controllerDataAPI_;
+        Tag::TagInterface* tagInterface_;
+        std::string tagId_;
+    };
+
     class NeoVSIDCommandProvider;
 
     class NeoVSID : public BasePlugin
@@ -35,6 +44,9 @@ namespace vsid {
         void OnTagDropdownAction(const Tag::DropdownActionEvent* event) override;
         void UpdateTagItems();
         void UpdateTagItems(std::string Callsign);
+        void updateCFL(tagUpdateParam param);
+        void updateRWY(tagUpdateParam param);
+        void updateSID(tagUpdateParam param);
         /*    bool OnCompileCommand(const char *sCommandLine) override;*/
 
         // Command handling
