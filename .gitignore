@@ -1,6 +1,9 @@
 # Prerequisites
 *.d
 
+# Airports config files
+src/config/vsid-settings-main.zip
+
 # Visual Studio files
 .vs/
 
