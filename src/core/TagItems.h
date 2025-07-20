@@ -112,8 +112,8 @@ void NeoVSID::UpdateTagItems(std::string callsign) {
 	Pilot pilot = dataManager_->getPilotByCallsign(callsign);
 
 	updateCFL({ callsign, pilot, controllerDataAPI_, tagInterface_, cflId_ });
-	updateRWY({ callsign, pilot, controllerDataAPI_, tagInterface_, cflId_ });
-	updateSID({ callsign, pilot, controllerDataAPI_, tagInterface_, cflId_ });
+	updateRWY({ callsign, pilot, controllerDataAPI_, tagInterface_, rwyId_ });
+	updateSID({ callsign, pilot, controllerDataAPI_, tagInterface_, sidId_ });
 
 }
 
