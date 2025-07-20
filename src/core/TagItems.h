@@ -52,25 +52,23 @@ void NeoVSID::UpdateTagItems() {
 
 void NeoVSID::UpdateTagItems(std::string Callsign) {
     // Update CFL value in tag item
-    std::vector<std::string> callsigns = dataManager_->getAllDepartureCallsigns(); //Delete when auto update is implemented
-
 	int vsidCfl = dataManager_->getPilotByCallsign(Callsign).cfl; // Get vsid assigned CFL
     int cfl = controllerDataAPI_->getByCallsign(Callsign)->clearedFlightLevel;
-    DisplayMessage(Callsign + " vsidCFL: " + std::to_string(vsidCfl) + ", CFL: " + std::to_string(cfl));
     std::string cfl_string;
 
     if (cfl == 0) {
         cfl_string = std::to_string(vsidCfl);
+        //TODO: Set CFL value to vsidCFL
 	}
     else {
         cfl_string = std::to_string(cfl);
 	}
     
     cfl_string = formatCFL(cfl_string);
-	DisplayMessage("so CFL: " + cfl_string);
     Tag::TagContext tagContext;
     tagContext.callsign = Callsign;
     tagContext.colour = Color::colorizeCfl(cfl, vsidCfl);
+
 
     tagInterface_->UpdateTagValue(cflId_, cfl_string, tagContext);
 }

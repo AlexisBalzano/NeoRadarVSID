@@ -84,6 +84,8 @@ void vsid::NeoVSID::SetGroundState(const std::string &callsign, const Controller
 }
 
 void NeoVSID::runScopeUpdate() {
+    dataManager_->getAllDepartureCallsigns();
+    UpdateTagItems();
 }
 
 
