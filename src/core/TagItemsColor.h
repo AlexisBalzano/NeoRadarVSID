@@ -13,7 +13,7 @@ namespace vsid::tagitems {
         Color& operator=(Color&&) = delete;
 
 		// Example color functions for different tag items
-		static std::optional<std::array<unsigned int, 3>> colorizeTag() { return Colors::lightgreen; };
+		static std::optional<std::array<unsigned int, 3>> colorizeTag() { return Colors::green; };
     };
  
 }  // namespace vacdm::tagitems
