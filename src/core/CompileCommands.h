@@ -73,6 +73,7 @@ Chat::CommandResult NeoVSIDCommandProvider::Execute(
         neoVSID_->DisplayMessage(".vsid auto");
         neoVSID_->DisplayMessage(".vsid airports");
         neoVSID_->DisplayMessage(".vsid pilots");
+        neoVSID_->DisplayMessage(".vsid reset");
     }
     else if (command == "AUTO")
     {
@@ -125,6 +126,13 @@ Chat::CommandResult NeoVSIDCommandProvider::Execute(
         }
 		return { true, std::nullopt };
     }
+    else if (command == "RESET")
+    {
+        neoVSID_->DisplayMessage("NeoVSID resetted.");
+        neoVSID_->GetDataManager()->removeAllPilots();
+        neoVSID_->GetDataManager()->populateActiveAirports();
+        return { true, std::nullopt };
+	}
     else {
         std::string error = "Invalid command. Use .vsid <command> <param>";
         neoVSID_->DisplayMessage(error);
