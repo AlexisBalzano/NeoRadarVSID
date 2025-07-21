@@ -32,6 +32,7 @@ void NeoVSID::Initialize(const PluginMetadata &metadata, CoreAPI *coreAPI, Clien
     DisplayMessage("Version " + std::string(PLUGIN_VERSION) + " loaded", "Initialisation");
     
     callsignsScope.clear();
+	dataManager_->removeAllPilots();
 	dataManager_->populateActiveAirports();
 
     try
@@ -100,6 +101,9 @@ void vsid::NeoVSID::OnControllerDataUpdated(const ControllerData::ControllerData
 
 void NeoVSID::OnAirportConfigurationsUpdated(const Airport::AirportConfigurationsUpdatedEvent* event) {
     dataManager_->populateActiveAirports();
+    //Force recomputation of all RWY, SID & CFL
+    dataManager_->removeAllPilots();
+    dataManager_->getAllDepartureCallsigns();
 }
 
 void vsid::NeoVSID::OnAircraftTemporaryAltitudeChanged(const ControllerData::AircraftTemporaryAltitudeChangedEvent* event)
