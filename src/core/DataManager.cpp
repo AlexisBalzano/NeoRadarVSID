@@ -1,6 +1,8 @@
 #include <fstream>
 #include <algorithm>
 
+#include "../NeoVSID.h"
+
 #if defined(_WIN32)
 #include <Windows.h>
 #elif defined(__APPLE__) || defined(__linux__)
@@ -9,9 +11,11 @@
 
 #include "DataManager.h"
 
-DataManager::DataManager(Aircraft::AircraftAPI* aircraftAPI, Flightplan::FlightplanAPI* flightplanAPI, Airport::AirportAPI* airportAPI)
-    : aircraftAPI_(aircraftAPI), flightplanAPI_(flightplanAPI), airportAPI_(airportAPI) {
+DataManager::DataManager(Aircraft::AircraftAPI* aircraftAPI, Flightplan::FlightplanAPI* flightplanAPI, Airport::AirportAPI* airportAPI, Chat::ChatAPI* chatAPI)
+    : aircraftAPI_(aircraftAPI), flightplanAPI_(flightplanAPI), airportAPI_(airportAPI), chatAPI_(chatAPI) {
     configPath_ = getDllDirectory();
+    //DELETE:
+    DisplayMessageFromDataManager("Retrieved dll path, is: " + configPath_.string(), "DataManager");
 }
 
 
@@ -51,6 +55,16 @@ void DataManager::clearData()
         airportAPI_ = nullptr;
 }
 
+void DataManager::DisplayMessageFromDataManager(const std::string& message, const std::string& sender)
+{
+    Chat::ClientTextMessageEvent textMessage;
+    textMessage.sentFrom = "NeoVSID";
+    (sender.empty()) ? textMessage.message = message : textMessage.message = sender + ": " + message;
+    textMessage.useDedicatedChannel = true;
+
+    chatAPI_->sendClientMessage(textMessage);
+}
+
 void DataManager::populateActiveAirports()
 {
 	std::vector<Airport::AirportConfig> allAirports = airportAPI_->getConfigurations();
@@ -73,7 +87,6 @@ int DataManager::fetchCFLfromJson(const Flightplan::Flightplan& flightplan)
 			return -1; // Return -1 if the JSON file could not be retrieved
         }
     }
-  
 
     std::transform(oaci.begin(), oaci.end(), oaci.begin(), ::toupper); //Convert to uppercase
     std::string sid = flightplan.route.suggestedSid;
@@ -97,7 +110,7 @@ int DataManager::retrieveConfigJson(const std::string& oaci)
 
     std::ifstream config(jsonPath);
     if (!config.is_open()) {
-        //TODO: displaying of error messages
+		DisplayMessageFromDataManager("Could not open JSON file: " + jsonPath.string(), "DataManager");
         return -1;
     }
 
@@ -105,6 +118,7 @@ int DataManager::retrieveConfigJson(const std::string& oaci)
         config >> configJson_;
     }
     catch (...) {
+		DisplayMessageFromDataManager("Error parsing JSON file: " + jsonPath.string(), "DataManager");
         return -1;
     }
 	return 0; // Return 0 if the JSON file was successfully retrieved
@@ -145,8 +159,9 @@ std::vector<std::string> DataManager::getAllDepartureCallsigns() {
         callsigns.push_back(flightplan.callsign);
 
         //TODO: determine rwy and SID
-
-        int vsidCfl = fetchCFLfromJson(flightplan);
+        int vsidCfl = 0;
+        if (!flightplan.route.suggestedDepRunway.empty())
+            vsidCfl = fetchCFLfromJson(flightplan);
 	    pilots.push_back(Pilot{ flightplan.callsign, flightplan.route.suggestedDepRunway, flightplan.route.suggestedSid, vsidCfl });
     }
 	return callsigns;

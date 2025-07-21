@@ -19,13 +19,14 @@ struct Pilot {
 using namespace PluginSDK;
 class DataManager {
 public:
-	DataManager(Aircraft::AircraftAPI* aircraftAPI, Flightplan::FlightplanAPI* flightplanAPI, Airport::AirportAPI* airportAPI);
+	DataManager(Aircraft::AircraftAPI* aircraftAPI, Flightplan::FlightplanAPI* flightplanAPI, Airport::AirportAPI* airportAPI, Chat::ChatAPI* chatAPI);
 	~DataManager() = default;
 
 	static std::filesystem::path getDllDirectory();
 	
 	void clearData();
 
+	void DisplayMessageFromDataManager(const std::string& message, const std::string& sender = "");
 	void populateActiveAirports();
 	int fetchCFLfromJson(const Flightplan::Flightplan& flightplan);
 	int retrieveConfigJson(const std::string& oaci);
@@ -42,6 +43,7 @@ private:
 	Aircraft::AircraftAPI* aircraftAPI_ = nullptr;
 	Flightplan::FlightplanAPI* flightplanAPI_ = nullptr;
 	Airport::AirportAPI* airportAPI_ = nullptr;
+	Chat::ChatAPI* chatAPI_ = nullptr;
 
 	std::filesystem::path configPath_;
 
