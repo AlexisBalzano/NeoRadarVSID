@@ -233,8 +233,6 @@ std::vector<std::string> DataManager::getAllDepartureCallsigns() {
 	std::vector<PluginSDK::Flightplan::Flightplan> flightplans = flightplanAPI_->getAll();
 	std::vector<std::string> callsigns;
 
-	pilots.clear();
-
 	for (const auto& flightplan : flightplans)
 	{
 		if (flightplan.callsign.empty())
@@ -253,6 +251,10 @@ std::vector<std::string> DataManager::getAllDepartureCallsigns() {
 			continue;
 
 		callsigns.push_back(flightplan.callsign);
+
+		// Check if the pilot already exists in pilots vector
+		if (std::find_if(pilots.begin(), pilots.end(), [&](const Pilot& p) { return p.callsign == flightplan.callsign; }) != pilots.end())
+			continue;
 
 		std::string vsidRwy = generateVRWY(flightplan);
 		sidData vsidData = generateVSID(flightplan, vsidRwy);
