@@ -71,5 +71,9 @@ if(${CMAKE_HOST_APPLE})
     )
 endif()
 
-# move config file to output dir, allows loading of DLL from output dir
-file(COPY ${CMAKE_SOURCE_DIR}/src/config/lfmn.json DESTINATION ${CMAKE_BINARY_DIR})
+# Collect all .json files in src/config/
+file(GLOB CONFIG_JSON_FILES "${CMAKE_SOURCE_DIR}/src/config/*.json")
+
+# Copy them to the build directory
+file(COPY ${CONFIG_JSON_FILES} DESTINATION ${CMAKE_BINARY_DIR})
+
