@@ -46,6 +46,7 @@ public:
 	Pilot getPilotByCallsign(std::string callsign) const;
 	void addPilot(const std::string& callsign);
 	void removePilot(const std::string& callsign);
+	void removeAllPilots();
 
 	std::string generateVRWY(const Flightplan::Flightplan& flightplan);
 	sidData generateVSID(const Flightplan::Flightplan& flightplan, const std::string& depRwy);

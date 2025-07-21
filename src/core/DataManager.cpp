@@ -313,3 +313,8 @@ void DataManager::removePilot(const std::string& callsign)
 	// Remove the pilot from the list
 	pilots.erase(std::remove_if(pilots.begin(), pilots.end(), [&](const Pilot& p) { return p.callsign == callsign; }), pilots.end());
 }
+
+void DataManager::removeAllPilots()
+{
+	pilots.clear();
+}
