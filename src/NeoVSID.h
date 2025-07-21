@@ -54,6 +54,17 @@ namespace vsid {
         bool getAutoModeState() const { return autoModeState; }
         void switchAutoModeState() { autoModeState = !autoModeState; }
 
+		// API Accessors
+        PluginSDK::Logger::LoggerAPI* GetLogger() const { return logger_; }
+        Aircraft::AircraftAPI* GetAircraftAPI() const { return aircraftAPI_; }
+        Airport::AirportAPI* GetAirportAPI() const { return airportAPI_; }
+        Chat::ChatAPI* GetChatAPI() const { return chatAPI_; }
+        Flightplan::FlightplanAPI* GetFlightplanAPI() const { return flightplanAPI_; }
+        Fsd::FsdAPI* GetFsdAPI() const { return fsdAPI_; }
+        PluginSDK::ControllerData::ControllerDataAPI* GetControllerDataAPI() const { return controllerDataAPI_; }
+		Tag::TagInterface* GetTagInterface() const { return tagInterface_; }
+        DataManager* GetDataManager() const { return dataManager_.get(); }
+
     private:
         bool initialized_ = false;
         PluginMetadata metadata_;
