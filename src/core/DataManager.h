@@ -15,6 +15,10 @@ struct Pilot {
 	}
 };
 
+struct sidData {
+	std::string sid;
+	int cfl;
+};
 
 using namespace PluginSDK;
 class DataManager {
@@ -29,6 +33,7 @@ public:
 	void DisplayMessageFromDataManager(const std::string& message, const std::string& sender = "");
 	void populateActiveAirports();
 	int retrieveConfigJson(const std::string& oaci);
+	void loadAircraftDataJson();
 	
 	std::vector<std::string> getActiveAirports() const { return activeAirports; }
 	std::vector<std::string> getAllDepartureCallsigns();
@@ -42,9 +47,8 @@ public:
 	void addPilot(const std::string& callsign);
 	void removePilot(const std::string& callsign);
 
-	int fetchCFLfromJson(const Flightplan::Flightplan& flightplan); // Used while generateVSID is not implemented because it should also return the CFL
 	std::string generateVRWY(const Flightplan::Flightplan& flightplan);
-	std::string generateVSID(const Flightplan::Flightplan& flightplan, const std::string& depRwy);
+	sidData generateVSID(const Flightplan::Flightplan& flightplan, const std::string& depRwy);
 
 private:
 	Aircraft::AircraftAPI* aircraftAPI_ = nullptr;
@@ -56,6 +60,7 @@ private:
 
 	std::filesystem::path configPath_;
 	nlohmann::json configJson_;
+	nlohmann::json aircraftDataJson_;
 	std::vector<std::string> activeAirports;
 	std::vector<Pilot> pilots;
 };

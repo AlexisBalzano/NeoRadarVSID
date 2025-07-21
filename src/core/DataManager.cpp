@@ -20,6 +20,7 @@ DataManager::DataManager(vsid::NeoVSID* neoVSID)
 	controllerDataAPI_ = neoVSID_->GetControllerDataAPI();
 
 	configPath_ = getDllDirectory();
+	loadAircraftDataJson();
 	activeAirports.clear();
 }
 
@@ -85,30 +86,6 @@ void DataManager::populateActiveAirports()
 	}
 }
 
-int DataManager::fetchCFLfromJson(const Flightplan::Flightplan& flightplan)
-{
-	std::string oaci = flightplan.origin;
-	if (!configJson_.contains(oaci) || configJson_.empty()) {
-		if (retrieveConfigJson(oaci) == -1) {
-			return -1; // Return -1 if the JSON file could not be retrieved
-		}
-	}
-
-	std::transform(oaci.begin(), oaci.end(), oaci.begin(), ::toupper); //Convert to uppercase
-	std::string sid = flightplan.route.suggestedSid;
-	if (sid.empty() || sid.length() < 2) {
-		return -1; // Return -1 if the SID is empty or too short
-	}
-	std::string waypoint = sid.substr(0, sid.length() - 2);
-	std::string letter = sid.substr(sid.length() - 1, 1);
-
-	if (configJson_.contains(oaci) && configJson_[oaci]["sids"].contains(waypoint) && configJson_[oaci]["sids"][waypoint].contains(letter)) {
-		return configJson_[oaci]["sids"][waypoint][letter]["1"]["initial"].get<int>();
-	}
-
-	return -1;
-}
-
 std::string DataManager::generateVRWY(const Flightplan::Flightplan& flightplan)
 {
 	/* TODO:
@@ -119,14 +96,87 @@ std::string DataManager::generateVRWY(const Flightplan::Flightplan& flightplan)
 	return flightplan.route.suggestedDepRunway;
 }
 
-std::string DataManager::generateVSID(const Flightplan::Flightplan& flightplan, const std::string& depRwy)
+sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, const std::string& depRwy)
 {
 	/* TODO:
 	* - generer SID en fonction de la piste assignée
-	* - generer SID en fonction du type de moteur du trafic
-	* - recuperer le CFL associé à la SID générée
+	* - tester implementation actuelle
 	*/
-	return flightplan.route.suggestedSid;
+	DisplayMessageFromDataManager("Generating VSID for flightplan: " + flightplan.callsign, "DataManager");
+
+	std::string suggestedSid = flightplan.route.suggestedSid;
+
+	DisplayMessageFromDataManager("Suggested SID: " + suggestedSid, "DataManager");
+	
+	// Check if configJSON is already the right one, if not, retrieve it
+	std::string oaci = flightplan.origin;
+	if (!configJson_.contains(oaci) || configJson_.empty()) {
+		if (retrieveConfigJson(oaci) == -1) {
+			DisplayMessageFromDataManager("Error retrieving config JSON for OACI: " + oaci, "DataManager");
+			return { suggestedSid, 0};
+		}
+	}
+
+	// Extract waypoint only SID information
+	std::transform(oaci.begin(), oaci.end(), oaci.begin(), ::toupper); //Convert to uppercase
+	if (suggestedSid.empty() || suggestedSid.length() < 2) {
+		return { suggestedSid, 0};
+	}
+	std::string waypoint = suggestedSid.substr(0, suggestedSid.length() - 2);
+	std::string indicator = suggestedSid.substr(suggestedSid.length() - 2, 1);
+	std::string letter = suggestedSid.substr(suggestedSid.length() - 1, 1);
+
+	nlohmann::json waypointSidData;
+
+	if (configJson_.contains(oaci) && configJson_[oaci]["sids"].contains(waypoint)) {
+		waypointSidData = configJson_[oaci]["sids"][waypoint];
+	} else {
+		DisplayMessageFromDataManager("SID not found in config JSON for waypoint: " + waypoint + " for: " + flightplan.callsign, "DataManager");
+		return { suggestedSid, 0};
+	}
+
+	//From here we have all the data necessary from oaci.json
+	if (waypointSidData.contains(letter)) {
+		if (waypointSidData[letter]["1"].contains("engineType")) {
+			std::string aircraftType = flightplan.acType;
+			std::string engineType = "J"; // Defaulting to Jet if no type is found
+			if (aircraftDataJson_.contains(aircraftType))
+				engineType = aircraftDataJson_[aircraftType]["engineType"].get<std::string>();
+			std::string requiredEngineType = waypointSidData[letter]["1"]["engineType"].get<std::string>();
+			if (requiredEngineType.find(engineType) != std::string::npos) {
+				// Engine type matches, we can assign this SID and CFL
+				int fetchedCfl = waypointSidData[letter]["1"]["initial"].get<int>();
+				return { waypoint + indicator + letter, fetchedCfl };
+			}
+			else {
+				if (waypointSidData.contains("2")) {
+					// If there is a CFL for the other engine type, we assign it
+					int fetchedCfl = waypointSidData[letter]["2"]["initial"].get<int>();
+					return { waypoint + indicator + letter, fetchedCfl };
+				}
+				else {
+				// Get the very next SID because it is the other engine type one
+					auto it = waypointSidData.find(letter); //get iterator to the current letter
+					if (it != waypointSidData.end()) {
+						++it; // Move to the next key
+						if (it != waypointSidData.end()) {
+							std::string nextLetter = it.key();
+							return { waypoint + indicator + nextLetter, it.value()["1"]["initial"].get<int>() };
+						}
+					}
+					// If no next letter, we return the suggested SID with CFL 0
+					return { suggestedSid, waypointSidData[letter]["1"]["initial"].get<int>() };
+				}
+
+			}
+		}
+		else {
+			// If no engine restriction then we assign this SID and CFL
+			int fetchedCfl = waypointSidData[letter]["1"]["initial"].get<int>();
+			return { waypoint + indicator + letter, fetchedCfl };
+		}
+	}
+	return { suggestedSid, 0 };
 }
 
 int DataManager::retrieveConfigJson(const std::string& oaci)
@@ -148,6 +198,23 @@ int DataManager::retrieveConfigJson(const std::string& oaci)
 		return -1;
 	}
 	return 0; // Return 0 if the JSON file was successfully retrieved
+}
+
+void DataManager::loadAircraftDataJson()
+{
+	std::filesystem::path jsonPath = configPath_ / "NeoVSID" / "AircraftData.json";
+	std::ifstream aircraftDataFile(jsonPath);
+	if (!aircraftDataFile.is_open()) {
+		DisplayMessageFromDataManager("Could not open aircraft data JSON file: " + jsonPath.string(), "DataManager");
+		return;
+	}
+	try {
+		aircraftDataJson_ = nlohmann::json::parse(aircraftDataFile);
+	}
+	catch (...) {
+		DisplayMessageFromDataManager("Error parsing aircraft data JSON file: " + jsonPath.string(), "DataManager");
+		return;
+	}
 }
 
 Pilot DataManager::getPilotByCallsign(std::string callsign) const
@@ -188,7 +255,8 @@ std::vector<std::string> DataManager::getAllDepartureCallsigns() {
 		callsigns.push_back(flightplan.callsign);
 
 		std::string vsidRwy = generateVRWY(flightplan);
-		pilots.push_back(Pilot{ flightplan.callsign, vsidRwy, generateVSID(flightplan, vsidRwy), fetchCFLfromJson(flightplan) });
+		sidData vsidData = generateVSID(flightplan, vsidRwy);
+		pilots.push_back(Pilot{ flightplan.callsign, vsidRwy, vsidData.sid, vsidData.cfl});
 	}
 	return callsigns;
 }
@@ -234,7 +302,10 @@ void DataManager::addPilot(const std::string& callsign)
 		return;
 	if (!isDepartureAirport(flightplan.origin))
 		return;
-	pilots.push_back(Pilot{ flightplan.callsign, flightplan.route.suggestedDepRunway, flightplan.route.suggestedSid, fetchCFLfromJson(flightplan) });
+
+	std::string vsidRwy = generateVRWY(flightplan);
+	sidData vsidData = generateVSID(flightplan, vsidRwy);
+	pilots.push_back(Pilot{ flightplan.callsign, vsidRwy, vsidData.sid, vsidData.cfl });
 }
 
 void DataManager::removePilot(const std::string& callsign)
