@@ -69,7 +69,7 @@ void NeoVSID::Shutdown()
 void NeoVSID::DisplayMessage(const std::string &message, const std::string &sender) {
     Chat::ClientTextMessageEvent textMessage;
     textMessage.sentFrom = "NeoVSID";
-    (sender.empty()) ? textMessage.message = message : textMessage.message = sender + ": " + message;
+    (sender.empty()) ? textMessage.message = ": " + message : textMessage.message = sender + ": " + message;
     textMessage.useDedicatedChannel = true;
 
     chatAPI_->sendClientMessage(textMessage);

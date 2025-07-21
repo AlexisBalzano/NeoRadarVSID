@@ -57,7 +57,7 @@ void DataManager::DisplayMessageFromDataManager(const std::string& message, cons
 {
 	Chat::ClientTextMessageEvent textMessage;
 	textMessage.sentFrom = "NeoVSID";
-	(sender.empty()) ? textMessage.message = message : textMessage.message = sender + ": " + message;
+	(sender.empty()) ? textMessage.message = ": " + message : textMessage.message = sender + ": " + message;
 	textMessage.useDedicatedChannel = true;
 
 	chatAPI_->sendClientMessage(textMessage);

@@ -53,21 +53,22 @@ void NeoVSID::TagProcessing(const std::string &callsign, const std::string &acti
         dataManager_->addPilot(callsign);
     }
 
+	bool printToTag = true;
     Pilot pilot = dataManager_->getPilotByCallsign(callsign);
 
     if (actionId == confirmCFLId_)
     {
-        updateCFL({ callsign, pilot, controllerDataAPI_, tagInterface_, cflId_ });
+        updateCFL({ callsign, pilot, controllerDataAPI_, tagInterface_, cflId_, printToTag });
 	}
 
     if (actionId == confirmRwyId_)
     {
-        updateCFL({ callsign, pilot, controllerDataAPI_, tagInterface_, rwyId_ });
+        updateCFL({ callsign, pilot, controllerDataAPI_, tagInterface_, rwyId_, printToTag });
 	}
 
     if (actionId == confirmSidId_)
     {
-        updateCFL({ callsign, pilot, controllerDataAPI_, tagInterface_, sidId_ });
+        updateCFL({ callsign, pilot, controllerDataAPI_, tagInterface_, sidId_, printToTag });
 	}
 }
 

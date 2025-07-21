@@ -19,6 +19,7 @@ namespace vsid {
         PluginSDK::ControllerData::ControllerDataAPI* controllerDataAPI_;
         Tag::TagInterface* tagInterface_;
         std::string tagId_;
+        bool confirmValue; // if true, vsid CFL/RWY/SID will be printed in FP
     };
 
     class NeoVSIDCommandProvider;
@@ -46,17 +47,12 @@ namespace vsid {
         void OnAircraftTemporaryAltitudeChanged(const ControllerData::AircraftTemporaryAltitudeChangedEvent* event) override;
         virtual void OnFlightplanUpdated(const Flightplan::FlightplanUpdatedEvent* event) override;
         void OnTimer(int Counter);
-        void OnTagAction(const Tag::TagActionEvent* event) override;
-        void OnTagDropdownAction(const Tag::DropdownActionEvent* event) override;
-        void UpdateTagItems();
-        void UpdateTagItems(std::string Callsign);
-        void updateCFL(tagUpdateParam param);
-        void updateRWY(tagUpdateParam param);
-        void updateSID(tagUpdateParam param);
         /*    bool OnCompileCommand(const char *sCommandLine) override;*/
 
         // Command handling
         void TagProcessing(const std::string& callsign, const std::string& actionId, const std::string& userInput = "");
+        bool getAutoModeState() const { return autoModeState; }
+        void switchAutoModeState() { autoModeState = !autoModeState; }
 
     private:
         bool initialized_ = false;
@@ -79,6 +75,16 @@ namespace vsid {
         void RegisterTagItems();
         void RegisterTagActions();
         void RegisterCommand();
+        void OnTagAction(const Tag::TagActionEvent* event) override;
+        void OnTagDropdownAction(const Tag::DropdownActionEvent* event) override;
+        void UpdateTagItems();
+        void UpdateTagItems(std::string Callsign);
+        void updateCFL(tagUpdateParam param);
+        void updateRWY(tagUpdateParam param);
+        void updateSID(tagUpdateParam param);
+
+		bool autoModeState = false; // Auto mode automatically assigns RWY SID & CFL using API without user confirmation
+
 
 	    // TAG Items IDs
 		std::string cflId_;
@@ -89,6 +95,9 @@ namespace vsid {
         std::string confirmRwyId_;
         std::string confirmSidId_;
         std::string confirmCFLId_;
+
+		// Command IDs
+		std::string commandId_;
 
         // Concerned callsigns
         std::vector<std::string> callsignsScope;

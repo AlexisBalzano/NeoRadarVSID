@@ -42,7 +42,9 @@ void NeoVSID::updateCFL(tagUpdateParam param) {
 
     if (cfl == 0) {
         cfl_string = std::to_string(vsidCfl);
-        //TODO: Set CFL value to vsidCFL
+        if (autoModeState) {
+            //TODO: Set CFL value to vsidCFL
+        }
     }
     else {
         cfl_string = std::to_string(cfl);
@@ -71,7 +73,9 @@ void NeoVSID::updateRWY(tagUpdateParam param) {
     }
     tagContext.colour = Color::colorizeRwy(rwy, vsidRwy, isDepRwy);
     if (rwy == "") {
-        //TODO: Set RWY value to vsidRwy
+        if (autoModeState) {
+            //TODO: Set RWY value to vsidRwy
+        }
         rwy = vsidRwy;
     }
     tagInterface_->UpdateTagValue(param.tagId_, rwy, tagContext);
@@ -87,7 +91,9 @@ void NeoVSID::updateSID(tagUpdateParam param) {
     tagContext.colour = Color::colorizeSid(sid, vsidSid);
     if (sid == "")
     {
-        //TODO: Set SID value to vsidSid
+        if (autoModeState) {
+            //TODO: Set SID value to vsidSid
+		}
         sid = vsidSid;
     }
     tagInterface_->UpdateTagValue(param.tagId_, sid, tagContext);
@@ -112,9 +118,9 @@ void NeoVSID::UpdateTagItems(std::string callsign) {
     
 	Pilot pilot = dataManager_->getPilotByCallsign(callsign);
 
-	updateCFL({ callsign, pilot, controllerDataAPI_, tagInterface_, cflId_ });
-	updateRWY({ callsign, pilot, controllerDataAPI_, tagInterface_, rwyId_ });
-	updateSID({ callsign, pilot, controllerDataAPI_, tagInterface_, sidId_ });
+	updateCFL({ callsign, pilot, controllerDataAPI_, tagInterface_, cflId_, autoModeState });
+	updateRWY({ callsign, pilot, controllerDataAPI_, tagInterface_, rwyId_, autoModeState });
+	updateSID({ callsign, pilot, controllerDataAPI_, tagInterface_, sidId_, autoModeState });
 
 }
 
