@@ -129,6 +129,10 @@ void vsid::NeoVSID::OnFlightplanUpdated(const Flightplan::FlightplanUpdatedEvent
         return;
     if (aircraftAPI_->getDistanceFromOrigin(event->callsign) > 2)
 		dataManager_->removePilot(event->callsign);
+
+    // Force recomputation of RWY, SID and CFL
+    if (dataManager_->pilotExists(event->callsign))
+        dataManager_->removePilot(event->callsign);
 	
     UpdateTagItems(event->callsign);
 }
