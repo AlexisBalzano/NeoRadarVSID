@@ -128,6 +128,8 @@ void vsid::NeoVSID::OnFlightplanUpdated(const Flightplan::FlightplanUpdatedEvent
         return;
     if (aircraftAPI_->getDistanceFromOrigin(event->callsign) > 4)
 		dataManager_->removePilot(event->callsign);
+	
+    UpdateTagItems(event->callsign);
 }
 
 
