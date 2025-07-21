@@ -103,11 +103,21 @@ int DataManager::fetchCFLfromJson(const Flightplan::Flightplan& flightplan)
 
 std::string DataManager::generateVRWY(const Flightplan::Flightplan& flightplan)
 {
+	/* TODO:
+	* - generer la piste en fonction des pistes de departs actuellement configurées sur le terrain de départ du trafic
+	* - generer la piste en fonction de la position du trafic par rapport au terrain de départ si plusieurs pistes de départ et config roulage mini
+	* - generer la piste en fonction de la direction du depart si config croisement au sol
+	*/ 
 	return flightplan.route.suggestedDepRunway;
 }
 
-std::string DataManager::generateVSID(const Flightplan::Flightplan& flightplan)
+std::string DataManager::generateVSID(const Flightplan::Flightplan& flightplan, const std::string& depRwy)
 {
+	/* TODO:
+	* - generer SID en fonction de la piste assignée
+	* - generer SID en fonction du type de moteur du trafic
+	* - recuperer le CFL associé à la SID générée
+	*/
 	return flightplan.route.suggestedSid;
 }
 
@@ -166,7 +176,8 @@ std::vector<std::string> DataManager::getAllDepartureCallsigns() {
 
 		callsigns.push_back(flightplan.callsign);
 
-		pilots.push_back(Pilot{ flightplan.callsign, generateVRWY(flightplan), generateVSID(flightplan), fetchCFLfromJson(flightplan) });
+		std::string vsidRwy = generateVRWY(flightplan);
+		pilots.push_back(Pilot{ flightplan.callsign, vsidRwy, generateVSID(flightplan, vsidRwy), fetchCFLfromJson(flightplan) });
 	}
 	return callsigns;
 }
