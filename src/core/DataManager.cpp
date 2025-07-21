@@ -93,7 +93,7 @@ int DataManager::fetchCFLfromJson(const Flightplan::Flightplan& flightplan)
 int DataManager::retrieveConfigJson(const std::string& oaci)
 {
     std::string fileName = oaci + ".json";
-    std::filesystem::path jsonPath = configPath_ / fileName;
+    std::filesystem::path jsonPath = configPath_ / "NeoVSID" / fileName;
 
     std::ifstream config(jsonPath);
     if (!config.is_open()) {
