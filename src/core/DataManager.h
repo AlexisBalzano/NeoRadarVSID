@@ -37,6 +37,7 @@ public:
 
 	bool aircraftExists(const std::string& callsign) const;
 	bool pilotExists(const std::string& callsign) const;
+	std::vector<Pilot> getPilots() const { return pilots; }
 	Pilot getPilotByCallsign(std::string callsign) const;
 	void addPilot(const std::string& callsign);
 	void removePilot(const std::string& callsign);

@@ -72,6 +72,7 @@ Chat::CommandResult NeoVSIDCommandProvider::Execute(
         neoVSID_->DisplayMessage(".vsid version");
         neoVSID_->DisplayMessage(".vsid auto");
         neoVSID_->DisplayMessage(".vsid airports");
+        neoVSID_->DisplayMessage(".vsid pilots");
     }
     else if (command == "AUTO")
     {
@@ -94,6 +95,34 @@ Chat::CommandResult NeoVSIDCommandProvider::Execute(
             message = message.substr(0, message.size() - 2);
             neoVSID_->DisplayMessage(message);
 		}
+		return { true, std::nullopt };
+    }
+    else if (command == "PILOTS")
+    {
+        std::vector<Pilot> activePilots = neoVSID_->GetDataManager()->getPilots();
+        if (activePilots.empty()) {
+            neoVSID_->DisplayMessage("No active pilots found.");
+        }
+        else {
+			int count = 0;
+            std::string message = "Active Pilots: ";
+            for (const auto& pilot : activePilots) {
+				++count;
+                message += pilot.callsign + ", ";
+                if (count >= 4) {
+                    // Remove the trailing comma and space
+                    message = message.substr(0, message.size() - 2);
+                    neoVSID_->DisplayMessage(message);
+					count = 0;
+					message = "";
+                }
+            }
+            if (!message.empty()) {
+                // Remove the trailing comma and space
+                message = message.substr(0, message.size() - 2);
+                neoVSID_->DisplayMessage(message);
+			}
+        }
 		return { true, std::nullopt };
     }
     else {
