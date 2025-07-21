@@ -1,19 +1,70 @@
 # NeoRadarVSID
 vSID adaptation for NeoRadar ATC Client
 
+# Installation
+- Download the latest release from the [Releases] according to your platform (Windows, Linux, MacOS).
+- Extract the contents of the zip file to your NeoRadar plugins directory (./Documents/NeoRadar).
+- add the following line to your NeoRadar list.yaml config file (./Documents/NeoRadar/package/'yourpackage'/system/list.yaml):
+```yaml
+    - name: vrwy
+      width: 30
+      tagItem:
+        itemName: plugin:NeoVSID:TAG_RWY
+        leftClick: sidMenu
+    - name: vsid
+      width: 80
+      tagItem:
+        itemName: plugin:NeoVSID:TAG_SID
+        leftClick: sidMenu
+    - name: vcfl
+      width: 40
+      tagItem:
+        itemName: plugin:NeoVSID:TAG_CFL
+        leftClick: plugin:NeoVSID:ACTION_confirmCFL
+        rightClick: cfl
+```
+- delete theses line to avoid conflict with the NeoRadarVSID plugin:
+```yaml
+    - name: rwy
+      width: 30
+      tagItem:
+        itemName: text
+        value:
+          - =suggestedDepRunwayIfNoAssigned
+          - |
+            &depRunway
+        color:
+          - =suggestedDepRunwayColor
+          - =blueDepRunway
+        leftClick: sidMenu
+        placeholder: "---"
+    - name: sid
+      width: 80
+      tagItem:
+        itemName: text
+        value:
+          - =suggestedSidIfNoAssigned
+          - |
+            &sid
+        color:
+          - =suggestedSidColor
+          - =blueAssignedSid
+        leftClick: sidMenu
+        placeholder: "----"
+    - name: cfl
+      width: 40
+      tagItem:
+        itemName: clearedFlightLevel
+        placeholder: "---"
+        padWithZeroLeft: 5
+        truncate: [0, 3]
+        leftClick: cfl
+```
 
-# TODO
-- Add TAG logic
-	- Assign RWY based on aircraft position (north & south) mode
-	- Assign RWY based on SID (north & south) mode
-	- assign SID based on engine type (jet or propeller)
-
-- make it linux & mac compilable
-	
-- Implement custom SID menu to allow user to only select available SID for the current flight plan and aircraft type.
-
-- (Logging system)
-
-# Functionnalities
-- Automatically assign best SID for the current flight plan and aircraft type. (for the moment use NeoRadar suggestedSID)
-- Add a rating requirement for plugin usage
+# Usage
+- Start NeoRadar and assign runways.<br>
+At most, vsid will assign SID & CFL every 5 seconds
+- Informations appear white when unconfirmed (ie: not printed in the FP/TAG).<br>
+- Right click on SID and CFL open their respective menu to confirm them.<br>
+They will turn green when confirmed.<br>
+- If another value is assigned to the SID or CFL, they will turn orange again while displaying the new assigned value to display deviation from config.<br>
