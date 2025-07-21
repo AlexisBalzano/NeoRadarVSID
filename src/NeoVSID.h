@@ -6,6 +6,8 @@
 #include "SDK.h"
 #include "core/NeoVSIDCommandProvider.h"
 #include "core/DataManager.h"
+#include "log/Logger.h"
+
 
 using namespace PluginSDK;
 
@@ -32,9 +34,14 @@ namespace vsid {
         void Shutdown() override;
         PluginMetadata GetMetadata() const override;
 
+        // Radar commands
         void DisplayMessage(const std::string& message, const std::string& sender = "");
         void SetGroundState(const std::string& callsign, const ControllerData::GroundStatus groundstate);
-
+		/* void SetSid(const std::string& callsign, const std::string& sid);
+           void SetCFL(const std::string& callsign, const std::string& cfl);
+		   void SetRunway(const std::string& callsign, const std::string& rwy);
+        */
+        
         // Scope events
         void OnAirportConfigurationsUpdated(const Airport::AirportConfigurationsUpdatedEvent* event) override;
         void OnAircraftTemporaryAltitudeChanged(const ControllerData::AircraftTemporaryAltitudeChangedEvent* event) override;
@@ -64,26 +71,15 @@ namespace vsid {
         PluginSDK::Logger::LoggerAPI* logger_ = nullptr;
         PluginSDK::ControllerData::ControllerDataAPI* controllerDataAPI_ = nullptr;
         Tag::TagInterface* tagInterface_ = nullptr;
-		DataManager* dataManager_ = nullptr;
-
-        std::optional<Aircraft::Aircraft> GetAircraftByCallsign(const std::string& callsign);
+        std::unique_ptr<DataManager> dataManager_;
 
 
         void runScopeUpdate();
 
+        // Tag Items
         void RegisterTagItems();
         void RegisterTagActions();
         void RegisterCommand();
-
-
-        std::thread m_worker;
-        bool m_stop;
-        void run();
-
-        std::shared_ptr<NeoVSIDCommandProvider> CommandProvider_;
-
-        // Concerned callsigns
-        std::vector<std::string> callsignsScope;
 
 	    // TAG Items IDs
 		std::string cflId_;
@@ -95,6 +91,15 @@ namespace vsid {
         std::string confirmSidId_;
         std::string confirmCFLId_;
 
+        // Concerned callsigns
+        std::vector<std::string> callsignsScope;
+
+
+        std::thread m_worker;
+        bool m_stop;
+        void run();
+
+        std::shared_ptr<NeoVSIDCommandProvider> CommandProvider_;
     };
 
 } // namespace vsid

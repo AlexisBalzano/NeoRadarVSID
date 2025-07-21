@@ -7,7 +7,6 @@
 #include "core/CompileCommands.h"
 #include "core/TagFunctions.h"
 #include "core/TagItems.h"
-#include "log/Logger.h"
 #include "utils/String.h"
 
 using namespace vsid;
@@ -28,13 +27,13 @@ void NeoVSID::Initialize(const PluginMetadata &metadata, CoreAPI *coreAPI, Clien
     controllerDataAPI_ = &lcoreAPI->controllerData();
     logger_ = &lcoreAPI->logger();
     tagInterface_ = lcoreAPI->tag().getInterface();
-	dataManager_ = DataManager::instance(aircraftAPI_, flightplanAPI_, airportAPI_);
+	dataManager_ = std::make_unique<DataManager>(aircraftAPI_, flightplanAPI_, airportAPI_);
 
     logging::Logger::instance().setLogger(logger_);
 
     DisplayMessage("Version " + std::string(PLUGIN_VERSION) + " loaded", "Initialisation");
-    logging::Logger::instance().log(logging::Logger::LogSender::vACDM, "Version " + std::string(PLUGIN_VERSION) + " loaded",
-                           logging::Logger::LogLevel::System);
+    
+    logging::Logger::instance().log(logging::Logger::LogSender::vACDM, "Version " + std::string(PLUGIN_VERSION) + " loaded", logging::Logger::LogLevel::System);
 
     callsignsScope.clear();
 
@@ -43,7 +42,6 @@ void NeoVSID::Initialize(const PluginMetadata &metadata, CoreAPI *coreAPI, Clien
         this->RegisterTagItems();
         this->RegisterTagActions();
         this->RegisterCommand();
-
 
         initialized_ = true;
     }
@@ -63,6 +61,10 @@ void NeoVSID::Shutdown()
         initialized_ = false;
         logger_->info("NeoVSID shutdown complete");
     }
+
+	if (dataManager_) dataManager_.reset();
+
+    logging::Logger::instance().shutdown();
 
     this->m_stop = true;
     this->m_worker.join();
@@ -88,11 +90,9 @@ void NeoVSID::runScopeUpdate() {
     UpdateTagItems();
 }
 
-
 void NeoVSID::OnTimer(int Counter) {
     if (Counter % 5 == 0) this->runScopeUpdate();
 }
-
 
 void NeoVSID::OnAirportConfigurationsUpdated(const Airport::AirportConfigurationsUpdatedEvent* event) {
     dataManager_->populateActiveAirports();
@@ -108,7 +108,7 @@ void vsid::NeoVSID::OnFlightplanUpdated(const Flightplan::FlightplanUpdatedEvent
     if (!event || event->callsign.empty())
         return;
 
-    // Check if callsign is in callsignsScope
+	// Do not update tags if the callsign is not in the scope
     if (std::find(callsignsScope.begin(), callsignsScope.end(), event->callsign) == callsignsScope.end())
         return;
     
@@ -132,8 +132,3 @@ PluginSDK::PluginMetadata NeoVSID::GetMetadata() const
 {
     return {"NeoVSID", PLUGIN_VERSION, "French VACC"};
 }
-
-std::optional<Aircraft::Aircraft> NeoVSID::GetAircraftByCallsign(const std::string &callsign) {
-    return aircraftAPI_->getByCallsign(callsign);
-    
-}  // namespace vacdm
