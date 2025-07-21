@@ -102,12 +102,8 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 	* - generer SID en fonction de la piste assignée
 	* - tester implementation actuelle
 	*/
-	DisplayMessageFromDataManager("Generating VSID for flightplan: " + flightplan.callsign, "DataManager");
-
 	std::string suggestedSid = flightplan.route.suggestedSid;
 
-	DisplayMessageFromDataManager("Suggested SID: " + suggestedSid, "DataManager");
-	
 	// Check if configJSON is already the right one, if not, retrieve it
 	std::string oaci = flightplan.origin;
 	if (!configJson_.contains(oaci) || configJson_.empty()) {
