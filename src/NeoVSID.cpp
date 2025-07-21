@@ -27,7 +27,7 @@ void NeoVSID::Initialize(const PluginMetadata &metadata, CoreAPI *coreAPI, Clien
     controllerDataAPI_ = &lcoreAPI->controllerData();
     logger_ = &lcoreAPI->logger();
     tagInterface_ = lcoreAPI->tag().getInterface();
-	dataManager_ = std::make_unique<DataManager>(aircraftAPI_, flightplanAPI_, airportAPI_, chatAPI_);
+	dataManager_ = std::make_unique<DataManager>(this);
 
     DisplayMessage("Version " + std::string(PLUGIN_VERSION) + " loaded", "Initialisation");
     

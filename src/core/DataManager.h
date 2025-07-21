@@ -19,7 +19,7 @@ struct Pilot {
 using namespace PluginSDK;
 class DataManager {
 public:
-	DataManager(Aircraft::AircraftAPI* aircraftAPI, Flightplan::FlightplanAPI* flightplanAPI, Airport::AirportAPI* airportAPI, Chat::ChatAPI* chatAPI);
+	DataManager(vsid::NeoVSID* neoVSID);
 	~DataManager() = default;
 
 	static std::filesystem::path getDllDirectory();
@@ -50,7 +50,9 @@ private:
 	Aircraft::AircraftAPI* aircraftAPI_ = nullptr;
 	Flightplan::FlightplanAPI* flightplanAPI_ = nullptr;
 	Airport::AirportAPI* airportAPI_ = nullptr;
+	PluginSDK::ControllerData::ControllerDataAPI* controllerDataAPI_ = nullptr;
 	Chat::ChatAPI* chatAPI_ = nullptr;
+	vsid::NeoVSID* neoVSID_ = nullptr;
 
 	std::filesystem::path configPath_;
 	nlohmann::json configJson_;

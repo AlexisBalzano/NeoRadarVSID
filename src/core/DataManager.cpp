@@ -11,8 +11,14 @@
 
 #include "DataManager.h"
 
-DataManager::DataManager(Aircraft::AircraftAPI* aircraftAPI, Flightplan::FlightplanAPI* flightplanAPI, Airport::AirportAPI* airportAPI, Chat::ChatAPI* chatAPI)
-	: aircraftAPI_(aircraftAPI), flightplanAPI_(flightplanAPI), airportAPI_(airportAPI), chatAPI_(chatAPI) {
+DataManager::DataManager(vsid::NeoVSID* neoVSID)
+	: neoVSID_(neoVSID) {
+	aircraftAPI_ = neoVSID_->GetAircraftAPI();
+	flightplanAPI_ = neoVSID_->GetFlightplanAPI();
+	airportAPI_ = neoVSID_->GetAirportAPI();
+	chatAPI_ = neoVSID_->GetChatAPI();
+	controllerDataAPI_ = neoVSID_->GetControllerDataAPI();
+
 	configPath_ = getDllDirectory();
 	activeAirports.clear();
 }
@@ -174,6 +180,9 @@ std::vector<std::string> DataManager::getAllDepartureCallsigns() {
 			continue;
 
 		if (aircraftAPI_->getDistanceFromOrigin(flightplan.callsign) > 2)
+			continue;
+
+		if (controllerDataAPI_->getByCallsign(flightplan.callsign)->groundStatus == ControllerData::GroundStatus::Dep)
 			continue;
 
 		callsigns.push_back(flightplan.callsign);
