@@ -1,6 +1,8 @@
 # Prerequisites
 *.d
 
+todo.txt
+
 # Airports config files
 src/config/vsid-settings-main.zip
 
