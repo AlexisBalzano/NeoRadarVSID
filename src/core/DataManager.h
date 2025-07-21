@@ -22,12 +22,9 @@ public:
 	DataManager(Aircraft::AircraftAPI* aircraftAPI, Flightplan::FlightplanAPI* flightplanAPI, Airport::AirportAPI* airportAPI);
 	~DataManager() = default;
 
-	
-	static DataManager* instance(Aircraft::AircraftAPI* aircraftAPI, Flightplan::FlightplanAPI* flightplanAPI, Airport::AirportAPI* airportAPI) {
-		static DataManager instance(aircraftAPI, flightplanAPI, airportAPI);
-		return &instance;
-	}
 	static std::filesystem::path getDllDirectory();
+	
+	void clearData();
 
 	void populateActiveAirports();
 	int fetchCFLfromJson(const Flightplan::Flightplan& flightplan);

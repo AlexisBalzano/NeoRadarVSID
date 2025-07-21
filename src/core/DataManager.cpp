@@ -37,6 +37,20 @@ std::filesystem::path DataManager::getDllDirectory()
 #endif
 }
 
+void DataManager::clearData()
+{
+    pilots.clear();
+    activeAirports.clear();
+	configJson_.clear();
+    configPath_.clear();
+    if (aircraftAPI_)
+        aircraftAPI_ = nullptr;
+    if (flightplanAPI_)
+        flightplanAPI_ = nullptr;
+    if (airportAPI_)
+        airportAPI_ = nullptr;
+}
+
 void DataManager::populateActiveAirports()
 {
 	std::vector<Airport::AirportConfig> allAirports = airportAPI_->getConfigurations();
