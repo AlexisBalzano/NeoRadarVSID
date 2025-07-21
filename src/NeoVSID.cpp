@@ -110,6 +110,7 @@ void vsid::NeoVSID::OnAircraftTemporaryAltitudeChanged(const ControllerData::Air
     // Do not update tags if the callsign is not in the scope
     if (std::find(callsignsScope.begin(), callsignsScope.end(), event->callsign) == callsignsScope.end())
         return;
+
     if (aircraftAPI_->getDistanceFromOrigin(event->callsign) > 2) {
 		dataManager_->removePilot(event->callsign);
         return;
@@ -126,7 +127,7 @@ void vsid::NeoVSID::OnFlightplanUpdated(const Flightplan::FlightplanUpdatedEvent
 	// Do not update tags if the callsign is not in the scope
     if (std::find(callsignsScope.begin(), callsignsScope.end(), event->callsign) == callsignsScope.end())
         return;
-    if (aircraftAPI_->getDistanceFromOrigin(event->callsign) > 4)
+    if (aircraftAPI_->getDistanceFromOrigin(event->callsign) > 2)
 		dataManager_->removePilot(event->callsign);
 	
     UpdateTagItems(event->callsign);
