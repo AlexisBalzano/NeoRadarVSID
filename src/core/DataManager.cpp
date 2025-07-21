@@ -14,6 +14,7 @@
 DataManager::DataManager(Aircraft::AircraftAPI* aircraftAPI, Flightplan::FlightplanAPI* flightplanAPI, Airport::AirportAPI* airportAPI, Chat::ChatAPI* chatAPI)
 	: aircraftAPI_(aircraftAPI), flightplanAPI_(flightplanAPI), airportAPI_(airportAPI), chatAPI_(chatAPI) {
 	configPath_ = getDllDirectory();
+	activeAirports.clear();
 }
 
 
