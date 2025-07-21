@@ -32,6 +32,7 @@ void NeoVSID::Initialize(const PluginMetadata &metadata, CoreAPI *coreAPI, Clien
     DisplayMessage("Version " + std::string(PLUGIN_VERSION) + " loaded", "Initialisation");
     
     callsignsScope.clear();
+	dataManager_->populateActiveAirports();
 
     try
     {
@@ -88,12 +89,32 @@ void NeoVSID::OnTimer(int Counter) {
     if (Counter % 5 == 0) this->runScopeUpdate();
 }
 
+void vsid::NeoVSID::OnControllerDataUpdated(const ControllerData::ControllerDataUpdatedEvent* event)
+{
+    if (!event || event->callsign.empty())
+        return;
+    ControllerData::ControllerDataModel controllerDataBlock = controllerDataAPI_->getByCallsign(event->callsign).value();
+    if (controllerDataBlock.groundStatus == ControllerData::GroundStatus::Dep)
+		dataManager_->removePilot(event->callsign);
+}
+
 void NeoVSID::OnAirportConfigurationsUpdated(const Airport::AirportConfigurationsUpdatedEvent* event) {
     dataManager_->populateActiveAirports();
 }
 
 void vsid::NeoVSID::OnAircraftTemporaryAltitudeChanged(const ControllerData::AircraftTemporaryAltitudeChangedEvent* event)
 {
+    if (!event || event->callsign.empty())
+        return;
+
+    // Do not update tags if the callsign is not in the scope
+    if (std::find(callsignsScope.begin(), callsignsScope.end(), event->callsign) == callsignsScope.end())
+        return;
+    if (aircraftAPI_->getDistanceFromOrigin(event->callsign) > 2) {
+		dataManager_->removePilot(event->callsign);
+        return;
+    }
+
     UpdateTagItems(event->callsign);
 }
 
@@ -105,8 +126,16 @@ void vsid::NeoVSID::OnFlightplanUpdated(const Flightplan::FlightplanUpdatedEvent
 	// Do not update tags if the callsign is not in the scope
     if (std::find(callsignsScope.begin(), callsignsScope.end(), event->callsign) == callsignsScope.end())
         return;
-    
-    UpdateTagItems(event->callsign); 
+    if (aircraftAPI_->getDistanceFromOrigin(event->callsign) > 4)
+		dataManager_->removePilot(event->callsign);
+}
+
+
+void vsid::NeoVSID::OnFlightplanRemoved(const Flightplan::FlightplanRemovedEvent* event)
+{
+    if (!event || event->callsign.empty())
+        return;
+    dataManager_->removePilot(event->callsign);
 }
 
 void NeoVSID::run() {

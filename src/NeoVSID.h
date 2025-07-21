@@ -43,9 +43,11 @@ namespace vsid {
         */
         
         // Scope events
+        void OnControllerDataUpdated(const ControllerData::ControllerDataUpdatedEvent* event) override;
         void OnAirportConfigurationsUpdated(const Airport::AirportConfigurationsUpdatedEvent* event) override;
         void OnAircraftTemporaryAltitudeChanged(const ControllerData::AircraftTemporaryAltitudeChangedEvent* event) override;
-        virtual void OnFlightplanUpdated(const Flightplan::FlightplanUpdatedEvent* event) override;
+        void OnFlightplanUpdated(const Flightplan::FlightplanUpdatedEvent* event) override;
+        void OnFlightplanRemoved(const Flightplan::FlightplanRemovedEvent* event) override;
         void OnTimer(int Counter);
         /*    bool OnCompileCommand(const char *sCommandLine) override;*/
 

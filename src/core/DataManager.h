@@ -39,6 +39,7 @@ public:
 	bool pilotExists(const std::string& callsign) const;
 	Pilot getPilotByCallsign(std::string callsign) const;
 	void addPilot(const std::string& callsign);
+	void removePilot(const std::string& callsign);
 
 	int fetchCFLfromJson(const Flightplan::Flightplan& flightplan); // Used while generateVSID is not implemented because it should also return the CFL
 	std::string generateVRWY(const Flightplan::Flightplan& flightplan);

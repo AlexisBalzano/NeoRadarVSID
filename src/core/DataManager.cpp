@@ -67,6 +67,7 @@ void DataManager::DisplayMessageFromDataManager(const std::string& message, cons
 void DataManager::populateActiveAirports()
 {
 	std::vector<Airport::AirportConfig> allAirports = airportAPI_->getConfigurations();
+	activeAirports.clear();
 
 	for (const auto& airport : allAirports)
 	{
@@ -172,7 +173,7 @@ std::vector<std::string> DataManager::getAllDepartureCallsigns() {
 		if (!isDepartureAirport(flightplan.origin))
 			continue;
 
-		if (aircraftAPI_->getDistanceFromOrigin(flightplan.callsign) > 4.)
+		if (aircraftAPI_->getDistanceFromOrigin(flightplan.callsign) > 2)
 			continue;
 
 		callsigns.push_back(flightplan.callsign);
@@ -222,6 +223,15 @@ void DataManager::addPilot(const std::string& callsign)
 	// Check if the pilot already exists
 	if (std::find_if(pilots.begin(), pilots.end(), [&](const Pilot& p) { return p.callsign == callsign; }) != pilots.end())
 		return;
-
+	if (!isDepartureAirport(flightplan.origin))
+		return;
 	pilots.push_back(Pilot{ flightplan.callsign, flightplan.route.suggestedDepRunway, flightplan.route.suggestedSid, fetchCFLfromJson(flightplan) });
+}
+
+void DataManager::removePilot(const std::string& callsign)
+{
+	if (callsign.empty())
+		return;
+	// Remove the pilot from the list
+	pilots.erase(std::remove_if(pilots.begin(), pilots.end(), [&](const Pilot& p) { return p.callsign == callsign; }), pilots.end());
 }
