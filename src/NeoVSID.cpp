@@ -127,12 +127,15 @@ void vsid::NeoVSID::OnFlightplanUpdated(const Flightplan::FlightplanUpdatedEvent
 	// Do not update tags if the callsign is not in the scope
     if (std::find(callsignsScope.begin(), callsignsScope.end(), event->callsign) == callsignsScope.end())
         return;
+
+    if (dataManager_->pilotExists(event->callsign))
+        return;
+
     if (aircraftAPI_->getDistanceFromOrigin(event->callsign) > 2)
 		dataManager_->removePilot(event->callsign);
 
     // Force recomputation of RWY, SID and CFL
-    if (dataManager_->pilotExists(event->callsign))
-        dataManager_->removePilot(event->callsign);
+    dataManager_->removePilot(event->callsign);
 	
     UpdateTagItems(event->callsign);
 }
