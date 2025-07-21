@@ -29,12 +29,8 @@ void NeoVSID::Initialize(const PluginMetadata &metadata, CoreAPI *coreAPI, Clien
     tagInterface_ = lcoreAPI->tag().getInterface();
 	dataManager_ = std::make_unique<DataManager>(aircraftAPI_, flightplanAPI_, airportAPI_);
 
-    logging::Logger::instance().setLogger(logger_);
-
     DisplayMessage("Version " + std::string(PLUGIN_VERSION) + " loaded", "Initialisation");
     
-    logging::Logger::instance().log(logging::Logger::LogSender::vACDM, "Version " + std::string(PLUGIN_VERSION) + " loaded", logging::Logger::LogLevel::System);
-
     callsignsScope.clear();
 
     try
@@ -63,8 +59,6 @@ void NeoVSID::Shutdown()
     }
 
 	if (dataManager_) dataManager_.reset();
-
-    logging::Logger::instance().shutdown();
 
     this->m_stop = true;
     this->m_worker.join();

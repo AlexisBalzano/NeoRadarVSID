@@ -1,7 +1,6 @@
 #include <algorithm>
 #include <string>
 
-#include "log/Logger.h"
 #include "utils/String.h"
 #include "NeoVSID.h"
 

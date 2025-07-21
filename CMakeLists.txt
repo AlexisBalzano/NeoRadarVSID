@@ -42,7 +42,6 @@ find_package(nlohmann_json CONFIG REQUIRED)
 # Source files
 # To set after starting development
 set(SOURCES
-    src/log/Logger.cpp
     src/NeoVSID.cpp
     src/main.cpp
 )

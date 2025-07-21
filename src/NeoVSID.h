@@ -6,7 +6,6 @@
 #include "SDK.h"
 #include "core/NeoVSIDCommandProvider.h"
 #include "core/DataManager.h"
-#include "log/Logger.h"
 
 
 using namespace PluginSDK;
