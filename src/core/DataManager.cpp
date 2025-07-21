@@ -101,6 +101,16 @@ int DataManager::fetchCFLfromJson(const Flightplan::Flightplan& flightplan)
 	return -1;
 }
 
+std::string DataManager::generateVRWY(const Flightplan::Flightplan& flightplan)
+{
+	return flightplan.route.suggestedDepRunway;
+}
+
+std::string DataManager::generateVSID(const Flightplan::Flightplan& flightplan)
+{
+	return flightplan.route.suggestedSid;
+}
+
 int DataManager::retrieveConfigJson(const std::string& oaci)
 {
 	std::string fileName = oaci + ".json";
@@ -156,11 +166,7 @@ std::vector<std::string> DataManager::getAllDepartureCallsigns() {
 
 		callsigns.push_back(flightplan.callsign);
 
-		//TODO: determine rwy and SID
-		int vsidCfl = 0;
-		if (!flightplan.route.suggestedDepRunway.empty())
-			vsidCfl = fetchCFLfromJson(flightplan);
-		pilots.push_back(Pilot{ flightplan.callsign, flightplan.route.suggestedDepRunway, flightplan.route.suggestedSid, vsidCfl });
+		pilots.push_back(Pilot{ flightplan.callsign, generateVRWY(flightplan), generateVSID(flightplan), fetchCFLfromJson(flightplan) });
 	}
 	return callsigns;
 }

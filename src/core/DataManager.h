@@ -28,18 +28,21 @@ public:
 
 	void DisplayMessageFromDataManager(const std::string& message, const std::string& sender = "");
 	void populateActiveAirports();
-	int fetchCFLfromJson(const Flightplan::Flightplan& flightplan);
 	int retrieveConfigJson(const std::string& oaci);
-	void addPilot(const std::string& callsign);
 	
 	std::vector<std::string> getActiveAirports() const { return activeAirports; }
-	Pilot getPilotByCallsign(std::string callsign) const;
 	std::vector<std::string> getAllDepartureCallsigns();
 
 	bool isDepartureAirport(const std::string& oaci) const;
+
 	bool aircraftExists(const std::string& callsign) const;
 	bool pilotExists(const std::string& callsign) const;
+	Pilot getPilotByCallsign(std::string callsign) const;
+	void addPilot(const std::string& callsign);
 
+	int fetchCFLfromJson(const Flightplan::Flightplan& flightplan);
+	std::string generateVRWY(const Flightplan::Flightplan& flightplan);
+	std::string generateVSID(const Flightplan::Flightplan& flightplan);
 
 private:
 	Aircraft::AircraftAPI* aircraftAPI_ = nullptr;
