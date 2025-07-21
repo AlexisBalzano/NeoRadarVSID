@@ -6,7 +6,6 @@ using namespace vsid;
 
 
 namespace vsid {
-
 void NeoVSID::RegisterTagActions()
 {
     PluginSDK::Tag::TagActionDefinition tagDef;
@@ -72,4 +71,4 @@ void NeoVSID::TagProcessing(const std::string &callsign, const std::string &acti
 	}
 }
 
-}  // namespace vacdm
+}  // namespace vsid

@@ -11,10 +11,6 @@
 using namespace vsid::tagitems;
 
 namespace vsid {
-enum itemType {
-
-};
-
 void NeoVSID::RegisterTagItems()
 {
     PluginSDK::Tag::TagItemDefinition tagDef;
@@ -35,6 +31,8 @@ void NeoVSID::RegisterTagItems()
     sidId_ = tagID;
 }
 
+
+// TAG ITEM UPDATE FUNCTIONS
 void NeoVSID::updateCFL(tagUpdateParam param) {
     Tag::TagContext tagContext;
 	tagContext.callsign = param.callsign;
@@ -95,6 +93,8 @@ void NeoVSID::updateSID(tagUpdateParam param) {
     tagInterface_->UpdateTagValue(param.tagId_, sid, tagContext);
 }
 
+
+// Update all tag items for all pilots
 void NeoVSID::UpdateTagItems() {
 	callsignsScope = dataManager_->getAllDepartureCallsigns();
     
@@ -104,6 +104,7 @@ void NeoVSID::UpdateTagItems() {
     }
 }
 
+// Update all tag items for a specific callsign
 void NeoVSID::UpdateTagItems(std::string callsign) {
     if (dataManager_->pilotExists(callsign) == false) {
 		dataManager_->addPilot(callsign);

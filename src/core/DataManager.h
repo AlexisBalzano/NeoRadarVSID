@@ -23,20 +23,22 @@ public:
 	~DataManager() = default;
 
 	static std::filesystem::path getDllDirectory();
-	
 	void clearData();
+	
 
 	void DisplayMessageFromDataManager(const std::string& message, const std::string& sender = "");
 	void populateActiveAirports();
 	int fetchCFLfromJson(const Flightplan::Flightplan& flightplan);
 	int retrieveConfigJson(const std::string& oaci);
+	void addPilot(const std::string& callsign);
+	
 	std::vector<std::string> getActiveAirports() const { return activeAirports; }
 	Pilot getPilotByCallsign(std::string callsign) const;
 	std::vector<std::string> getAllDepartureCallsigns();
+
 	bool isDepartureAirport(const std::string& oaci) const;
 	bool aircraftExists(const std::string& callsign) const;
 	bool pilotExists(const std::string& callsign) const;
-	void addPilot(const std::string& callsign);
 
 
 private:
@@ -46,9 +48,7 @@ private:
 	Chat::ChatAPI* chatAPI_ = nullptr;
 
 	std::filesystem::path configPath_;
-
 	nlohmann::json configJson_;
-
 	std::vector<std::string> activeAirports;
 	std::vector<Pilot> pilots;
 };
