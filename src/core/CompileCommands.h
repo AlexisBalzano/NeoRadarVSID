@@ -69,15 +69,31 @@ Chat::CommandResult NeoVSIDCommandProvider::Execute(
 	}
     else if (command == "HELP")
     {
-        neoVSID_->DisplayMessage("To Check current NeoVSID version, use.vsid version");
-        neoVSID_->DisplayMessage("To set auto mode, use.vsid auto");
-        neoVSID_->DisplayMessage("Other commands are comming soon.");
+        neoVSID_->DisplayMessage(".vsid version");
+        neoVSID_->DisplayMessage(".vsid auto");
+        neoVSID_->DisplayMessage(".vsid airports");
     }
     else if (command == "AUTO")
     {
         neoVSID_->switchAutoModeState();
         std::string message = "Automode set to " + (neoVSID_->getAutoModeState() ? std::string("True") : std::string("False"));
         neoVSID_->DisplayMessage(message);
+		return { true, std::nullopt };
+    }
+    else if (command == "AIRPORTS")
+    {
+		std::vector<std::string> activeAirports = neoVSID_->GetDataManager()->getActiveAirports();
+        if (activeAirports.empty()) {
+            neoVSID_->DisplayMessage("No active airports found.");
+        } else {
+            std::string message = "Active Airports: ";
+            for (const auto& airport : activeAirports) {
+                message += airport + ", ";
+            }
+            // Remove the trailing comma and space
+            message = message.substr(0, message.size() - 2);
+            neoVSID_->DisplayMessage(message);
+		}
 		return { true, std::nullopt };
     }
     else {
