@@ -63,8 +63,8 @@ vSID adaptation for NeoRadar ATC Client
 
 # Usage
 - Start NeoRadar and assign runways.<br>
-At most, vsid will assign SID & CFL every 5 seconds
-- Informations appear white when unconfirmed (ie: not printed in the FP/TAG).<br>
-- Right click on SID and CFL open their respective menu to confirm them.<br>
+At most, vSID will assign SID & CFL every 5 seconds
+- Informations first appear white when unconfirmed (ie: not printed in the FP/TAG).<br>
+- Right clicking on SID and CFL open their respective menu to confirm them.<br>
 They will turn green when confirmed.<br>
-- If another value is assigned to the SID or CFL, they will turn orange again while displaying the new assigned value to display deviation from config.<br>
+- If another value is assigned to the SID or CFL, they will turn orange while displaying the new assigned value to indicate deviation from config.<br>
