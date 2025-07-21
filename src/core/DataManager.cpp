@@ -113,8 +113,8 @@ int DataManager::retrieveConfigJson(const std::string& oaci)
 Pilot DataManager::getPilotByCallsign(std::string callsign) const
 {
 	if (callsign.empty())
-		return Pilot{}; // Return an empty Pilot object if the callsign is empty
-    for (auto pilot : pilots)
+		return Pilot{};
+    for (const auto& pilot : pilots)
     {
         if (pilot.callsign == callsign)
 			return pilot;
@@ -126,26 +126,25 @@ std::vector<std::string> DataManager::getAllDepartureCallsigns() {
     std::vector<PluginSDK::Flightplan::Flightplan> flightplans = flightplanAPI_->getAll();
     std::vector<std::string> callsigns;
 
-	pilots.clear(); // Clear the pilots vector to ensure it starts fresh
+	pilots.clear();
     
     for (const auto& flightplan : flightplans)
     {
         if (flightplan.callsign.empty())
             continue;
 
-        // Ensure the aircraft exists
         if (!aircraftExists(flightplan.callsign))
             continue;
 
-		// Ensure the flightplan is from a departure airport
         if (!isDepartureAirport(flightplan.origin))
 			continue;
     
-        // Ensure the aircraft is still at its departure airport
         if (aircraftAPI_->getDistanceFromOrigin(flightplan.callsign) > 4.)
             continue;
     
         callsigns.push_back(flightplan.callsign);
+
+        //TODO: determine rwy and SID
 
         int vsidCfl = fetchCFLfromJson(flightplan);
 	    pilots.push_back(Pilot{ flightplan.callsign, flightplan.route.suggestedDepRunway, flightplan.route.suggestedSid, vsidCfl });
@@ -192,7 +191,6 @@ void DataManager::addPilot(const std::string& callsign)
     // Check if the pilot already exists
     if (std::find_if(pilots.begin(), pilots.end(), [&](const Pilot& p) { return p.callsign == callsign; }) != pilots.end())
         return;
-    // Add the new pilot
+    
     pilots.push_back(Pilot{ flightplan.callsign, flightplan.route.suggestedDepRunway, flightplan.route.suggestedSid, fetchCFLfromJson(flightplan) });
-
 }
