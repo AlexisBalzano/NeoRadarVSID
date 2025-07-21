@@ -100,7 +100,8 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: NeoCCAMS-${{ matrix.platform }}-${{ matrix.architecture }}
+          name: NeoVSID-${{ matrix.platform }}-${{ matrix.architecture }}
           path: |
-            lib/NeoCCAMS*
-            bin\${{ env.build_type }}\NeoCCAMS.dll
+            lib/NeoVSID*
+            bin/NeoVSID*
+            bin/${{ env.build_type }}/NeoVSID*
