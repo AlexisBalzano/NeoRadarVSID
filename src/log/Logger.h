@@ -41,6 +41,7 @@ class Logger {
         std::string message;
         LogLevel loglevel;
     };
+    
 
    private:
     Logger();
@@ -83,8 +84,9 @@ class Logger {
     /// @param loglevel the severity, must be greater than m_minimumLogLevel to be logged
     void log(const LogSender &sender, const std::string &message, const LogLevel loglevel);
     void setLogger(PluginSDK::Logger::LoggerAPI *vacdmLogger) { vacdmLogger_ = vacdmLogger; };
+	void shutdown();
     std::string handleLogCommand(std::string command);
     std::string handleLogLevelCommand(std::string command);
-    static Logger &instance();
+    static Logger& instance();
 };
 }  // namespace vacdm::logging

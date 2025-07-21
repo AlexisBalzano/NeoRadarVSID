@@ -104,6 +104,17 @@ void Logger::log(const LogSender &sender, const std::string &message, const LogL
     }
 }
 
+void vsid::logging::Logger::shutdown()
+{
+    this->m_stop = true;
+    if (this->m_logWriter.joinable()) {
+        this->m_logWriter.join();
+    }
+    std::lock_guard guard(this->m_logLock);
+    m_asynchronousLogs.clear();
+	this->loggingEnabled = false;
+}
+
 std::string Logger::handleLogCommand(std::string command) {
     auto elements = vacdm::utils::String::splitString(command, " ");
 
@@ -205,7 +216,7 @@ void Logger::disableLogging() {
     this->loggingEnabled = false;
 }
 
-Logger &Logger::instance() {
+Logger& Logger::instance() {
     static Logger __instance;
     return __instance;
 }
