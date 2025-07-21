@@ -45,6 +45,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Add vcpkg submodule
+        shell: bash
+        run: |
+          git submodule add https://github.com/microsoft/vcpkg.git vcpkg
+          git commit -am "Add vcpkg as a submodule"
+          git push
+
       - name: Checkout submodules
         shell: bash
         run: |
