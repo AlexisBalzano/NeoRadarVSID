@@ -8,6 +8,7 @@ vSID adaptation for NeoRadar ATC Client
 	- Assign RWY based on SID (north & south) mode
 	- assign SID based on engine type (jet or propeller)
 
+- make it linux & mac compilable
 	
 - Implement custom SID menu to allow user to only select available SID for the current flight plan and aircraft type.
 
