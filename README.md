@@ -10,12 +10,14 @@ vSID adaptation for NeoRadar ATC Client
       width: 30
       tagItem:
         itemName: plugin:NeoVSID:TAG_RWY
-        leftClick: sidMenu
+        leftClick: plugin:NeoVSID:ACTION_confirmRWY
+        rightClick: sidMenu
     - name: vsid
       width: 80
       tagItem:
         itemName: plugin:NeoVSID:TAG_SID
-        leftClick: sidMenu
+        leftClick: plugin:NeoVSID:ACTION_confirmSID
+        rightClick: sidMenu
     - name: vcfl
       width: 40
       tagItem:
