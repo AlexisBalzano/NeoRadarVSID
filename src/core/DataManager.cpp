@@ -102,6 +102,10 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 	* - generer SID en fonction de la piste assignée
 	* - tester implementation actuelle
 	*/
+	if (flightplan.flightRule == "V") {
+		return { "------", 0 };
+	}
+
 	std::string suggestedSid = flightplan.route.suggestedSid;
 	std::string firstWaypoint = flightplan.route.waypoints[0].identifier;
 
@@ -132,6 +136,7 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 		return { suggestedSid, 0};
 	}
 
+	//TODO: refactor using iterator for all cases to make it more readable
 	//From here we have all the data necessary from oaci.json
 	if (waypointSidData.contains(letter)) {
 		if (waypointSidData[letter]["1"].contains("engineType")) {
