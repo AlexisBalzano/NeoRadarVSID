@@ -86,6 +86,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cmake --build . --config ${{ env.build_type }}
+          set_target_properties(NeoVSD PROPERTIES OUTPUT_NAME "NeoVSID")
 
       - name: Create release and upload artifacts
         uses: softprops/action-gh-release@v2
