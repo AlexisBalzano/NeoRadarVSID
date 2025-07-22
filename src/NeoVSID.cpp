@@ -132,9 +132,6 @@ void vsid::NeoVSID::OnFlightplanUpdated(const Flightplan::FlightplanUpdatedEvent
     if (std::find(callsignsScope.begin(), callsignsScope.end(), event->callsign) == callsignsScope.end())
         return;
 
-    if (dataManager_->pilotExists(event->callsign))
-        return;
-
     if (aircraftAPI_->getDistanceFromOrigin(event->callsign) > 2)
 		dataManager_->removePilot(event->callsign);
 
