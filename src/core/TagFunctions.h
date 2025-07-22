@@ -63,12 +63,12 @@ void NeoVSID::TagProcessing(const std::string &callsign, const std::string &acti
 
     if (actionId == confirmRwyId_)
     {
-        updateCFL({ callsign, pilot, controllerDataAPI_, tagInterface_, rwyId_, printToTag });
+        updateRWY({ callsign, pilot, controllerDataAPI_, tagInterface_, rwyId_, printToTag });
 	}
 
     if (actionId == confirmSidId_)
     {
-        updateCFL({ callsign, pilot, controllerDataAPI_, tagInterface_, sidId_, printToTag });
+        updateSID({ callsign, pilot, controllerDataAPI_, tagInterface_, sidId_, printToTag });
 	}
 }
 
