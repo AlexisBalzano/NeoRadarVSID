@@ -103,6 +103,7 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 	* - tester implementation actuelle
 	*/
 	std::string suggestedSid = flightplan.route.suggestedSid;
+	std::string firstWaypoint = flightplan.route.waypoints[0].identifier;
 
 	// Check if configJSON is already the right one, if not, retrieve it
 	std::string oaci = flightplan.origin;
@@ -124,10 +125,10 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 
 	nlohmann::json waypointSidData;
 
-	if (configJson_.contains(oaci) && configJson_[oaci]["sids"].contains(waypoint)) {
-		waypointSidData = configJson_[oaci]["sids"][waypoint];
+	if (configJson_.contains(oaci) && configJson_[oaci]["sids"].contains(firstWaypoint)) {
+		waypointSidData = configJson_[oaci]["sids"][firstWaypoint];
 	} else {
-		DisplayMessageFromDataManager("SID not found in config JSON for waypoint: " + waypoint + " for: " + flightplan.callsign, "DataManager");
+		DisplayMessageFromDataManager("SID not found in config JSON for waypoint: " + firstWaypoint + " for: " + flightplan.callsign, "DataManager");
 		return { suggestedSid, 0};
 	}
 
@@ -142,25 +143,34 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 			if (requiredEngineType.find(engineType) != std::string::npos) {
 				// Engine type matches, we can assign this SID and CFL
 				int fetchedCfl = waypointSidData[letter]["1"]["initial"].get<int>();
-				return { waypoint + indicator + letter, fetchedCfl };
+				return { firstWaypoint + indicator + letter, fetchedCfl };
 			}
 			else {
 				if (waypointSidData.contains("2")) {
 					// If there is a CFL for the other engine type, we assign it
 					int fetchedCfl = waypointSidData[letter]["2"]["initial"].get<int>();
-					return { waypoint + indicator + letter, fetchedCfl };
+					return { firstWaypoint + indicator + letter, fetchedCfl };
 				}
 				else {
-				// Get the very next SID because it is the other engine type one
-					auto it = waypointSidData.find(letter); //get iterator to the current letter
-					if (it != waypointSidData.end()) {
-						++it; // Move to the next key
-						if (it != waypointSidData.end()) {
-							std::string nextLetter = it.key();
-							return { waypoint + indicator + nextLetter, it.value()["1"]["initial"].get<int>() };
+					// Iterate over the next SIDs for the same runway to find the other engine type one
+					auto it = waypointSidData.begin();
+					while (it != waypointSidData.end()) {
+						std::string nextLetter = it.key();
+						std::string sidRwy = waypointSidData[nextLetter]["1"]["rwy"].get<std::string>();
+						if (sidRwy.find(depRwy) != std::string::npos) {
+							if (waypointSidData[nextLetter]["1"].contains("engineType")) {
+								requiredEngineType = waypointSidData[nextLetter]["1"]["engineType"].get<std::string>();
+								if (requiredEngineType.find(engineType) != std::string::npos) {
+									// Engine type matches, we can assign this SID and CFL
+									int fetchedCfl = waypointSidData[letter]["1"]["initial"].get<int>();
+									return { firstWaypoint + indicator + nextLetter, fetchedCfl };
+								}
+							}
 						}
+						++it;
 					}
-					// If no next letter, we return the suggested SID with CFL 0
+					// If no next letter, we return the first SID with its CFL
+					DisplayMessageFromDataManager("No matching engine type SID found for: " + flightplan.callsign, "DataManager");
 					return { suggestedSid, waypointSidData[letter]["1"]["initial"].get<int>() };
 				}
 
@@ -169,7 +179,7 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 		else {
 			// If no engine restriction then we assign this SID and CFL
 			int fetchedCfl = waypointSidData[letter]["1"]["initial"].get<int>();
-			return { waypoint + indicator + letter, fetchedCfl };
+			return { firstWaypoint + indicator + letter, fetchedCfl };
 		}
 	}
 	return { suggestedSid, 0 };
