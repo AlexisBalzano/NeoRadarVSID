@@ -64,7 +64,7 @@ void NeoVSID::Shutdown()
     this->m_stop = true;
     this->m_worker.join();
 
-    chatAPI_->unregisterCommand(commandId_);
+    this->unegisterCommand();
 }
 
 void NeoVSID::DisplayMessage(const std::string &message, const std::string &sender) {

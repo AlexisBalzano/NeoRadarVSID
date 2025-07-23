@@ -70,6 +70,16 @@ namespace vsid {
         void runScopeUpdate();
         void run();
 
+    public:
+        // Command IDs
+        std::string helpCommandId_;
+        std::string versionCommandId_;
+        std::string autoModeCommandId_;
+        std::string airportsCommandId_;
+        std::string pilotsCommandId_;
+        std::string resetCommandId_;
+        std::string removeCommandId_;
+
     private:
         // Plugin state
         std::vector<std::string> callsignsScope;
@@ -96,6 +106,7 @@ namespace vsid {
         void RegisterTagItems();
         void RegisterTagActions();
         void RegisterCommand();
+        void unegisterCommand();
         void OnTagAction(const Tag::TagActionEvent* event) override;
         void OnTagDropdownAction(const Tag::DropdownActionEvent* event) override;
         void UpdateTagItems();
@@ -113,8 +124,5 @@ namespace vsid {
         std::string confirmRwyId_;
         std::string confirmSidId_;
         std::string confirmCFLId_;
-
-		// Command IDs
-		std::string commandId_;
     };
 } // namespace vsid
