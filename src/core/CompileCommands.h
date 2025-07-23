@@ -8,8 +8,6 @@ using namespace vsid;
 
 namespace vsid {
 void NeoVSID::RegisterCommand() {
-
-    logger_->info("RegisterCommand");
     try
     {
         PluginSDK::Chat::CommandDefinition definition;

@@ -1,9 +1,7 @@
 #pragma once
-
 #include "NeoVSID.h"
 
 using namespace vsid;
-
 
 namespace vsid {
 void NeoVSID::RegisterTagActions()
@@ -17,12 +15,10 @@ void NeoVSID::RegisterTagActions()
     
     tagDef.name = "confirmRWY";
 	tagDef.description = "confirm the RWY.";
-	tagDef.requiresInput = false;
     confirmRwyId_ = tagInterface_->RegisterTagAction(tagDef);
     
     tagDef.name = "confirmSID";
 	tagDef.description = "confirm the SID.";
-	tagDef.requiresInput = false;
     confirmSidId_ = tagInterface_->RegisterTagAction(tagDef);
 }
 
@@ -42,7 +38,6 @@ void NeoVSID::OnTagDropdownAction(const PluginSDK::Tag::DropdownActionEvent *eve
     {
         return;
     }
-
 }
 
 void NeoVSID::TagProcessing(const std::string &callsign, const std::string &actionId, const std::string &userInput)
@@ -71,5 +66,4 @@ void NeoVSID::TagProcessing(const std::string &callsign, const std::string &acti
         updateSID({ callsign, pilot, controllerDataAPI_, tagInterface_, sidId_, printToTag });
 	}
 }
-
 }  // namespace vsid

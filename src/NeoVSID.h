@@ -1,12 +1,13 @@
-// NeoVSID.h
 #pragma once
 #include <memory>
 #include <thread>
 #include <vector>
+
 #include "SDK.h"
 #include "core/NeoVSIDCommandProvider.h"
 #include "core/DataManager.h"
 
+constexpr double MAX_DISTANCE = 2.; //Max distance from origin airport for auto assigning SID/CFL/RWY
 
 using namespace PluginSDK;
 
@@ -19,7 +20,7 @@ namespace vsid {
         PluginSDK::ControllerData::ControllerDataAPI* controllerDataAPI_;
         Tag::TagInterface* tagInterface_;
         std::string tagId_;
-        bool confirmValue; // if true, vsid CFL/RWY/SID will be printed in FP
+        bool autoConfirm; // if true, vsid CFL/RWY/SID will be printed in FP
     };
 
     class NeoVSIDCommandProvider;
@@ -30,17 +31,16 @@ namespace vsid {
         NeoVSID();
         ~NeoVSID();
 
+		// Plugin lifecycle methods
         void Initialize(const PluginMetadata& metadata, CoreAPI* coreAPI, ClientInformation info) override;
         void Shutdown() override;
         PluginMetadata GetMetadata() const override;
 
         // Radar commands
         void DisplayMessage(const std::string& message, const std::string& sender = "");
-        void SetGroundState(const std::string& callsign, const ControllerData::GroundStatus groundstate);
 		/* void SetSid(const std::string& callsign, const std::string& sid);
            void SetCFL(const std::string& callsign, const std::string& cfl);
-		   void SetRunway(const std::string& callsign, const std::string& rwy);
-        */
+		   void SetRunway(const std::string& callsign, const std::string& rwy);*/
         
         // Scope events
         void OnControllerDataUpdated(const ControllerData::ControllerDataUpdatedEvent* event) override;
@@ -49,7 +49,6 @@ namespace vsid {
         void OnFlightplanUpdated(const Flightplan::FlightplanUpdatedEvent* event) override;
         void OnFlightplanRemoved(const Flightplan::FlightplanRemovedEvent* event) override;
         void OnTimer(int Counter);
-        /*    bool OnCompileCommand(const char *sCommandLine) override;*/
 
         // Command handling
         void TagProcessing(const std::string& callsign, const std::string& actionId, const std::string& userInput = "");
@@ -68,7 +67,18 @@ namespace vsid {
         DataManager* GetDataManager() const { return dataManager_.get(); }
 
     private:
+        void runScopeUpdate();
+        void run();
+
+    private:
+        // Plugin state
+        std::vector<std::string> callsignsScope;
         bool initialized_ = false;
+        bool autoModeState = false; // Auto mode automatically assigns RWY SID & CFL using API without user confirmation
+        std::thread m_worker;
+        bool m_stop;
+
+        // APIs
         PluginMetadata metadata_;
         ClientInformation clientInfo_;
         Aircraft::AircraftAPI* aircraftAPI_ = nullptr;
@@ -80,9 +90,7 @@ namespace vsid {
         PluginSDK::ControllerData::ControllerDataAPI* controllerDataAPI_ = nullptr;
         Tag::TagInterface* tagInterface_ = nullptr;
         std::unique_ptr<DataManager> dataManager_;
-
-
-        void runScopeUpdate();
+        std::shared_ptr<NeoVSIDCommandProvider> CommandProvider_;
 
         // Tag Items
         void RegisterTagItems();
@@ -96,9 +104,6 @@ namespace vsid {
         void updateRWY(tagUpdateParam param);
         void updateSID(tagUpdateParam param);
 
-		bool autoModeState = false; // Auto mode automatically assigns RWY SID & CFL using API without user confirmation
-
-
 	    // TAG Items IDs
 		std::string cflId_;
         std::string rwyId_;
@@ -111,16 +116,5 @@ namespace vsid {
 
 		// Command IDs
 		std::string commandId_;
-
-        // Concerned callsigns
-        std::vector<std::string> callsignsScope;
-
-
-        std::thread m_worker;
-        bool m_stop;
-        void run();
-
-        std::shared_ptr<NeoVSIDCommandProvider> CommandProvider_;
     };
-
 } // namespace vsid

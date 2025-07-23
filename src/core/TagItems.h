@@ -1,5 +1,4 @@
 #pragma once
-
 #include <chrono>
 #include <format>
 #include <string>
@@ -42,7 +41,7 @@ void NeoVSID::updateCFL(tagUpdateParam param) {
 
     if (cfl == 0) {
         cfl_string = std::to_string(vsidCfl);
-        if (autoModeState) {
+        if (param.autoConfirm) {
             //TODO: Set CFL value to vsidCFL
         }
     }
@@ -63,7 +62,6 @@ void NeoVSID::updateRWY(tagUpdateParam param) {
     std::optional<Flightplan::Flightplan> fp = flightplanAPI_->getByCallsign(param.callsign);
     std::string rwy = fp->route.depRunway;
 
-
     std::vector<std::string> depRwys = airportAPI_->getConfigurationByIcao(fp->origin)->depRunways;
     bool isDepRwy = false;
     for (const auto& rwy_ : depRwys)
@@ -71,9 +69,10 @@ void NeoVSID::updateRWY(tagUpdateParam param) {
         if (vsidRwy == rwy_)
             isDepRwy = true;
     }
+
     tagContext.colour = Color::colorizeRwy(rwy, vsidRwy, isDepRwy);
     if (rwy == "") {
-        if (autoModeState) {
+        if (param.autoConfirm) {
             //TODO: Set RWY value to vsidRwy
         }
         rwy = vsidRwy;
@@ -91,7 +90,7 @@ void NeoVSID::updateSID(tagUpdateParam param) {
     tagContext.colour = Color::colorizeSid(sid, vsidSid);
     if (sid == "")
     {
-        if (autoModeState) {
+        if (param.autoConfirm) {
             //TODO: Set SID value to vsidSid
 		}
         sid = vsidSid;
@@ -115,14 +114,10 @@ void NeoVSID::UpdateTagItems(std::string callsign) {
     if (dataManager_->pilotExists(callsign) == false) {
 		dataManager_->addPilot(callsign);
 	}
-    
 	Pilot pilot = dataManager_->getPilotByCallsign(callsign);
 
 	updateCFL({ callsign, pilot, controllerDataAPI_, tagInterface_, cflId_, autoModeState });
 	updateRWY({ callsign, pilot, controllerDataAPI_, tagInterface_, rwyId_, autoModeState });
 	updateSID({ callsign, pilot, controllerDataAPI_, tagInterface_, sidId_, autoModeState });
-
 }
-
-
 }  // namespace vsid

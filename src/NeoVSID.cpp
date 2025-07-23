@@ -1,4 +1,3 @@
-// NeoVACDM.cpp
 #include "NeoVSID.h"
 #include <numeric>
 #include <chrono>
@@ -65,7 +64,7 @@ void NeoVSID::Shutdown()
     this->m_stop = true;
     this->m_worker.join();
 
-    //chatAPI_->unregisterCommand(commandId_);
+    chatAPI_->unregisterCommand(commandId_);
 }
 
 void NeoVSID::DisplayMessage(const std::string &message, const std::string &sender) {
@@ -75,11 +74,6 @@ void NeoVSID::DisplayMessage(const std::string &message, const std::string &send
     textMessage.useDedicatedChannel = true;
 
     chatAPI_->sendClientMessage(textMessage);
-}
-
-void vsid::NeoVSID::SetGroundState(const std::string &callsign, const ControllerData::GroundStatus groundstate)
-{
-    controllerDataAPI_->setGroundStatus(callsign, groundstate);
 }
 
 void NeoVSID::runScopeUpdate() {
@@ -115,7 +109,7 @@ void vsid::NeoVSID::OnAircraftTemporaryAltitudeChanged(const ControllerData::Air
     if (std::find(callsignsScope.begin(), callsignsScope.end(), event->callsign) == callsignsScope.end())
         return;
 
-    if (aircraftAPI_->getDistanceFromOrigin(event->callsign) > 2) {
+    if (aircraftAPI_->getDistanceFromOrigin(event->callsign) > MAX_DISTANCE) {
 		dataManager_->removePilot(event->callsign);
         return;
     }
@@ -132,7 +126,7 @@ void vsid::NeoVSID::OnFlightplanUpdated(const Flightplan::FlightplanUpdatedEvent
     if (std::find(callsignsScope.begin(), callsignsScope.end(), event->callsign) == callsignsScope.end())
         return;
 
-    if (aircraftAPI_->getDistanceFromOrigin(event->callsign) > 2)
+    if (aircraftAPI_->getDistanceFromOrigin(event->callsign) > MAX_DISTANCE)
 		dataManager_->removePilot(event->callsign);
 
     // Force recomputation of RWY, SID and CFL

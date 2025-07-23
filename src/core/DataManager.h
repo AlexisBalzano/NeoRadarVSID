@@ -4,6 +4,7 @@
 #include <nlohmann/json.hpp>
 
 #include "SDK.h"
+
 struct Pilot {
 	std::string callsign;
 	std::string rwy;
@@ -21,32 +22,32 @@ struct sidData {
 };
 
 using namespace PluginSDK;
+
 class DataManager {
 public:
 	DataManager(vsid::NeoVSID* neoVSID);
 	~DataManager() = default;
 
-	static std::filesystem::path getDllDirectory();
 	void clearData();
-	
 
+	static std::filesystem::path getDllDirectory();
 	void DisplayMessageFromDataManager(const std::string& message, const std::string& sender = "");
 	void populateActiveAirports();
 	int retrieveConfigJson(const std::string& oaci);
 	void loadAircraftDataJson();
-	
+
 	std::vector<std::string> getActiveAirports() const { return activeAirports; }
 	std::vector<std::string> getAllDepartureCallsigns();
-
-	bool isDepartureAirport(const std::string& oaci) const;
-
-	bool aircraftExists(const std::string& callsign) const;
-	bool pilotExists(const std::string& callsign) const;
 	std::vector<Pilot> getPilots() const { return pilots; }
 	Pilot getPilotByCallsign(std::string callsign) const;
+
 	void addPilot(const std::string& callsign);
 	void removePilot(const std::string& callsign);
 	void removeAllPilots();
+
+	bool isDepartureAirport(const std::string& oaci) const;
+	bool aircraftExists(const std::string& callsign) const;
+	bool pilotExists(const std::string& callsign) const;
 
 	std::string generateVRWY(const Flightplan::Flightplan& flightplan);
 	sidData generateVSID(const Flightplan::Flightplan& flightplan, const std::string& depRwy);

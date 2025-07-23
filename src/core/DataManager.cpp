@@ -2,6 +2,7 @@
 #include <algorithm>
 
 #include "../NeoVSID.h"
+#include "DataManager.h"
 
 #if defined(_WIN32)
 #include <Windows.h>
@@ -9,7 +10,6 @@
 #include <dlfcn.h>
 #endif
 
-#include "DataManager.h"
 
 DataManager::DataManager(vsid::NeoVSID* neoVSID)
 	: neoVSID_(neoVSID) {
@@ -78,7 +78,6 @@ void DataManager::populateActiveAirports()
 
 	for (const auto& airport : allAirports)
 	{
-		// Check if the airport is active
 		if (airport.status == Airport::AirportStatus::Active)
 		{
 			activeAirports.push_back(airport.icao);
@@ -255,7 +254,7 @@ std::vector<std::string> DataManager::getAllDepartureCallsigns() {
 		if (!isDepartureAirport(flightplan.origin))
 			continue;
 
-		if (aircraftAPI_->getDistanceFromOrigin(flightplan.callsign) > 2)
+		if (aircraftAPI_->getDistanceFromOrigin(flightplan.callsign) > MAX_DISTANCE)
 			continue;
 
 		if (controllerDataAPI_->getByCallsign(flightplan.callsign)->groundStatus == ControllerData::GroundStatus::Dep)
@@ -263,8 +262,7 @@ std::vector<std::string> DataManager::getAllDepartureCallsigns() {
 
 		callsigns.push_back(flightplan.callsign);
 
-		// Check if the pilot already exists in pilots vector
-		if (std::find_if(pilots.begin(), pilots.end(), [&](const Pilot& p) { return p.callsign == flightplan.callsign; }) != pilots.end())
+		if (pilotExists(flightplan.callsign))
 			continue;
 
 		std::string vsidRwy = generateVRWY(flightplan);
@@ -310,8 +308,7 @@ void DataManager::addPilot(const std::string& callsign)
 
 	if (callsign.empty())
 		return;
-	// Check if the pilot already exists
-	if (std::find_if(pilots.begin(), pilots.end(), [&](const Pilot& p) { return p.callsign == callsign; }) != pilots.end())
+	if (pilotExists(callsign))
 		return;
 	if (!isDepartureAirport(flightplan.origin))
 		return;
@@ -325,7 +322,6 @@ void DataManager::removePilot(const std::string& callsign)
 {
 	if (callsign.empty())
 		return;
-	// Remove the pilot from the list
 	pilots.erase(std::remove_if(pilots.begin(), pilots.end(), [&](const Pilot& p) { return p.callsign == callsign; }), pilots.end());
 }
 
