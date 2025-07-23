@@ -101,7 +101,7 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 	* - generer SID en fonction de la piste assignée
 	* - tester implementation actuelle
 	*/
-	if (flightplan.flightRule == "V") {
+	if (flightplan.flightRule == "V" || flightplan.route.rawRoute.empty()) {
 		return { "------", 0 };
 	}
 
@@ -318,11 +318,15 @@ void DataManager::addPilot(const std::string& callsign)
 	pilots.push_back(Pilot{ flightplan.callsign, vsidRwy, vsidData.sid, vsidData.cfl });
 }
 
-void DataManager::removePilot(const std::string& callsign)
+bool DataManager::removePilot(const std::string& callsign)
 {
 	if (callsign.empty())
-		return;
+		return false;
+	auto previousSize = pilots.size();
 	pilots.erase(std::remove_if(pilots.begin(), pilots.end(), [&](const Pilot& p) { return p.callsign == callsign; }), pilots.end());
+	if (previousSize == pilots.size())
+		return false; // No pilot was removed
+	return true;
 }
 
 void DataManager::removeAllPilots()

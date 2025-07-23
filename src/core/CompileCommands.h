@@ -13,13 +13,18 @@ void NeoVSID::RegisterCommand() {
         PluginSDK::Chat::CommandDefinition definition;
         definition.name = "vsid";
         definition.description = "NeoVSID command";
-        definition.lastParameterHasSpaces = false;
+        definition.lastParameterHasSpaces = true;
 
         Chat::CommandParameter parameter;
         parameter.name = "command";
         parameter.type = Chat::ParameterType::String;
         parameter.required = true;
         definition.parameters.push_back(parameter);
+
+        //parameter.name = "parameter";
+        //parameter.type = Chat::ParameterType::String;
+        //parameter.required = false;
+        //definition.parameters.push_back(parameter);
 
         CommandProvider_ = std::make_shared<NeoVSIDCommandProvider>(this, logger_, chatAPI_, fsdAPI_);
 
@@ -55,32 +60,38 @@ Chat::CommandResult NeoVSIDCommandProvider::Execute(
         return {false, error};
     }
 
-	std::string command = args[0];
+	auto pos = args[0].find(' ');
+	std::string command = args[0].substr(0,pos);
+    std::string parameter = (pos == std::string::npos) ? "" : args[0].substr(pos + 1);
+
+	bool hasParameter = !parameter.empty();
+
 	std::transform(command.begin(), command.end(), command.begin(), ::toupper);
 	logger_->info("Command: " + command);
 
-    if (command == "VERSION")
+    if (command == "VERSION" && !hasParameter)
     {
         std::string message = "Version " + std::string(PLUGIN_VERSION);
         neoVSID_->DisplayMessage(message);
         return { true, std::nullopt };
 	}
-    else if (command == "HELP")
+    else if (command == "HELP" && !hasParameter)
     {
         neoVSID_->DisplayMessage(".vsid version");
         neoVSID_->DisplayMessage(".vsid auto");
         neoVSID_->DisplayMessage(".vsid airports");
         neoVSID_->DisplayMessage(".vsid pilots");
         neoVSID_->DisplayMessage(".vsid reset");
+        neoVSID_->DisplayMessage(".vsid remove <CALLSIGN>");
     }
-    else if (command == "AUTO")
+    else if (command == "AUTO" && !hasParameter)
     {
         neoVSID_->switchAutoModeState();
         std::string message = "Automode set to " + (neoVSID_->getAutoModeState() ? std::string("True") : std::string("False"));
         neoVSID_->DisplayMessage(message);
 		return { true, std::nullopt };
     }
-    else if (command == "AIRPORTS")
+    else if (command == "AIRPORTS" && !hasParameter)
     {
 		std::vector<std::string> activeAirports = neoVSID_->GetDataManager()->getActiveAirports();
         if (activeAirports.empty()) {
@@ -96,7 +107,7 @@ Chat::CommandResult NeoVSIDCommandProvider::Execute(
 		}
 		return { true, std::nullopt };
     }
-    else if (command == "PILOTS")
+    else if (command == "PILOTS" && !hasParameter)
     {
         std::vector<Pilot> activePilots = neoVSID_->GetDataManager()->getPilots();
         if (activePilots.empty()) {
@@ -124,7 +135,25 @@ Chat::CommandResult NeoVSIDCommandProvider::Execute(
         }
 		return { true, std::nullopt };
     }
-    else if (command == "RESET")
+    else if (command == "REMOVE")
+    {
+        if (!hasParameter) {
+            std::string error = "Callsign is required. Use .vsid remove <CALLSIGN>";
+            neoVSID_->DisplayMessage(error);
+            return { false, error };
+        }
+        std::transform(parameter.begin(), parameter.end(), parameter.begin(), ::toupper);
+
+        bool successful = neoVSID_->GetDataManager()->removePilot(parameter);
+		if (!successful) {
+            std::string error = "Pilot " + parameter + " not found.";
+            neoVSID_->DisplayMessage(error);
+            return { false, error };
+		}
+        neoVSID_->DisplayMessage("Pilot " + parameter + " removed.");
+        return { true, std::nullopt };
+	}
+    else if (command == "RESET" && !hasParameter)
     {
         neoVSID_->DisplayMessage("NeoVSID resetted.");
         neoVSID_->GetDataManager()->removeAllPilots();

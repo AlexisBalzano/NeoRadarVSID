@@ -42,7 +42,7 @@ public:
 	Pilot getPilotByCallsign(std::string callsign) const;
 
 	void addPilot(const std::string& callsign);
-	void removePilot(const std::string& callsign);
+	bool removePilot(const std::string& callsign);
 	void removeAllPilots();
 
 	bool isDepartureAirport(const std::string& oaci) const;
