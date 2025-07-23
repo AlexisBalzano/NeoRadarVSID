@@ -324,7 +324,7 @@ bool DataManager::removePilot(const std::string& callsign)
 		return false;
 	auto previousSize = pilots.size();
 	pilots.erase(std::remove_if(pilots.begin(), pilots.end(), [&](const Pilot& p) { return p.callsign == callsign; }), pilots.end());
-	if (previousSize == pilots.size())
+	if (previousSize == pilots.size() && previousSize != 0)
 		return false; // No pilot was removed
 	return true;
 }
