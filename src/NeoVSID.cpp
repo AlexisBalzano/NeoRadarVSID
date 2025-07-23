@@ -94,9 +94,9 @@ void vsid::NeoVSID::OnControllerDataUpdated(const ControllerData::ControllerData
 }
 
 void NeoVSID::OnAirportConfigurationsUpdated(const Airport::AirportConfigurationsUpdatedEvent* event) {
-    dataManager_->populateActiveAirports();
     //Force recomputation of all RWY, SID & CFL
     dataManager_->removeAllPilots();
+    dataManager_->populateActiveAirports();
     dataManager_->getAllDepartureCallsigns();
 }
 
