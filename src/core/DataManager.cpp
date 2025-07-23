@@ -6,8 +6,11 @@
 
 #if defined(_WIN32)
 #include <Windows.h>
+#include <shlobj.h>
+#include <knownfolders.h>
 #elif defined(__APPLE__) || defined(__linux__)
 #include <dlfcn.h>
+#include <cstdlib>
 #endif
 
 
@@ -28,20 +31,20 @@ DataManager::DataManager(vsid::NeoVSID* neoVSID)
 std::filesystem::path DataManager::getDllDirectory()
 {
 #if defined(_WIN32)
-	wchar_t buffer[MAX_PATH];
-	HMODULE hModule = nullptr;
-	// Use the address of this function to get the module handle
-	GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, reinterpret_cast<LPCWSTR>(&getDllDirectory), &hModule);
-	GetModuleFileNameW(hModule, buffer, MAX_PATH);
-	return std::filesystem::path(buffer).parent_path();
-#elif defined(__APPLE__)
-	Dl_info dl_info;
-	dladdr((void*)&getDllDirectory, &dl_info);
-	return std::filesystem::path(dl_info.dli_fname).parent_path();
-#elif defined(__linux__)
-	Dl_info dl_info;
-	dladdr((void*)&getDllDirectory, &dl_info);
-	return std::filesystem::path(dl_info.dli_fname).parent_path();
+	PWSTR path = nullptr;
+	HRESULT hr = SHGetKnownFolderPath(FOLDERID_Documents, 0, NULL, &path);
+	std::filesystem::path documentsPath;
+	if (SUCCEEDED(hr)) {
+		documentsPath = path;
+		CoTaskMemFree(path);
+	}
+	return documentsPath / "NeoRadar/plugins";
+#elif defined(__APPLE__) || defined(__linux__)
+	const char* homeDir = std::getenv("HOME");
+	if (homeDir) {
+		return std::filesystem::path(homeDir) / "Documents" / "NeoRadar/plugins";
+	}
+	return std::filesystem::path(); // Return empty path if HOME is not set
 #else
 	return std::filesystem::path(); // Return an empty path for unsupported platforms
 #endif
