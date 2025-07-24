@@ -91,8 +91,8 @@ void DataManager::populateActiveAirports()
 std::string DataManager::generateVRWY(const Flightplan::Flightplan& flightplan)
 {
 	/* TODO:
-	* - generer la piste en fonction des pistes de departs actuellement configurées sur le terrain de départ du trafic
-	* - generer la piste en fonction de la position du trafic par rapport au terrain de départ si plusieurs pistes de départ et config roulage mini
+	* - generer la piste en fonction des pistes de departs actuellement configurï¿½es sur le terrain de dï¿½part du trafic
+	* - generer la piste en fonction de la position du trafic par rapport au terrain de dï¿½part si plusieurs pistes de dï¿½part et config roulage mini
 	* - generer la piste en fonction de la direction du depart si config croisement au sol
 	*/ 
 	return flightplan.route.suggestedDepRunway;
@@ -100,15 +100,12 @@ std::string DataManager::generateVRWY(const Flightplan::Flightplan& flightplan)
 
 sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, const std::string& depRwy)
 {
-	/* TODO:
-	* - generer SID en fonction de la piste assignée
-	* - tester implementation actuelle
-	*/
 	if (flightplan.flightRule == "V" || flightplan.route.rawRoute.empty()) {
 		return { "------", 0 };
 	}
 
 	std::string suggestedSid = flightplan.route.suggestedSid;
+	std::string indicator = suggestedSid.substr(suggestedSid.length() - 2, 1);
 	std::string firstWaypoint = flightplan.route.waypoints[0].identifier;
 
 	// Check if configJSON is already the right one, if not, retrieve it
@@ -122,15 +119,12 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 
 	// Extract waypoint only SID information
 	std::transform(oaci.begin(), oaci.end(), oaci.begin(), ::toupper); //Convert to uppercase
+
 	if (suggestedSid.empty() || suggestedSid.length() < 2) {
 		return { suggestedSid, 0};
 	}
-	std::string waypoint = suggestedSid.substr(0, suggestedSid.length() - 2);
-	std::string indicator = suggestedSid.substr(suggestedSid.length() - 2, 1);
-	std::string letter = suggestedSid.substr(suggestedSid.length() - 1, 1);
 
 	nlohmann::json waypointSidData;
-
 	if (configJson_.contains(oaci) && configJson_[oaci]["sids"].contains(firstWaypoint)) {
 		waypointSidData = configJson_[oaci]["sids"][firstWaypoint];
 	} else {
@@ -138,60 +132,47 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 		return { suggestedSid, 0};
 	}
 
-	//TODO: refactor using iterator for all cases to make it more readable
-	//From here we have all the data necessary from oaci.json
-	if (waypointSidData.contains(letter)) {
-		if (waypointSidData[letter]["1"].contains("engineType")) {
-			std::string aircraftType = flightplan.acType;
-			std::string engineType = "J"; // Defaulting to Jet if no type is found
-			if (aircraftDataJson_.contains(aircraftType))
-				engineType = aircraftDataJson_[aircraftType]["engineType"].get<std::string>();
-			std::string requiredEngineType = waypointSidData[letter]["1"]["engineType"].get<std::string>();
-			if (requiredEngineType.find(engineType) != std::string::npos) {
-				// Engine type matches, we can assign this SID and CFL
-				int fetchedCfl = waypointSidData[letter]["1"]["initial"].get<int>();
-				return { firstWaypoint + indicator + letter, fetchedCfl };
-			}
-			else {
-				if (waypointSidData.contains("2")) {
-					// If there is a CFL for the other engine type, we assign it
-					int fetchedCfl = waypointSidData[letter]["2"]["initial"].get<int>();
-					return { firstWaypoint + indicator + letter, fetchedCfl };
-				}
-				else {
-					// Iterate over the next SIDs for the same runway to find the other engine type one
-					auto it = waypointSidData.begin();
-					while (it != waypointSidData.end()) {
-						std::string nextLetter = it.key();
-						std::string sidRwy = waypointSidData[nextLetter]["1"]["rwy"].get<std::string>();
-						if (sidRwy.find(depRwy) != std::string::npos) {
-							if (waypointSidData[nextLetter]["1"].contains("engineType")) {
-								requiredEngineType = waypointSidData[nextLetter]["1"]["engineType"].get<std::string>();
-								if (requiredEngineType.find(engineType) != std::string::npos) {
-									// Engine type matches, we can assign this SID and CFL
-									int fetchedCfl = waypointSidData[letter]["1"]["initial"].get<int>();
-									return { firstWaypoint + indicator + nextLetter, fetchedCfl };
-								}
-							}
-						}
-						++it;
-					}
-					// If no next letter, we return the first SID with its CFL
-					DisplayMessageFromDataManager("No matching engine type SID found for: " + flightplan.callsign, "DataManager");
-					return { suggestedSid, waypointSidData[letter]["1"]["initial"].get<int>() };
-				}
+	std::string aircraftType = flightplan.acType;
+	std::string engineType = "J"; // Defaulting to Jet if no type is found
+	std::string requiredEngineType = "J";
+	if (aircraftDataJson_.contains(aircraftType))
+		engineType = aircraftDataJson_[aircraftType]["engineType"].get<std::string>();
 
+	auto sidIterator = waypointSidData.begin();
+	while (sidIterator != waypointSidData.end()) {
+		std::string sidLetter = sidIterator.key();
+		std::string sidRwy = waypointSidData[sidLetter]["1"]["rwy"].get<std::string>();
+		if (sidRwy.find(depRwy) == std::string::npos) {
+			++sidIterator;
+			continue;
+		}
+		auto variantIterator = waypointSidData[sidLetter].begin();
+		while (variantIterator != waypointSidData[sidLetter].end())
+		{
+			std::string variant = variantIterator.key();
+			if (waypointSidData[sidLetter][variant].contains("engineType")) {
+				requiredEngineType = waypointSidData[sidLetter][variant]["engineType"].get<std::string>();
+				if (requiredEngineType.find(engineType) != std::string::npos) {
+					// Engine type matches, we can assign this SID and CFL
+					int fetchedCfl = waypointSidData[sidLetter][variant]["initial"].get<int>();
+					return { firstWaypoint + indicator + sidLetter, fetchedCfl };
+				}
+				else { // Engine type doesn't match
+					++variantIterator;
+					continue;
+				}
+			} 
+			else { //No engine restriction
+				int fetchedCfl = waypointSidData[sidLetter][variant]["initial"].get<int>();
+				return { firstWaypoint + indicator + sidLetter, fetchedCfl };
 			}
+			++variantIterator; // Fallback
 		}
-		else {
-			// If no engine restriction then we assign this SID and CFL
-			int fetchedCfl = waypointSidData[letter]["1"]["initial"].get<int>();
-			return { firstWaypoint + indicator + letter, fetchedCfl };
-		}
+		++sidIterator;
 	}
-	return { suggestedSid, 0 };
+	return { suggestedSid, 0};
 }
-
+	
 int DataManager::retrieveConfigJson(const std::string& oaci)
 {
 	std::string fileName = oaci + ".json";
