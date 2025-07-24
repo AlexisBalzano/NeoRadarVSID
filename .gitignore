@@ -9,6 +9,9 @@ src/config/vsid-settings-main.zip
 # Visual Studio files
 .vs/
 
+# Visual Studio Code files
+.vscode/
+
 #ignore build directories
 out/
 
