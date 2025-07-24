@@ -79,6 +79,7 @@ namespace vsid {
         std::string pilotsCommandId_;
         std::string resetCommandId_;
         std::string removeCommandId_;
+        std::string positionCommandId_;
 
     private:
         // Plugin state

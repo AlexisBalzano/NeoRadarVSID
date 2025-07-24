@@ -66,6 +66,13 @@ void NeoVSID::RegisterCommand() {
         definition.parameters.push_back(parameter);
 
         removeCommandId_ = chatAPI_->registerCommand(definition.name, definition, CommandProvider_);
+
+        definition.name = "vsid position";
+        definition.description = "print aircraft coordinates inside NeoRadar";
+        definition.lastParameterHasSpaces = false;
+
+        positionCommandId_ = chatAPI_->registerCommand(definition.name, definition, CommandProvider_);
+
     }
     catch (const std::exception& ex)
     {
@@ -84,6 +91,7 @@ inline void NeoVSID::unegisterCommand()
         chatAPI_->unregisterCommand(pilotsCommandId_);
         chatAPI_->unregisterCommand(resetCommandId_);
         chatAPI_->unregisterCommand(removeCommandId_);
+        chatAPI_->unregisterCommand(positionCommandId_);
         CommandProvider_.reset();
 	}
 }
@@ -104,6 +112,7 @@ Chat::CommandResult NeoVSIDCommandProvider::Execute( const std::string &commandI
         neoVSID_->DisplayMessage(".vsid pilots");
         neoVSID_->DisplayMessage(".vsid reset");
         neoVSID_->DisplayMessage(".vsid remove <CALLSIGN>");
+        neoVSID_->DisplayMessage(".vsid position <CALLSIGN>");
     }
     else if (commandId == neoVSID_->autoModeCommandId_)
     {
@@ -170,14 +179,38 @@ Chat::CommandResult NeoVSIDCommandProvider::Execute( const std::string &commandI
 		if (!successful) {
             std::string error = "Pilot " + callsign + " not found.";
             neoVSID_->DisplayMessage(error);
+            return { true, std::nullopt };
 		}
         neoVSID_->DisplayMessage("Pilot " + callsign + " removed.");
+        return { true, std::nullopt };
+	}
+    else if (commandId == neoVSID_->positionCommandId_)
+    {
+        if (args.empty() || args[0].empty()) {
+            std::string error = "Callsign is required. Use .vsid position <callsign>";
+            neoVSID_->DisplayMessage(error);
+            return { true, std::nullopt };
+        }
+		std::string callsign = args[0];
+		std::transform(callsign.begin(), callsign.end(), callsign.begin(), ::toupper);
+        auto aircraftOpt = neoVSID_->GetAircraftAPI()->getByCallsign(callsign);
+        if (!aircraftOpt) {
+            neoVSID_->DisplayMessage("Aircraft " + callsign + " not found.");
+            return { true, std::nullopt };
+        }
+        const auto& aircraft = *aircraftOpt;
+        neoVSID_->DisplayMessage(callsign + "'s position is N" + std::to_string(aircraft.position.latitude) + " E" + std::to_string(aircraft.position.longitude));
+        std::string oaci = neoVSID_->GetFlightplanAPI()->getByCallsign(callsign)->origin;
+		bool isInArea = neoVSID_->GetDataManager()->isInArea(aircraft.position.latitude, aircraft.position.longitude, oaci);
+        neoVSID_->DisplayMessage("Aircraft " + std::string(isInArea ? "is in Area" : "isn't in Area"));
         return { true, std::nullopt };
 	}
     else if (commandId == neoVSID_->resetCommandId_)
     {
         neoVSID_->DisplayMessage("NeoVSID resetted.");
         neoVSID_->GetDataManager()->removeAllPilots();
+		neoVSID_->GetDataManager()->clearJson();
+		neoVSID_->GetDataManager()->loadAircraftDataJson();
         neoVSID_->GetDataManager()->populateActiveAirports();
         return { true, std::nullopt };
 	}
