@@ -29,6 +29,7 @@ public:
 	~DataManager() = default;
 
 	void clearData();
+	void clearJson();
 
 	static std::filesystem::path getDllDirectory();
 	void DisplayMessageFromDataManager(const std::string& message, const std::string& sender = "");
@@ -48,6 +49,7 @@ public:
 	bool isDepartureAirport(const std::string& oaci) const;
 	bool aircraftExists(const std::string& callsign) const;
 	bool pilotExists(const std::string& callsign) const;
+	bool isInArea(const double& latitude, const double& longitude, const std::string& oaci);
 
 	std::string generateVRWY(const Flightplan::Flightplan& flightplan);
 	sidData generateVSID(const Flightplan::Flightplan& flightplan, const std::string& depRwy);

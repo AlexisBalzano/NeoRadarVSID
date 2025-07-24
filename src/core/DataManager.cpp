@@ -64,6 +64,12 @@ void DataManager::clearData()
 		airportAPI_ = nullptr;
 }
 
+void DataManager::clearJson()
+{
+	configJson_.clear();
+	aircraftDataJson_.clear();
+}
+
 void DataManager::DisplayMessageFromDataManager(const std::string& message, const std::string& sender)
 {
 	Chat::ClientTextMessageEvent textMessage;
@@ -284,6 +290,53 @@ bool DataManager::pilotExists(const std::string& callsign) const
 	if (std::find_if(pilots.begin(), pilots.end(), [&](const Pilot& p) { return p.callsign == callsign; }) != pilots.end())
 		return true;
 	return false;
+}
+
+bool DataManager::isInArea(const double& latitude, const double& longitude, const std::string& oaci)
+{
+	if (!configJson_.contains(oaci) || configJson_.empty()) {
+		if (retrieveConfigJson(oaci) == -1) {
+			DisplayMessageFromDataManager("Error retrieving config JSON for OACI: " + oaci, "DataManager");
+			return false;
+		}
+	}
+
+	std::vector<double> latitudes, longitudes;
+	if (configJson_[oaci].contains("areas")) {
+		if (configJson_[oaci]["areas"]["test"]["active"].get<bool>() == false) { // "test" hardocdé pour le moment
+			DisplayMessageFromDataManager("Area is not active in config JSON for OACI: " + oaci, "DataManager"); // pour le moment on ne peut l'activer/desactiver depuis neoRadar sans faire de .vsid reset
+			return false;
+		}
+		const auto& area = configJson_[oaci]["areas"]["test"]; // "test" hardocdé pour le moment
+		for (auto it = area.begin(); it != area.end(); ++it) {
+			if (it.key() == "active") continue;
+			const auto& waypoint = it.value();
+			double lat = std::stod(waypoint["lat"].get<std::string>());
+			double lon = std::stod(waypoint["lon"].get<std::string>());
+			latitudes.push_back(lat);
+			longitudes.push_back(lon);
+		}
+	} else {
+		DisplayMessageFromDataManager("Area not found in config JSON for OACI: " + oaci, "DataManager");
+		return false;
+	}
+
+	// Ray casting algorithm for point-in-polygon
+	bool inside = false;
+	size_t n = latitudes.size();
+	if (n < 3) {
+		DisplayMessageFromDataManager("Not enough points in area polygon for OACI: " + oaci, "DataManager");
+		return false;
+	}
+	for (size_t i = 0, j = n - 1; i < n; j = i++) {
+		double xi = latitudes[i], yi = longitudes[i];
+		double xj = latitudes[j], yj = longitudes[j];
+		bool intersect = ((yi > longitude) != (yj > longitude)) &&
+			(latitude < (xj - xi) * (longitude - yi) / (yj - yi + 1e-12) + xi);
+		if (intersect)
+			inside = !inside;
+	}
+	return inside;
 }
 
 void DataManager::addPilot(const std::string& callsign)
