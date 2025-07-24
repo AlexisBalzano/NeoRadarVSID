@@ -1,5 +1,6 @@
 # NeoRadarVSID
-vSID adaptation for NeoRadar ATC Client
+vSID adaptation for NeoRadar ATC Client <br>
+<img width="565" height="154" alt="VSIDillustrationImage" src="https://github.com/user-attachments/assets/19cf296e-ca41-4fa3-a2b1-c3852d1df9a3" />
 
 # Installation
 - Download the latest release from the [Releases] according to your platform (Windows, Linux, MacOS).
