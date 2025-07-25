@@ -47,6 +47,20 @@ void NeoVSID::RegisterCommand() {
         definition.parameters.clear();
 
         pilotsCommandId_ = chatAPI_->registerCommand(definition.name, definition, CommandProvider_);
+        
+        definition.name = "vsid areas";
+        definition.description = "return area list";
+        definition.lastParameterHasSpaces = false;
+        definition.parameters.clear();
+
+        areasCommandId_ = chatAPI_->registerCommand(definition.name, definition, CommandProvider_);
+
+        definition.name = "vsid rules";
+        definition.description = "return rule list";
+        definition.lastParameterHasSpaces = false;
+        definition.parameters.clear();
+
+        rulesCommandId_ = chatAPI_->registerCommand(definition.name, definition, CommandProvider_);
 
         definition.name = "vsid reset";
         definition.description = "reset active airport & pilot lists";
@@ -89,6 +103,8 @@ inline void NeoVSID::unegisterCommand()
         chatAPI_->unregisterCommand(autoModeCommandId_);
         chatAPI_->unregisterCommand(airportsCommandId_);
         chatAPI_->unregisterCommand(pilotsCommandId_);
+        chatAPI_->unregisterCommand(areasCommandId_);
+        chatAPI_->unregisterCommand(rulesCommandId_);
         chatAPI_->unregisterCommand(resetCommandId_);
         chatAPI_->unregisterCommand(removeCommandId_);
         chatAPI_->unregisterCommand(positionCommandId_);
@@ -165,13 +181,64 @@ Chat::CommandResult NeoVSIDCommandProvider::Execute( const std::string &commandI
         }
 		return { true, std::nullopt };
     }
+    else if (commandId == neoVSID_->areasCommandId_)
+    {
+        std::vector<areaData> areas = neoVSID_->GetDataManager()->getAreas();
+        if (areas.empty()) {
+            neoVSID_->DisplayMessage("No Area found.");
+        }
+        else {
+			int count = 0;
+            std::string message = "Areas: ";
+            for (const auto& area : areas) {
+				++count;
+                message += area.name + ", ";
+                if (count >= 4) {
+                    // Remove the trailing comma and space
+                    message = message.substr(0, message.size() - 2);
+                    neoVSID_->DisplayMessage(message);
+					count = 0;
+					message = "";
+                }
+            }
+            if (!message.empty()) {
+                // Remove the trailing comma and space
+                message = message.substr(0, message.size() - 2);
+                neoVSID_->DisplayMessage(message);
+			}
+        }
+		return { true, std::nullopt };
+    }
+    else if (commandId == neoVSID_->rulesCommandId_)
+    {
+        std::vector<ruleData> rules = neoVSID_->GetDataManager()->getRules();
+        if (rules.empty()) {
+            neoVSID_->DisplayMessage("No rule found.");
+        }
+        else {
+			int count = 0;
+            std::string message = "Rules: ";
+            for (const auto& rule : rules) {
+				++count;
+                message += rule.name + ", ";
+                if (count >= 4) {
+                    // Remove the trailing comma and space
+                    message = message.substr(0, message.size() - 2);
+                    neoVSID_->DisplayMessage(message);
+					count = 0;
+					message = "";
+                }
+            }
+            if (!message.empty()) {
+                // Remove the trailing comma and space
+                message = message.substr(0, message.size() - 2);
+                neoVSID_->DisplayMessage(message);
+			}
+        }
+		return { true, std::nullopt };
+    }
     else if (commandId == neoVSID_->removeCommandId_)
     {
-        //if (args[0].empty()) {
-        //    std::string error = "Callsign is required. Use .vsid remove <callsign>";
-        //    neoVSID_->DisplayMessage(error);
-        //    return { false, error };
-        //}
 		std::string callsign = args[0];
         std::transform(callsign.begin(), callsign.end(), callsign.begin(), ::toupper);
 

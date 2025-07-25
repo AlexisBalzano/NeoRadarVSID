@@ -77,6 +77,8 @@ namespace vsid {
         std::string autoModeCommandId_;
         std::string airportsCommandId_;
         std::string pilotsCommandId_;
+		std::string areasCommandId_;
+		std::string rulesCommandId_;
         std::string resetCommandId_;
         std::string removeCommandId_;
         std::string positionCommandId_;
