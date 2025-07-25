@@ -74,7 +74,7 @@ void NeoVSID::RegisterCommand() {
         definition.lastParameterHasSpaces = false;
 
         Chat::CommandParameter parameter;
-        parameter.name = "callsign";
+        parameter.name = "CALLSIGN";
         parameter.type = Chat::ParameterType::String;
         parameter.required = true;
         definition.parameters.push_back(parameter);
@@ -84,6 +84,10 @@ void NeoVSID::RegisterCommand() {
         definition.name = "vsid position";
         definition.description = "print aircraft coordinates inside NeoRadar";
         definition.lastParameterHasSpaces = false;
+
+		parameter.name = "AREANAME";
+        parameter.required = true;
+        definition.parameters.push_back(parameter);
 
         positionCommandId_ = chatAPI_->registerCommand(definition.name, definition, CommandProvider_);
 
@@ -156,7 +160,7 @@ Chat::CommandResult NeoVSIDCommandProvider::Execute( const std::string &commandI
         neoVSID_->DisplayMessage(".vsid areas");
         neoVSID_->DisplayMessage(".vsid reset");
         neoVSID_->DisplayMessage(".vsid remove <CALLSIGN>");
-        neoVSID_->DisplayMessage(".vsid position <CALLSIGN>");
+        neoVSID_->DisplayMessage(".vsid position <CALLSIGN> <AREANAME>");
         neoVSID_->DisplayMessage(".vsid rule <OACI> <RULENAME>");
         neoVSID_->DisplayMessage(".vsid area <OACI> <AREANAME>");
     }
@@ -283,12 +287,13 @@ Chat::CommandResult NeoVSIDCommandProvider::Execute( const std::string &commandI
 	}
     else if (commandId == neoVSID_->positionCommandId_)
     {
-        if (args.empty() || args[0].empty()) {
-            std::string error = "Callsign is required. Use .vsid position <callsign>";
+        if (args.empty() || args[0].empty() || args[1].empty()) {
+            std::string error = "CALLSIGN and AREANAME are required. Use .vsid rule <oaci> <areaname>";
             neoVSID_->DisplayMessage(error);
             return { true, std::nullopt };
         }
 		std::string callsign = args[0];
+        std::string areaName = args[1];
 		std::transform(callsign.begin(), callsign.end(), callsign.begin(), ::toupper);
         auto aircraftOpt = neoVSID_->GetAircraftAPI()->getByCallsign(callsign);
         if (!aircraftOpt) {
@@ -298,7 +303,7 @@ Chat::CommandResult NeoVSIDCommandProvider::Execute( const std::string &commandI
         const auto& aircraft = *aircraftOpt;
         neoVSID_->DisplayMessage(callsign + "'s position is N" + std::to_string(aircraft.position.latitude) + " E" + std::to_string(aircraft.position.longitude));
         std::string oaci = neoVSID_->GetFlightplanAPI()->getByCallsign(callsign)->origin;
-		bool isInArea = neoVSID_->GetDataManager()->isInArea(aircraft.position.latitude, aircraft.position.longitude, oaci);
+		bool isInArea = neoVSID_->GetDataManager()->isInArea(aircraft.position.latitude, aircraft.position.longitude, oaci, areaName);
         neoVSID_->DisplayMessage("Aircraft " + std::string(isInArea ? "is in Area" : "isn't in Area"));
         return { true, std::nullopt };
 	}
