@@ -406,6 +406,36 @@ bool DataManager::isInArea(const double& latitude, const double& longitude, cons
 	return inside;
 }
 
+void DataManager::switchRuleState(const std::string& oaci, const std::string& ruleName)
+{
+	if (oaci.empty() || ruleName.empty())
+		return;
+	auto it = std::find_if(rules.begin(), rules.end(), [&](const ruleData& rule) {
+		return rule.oaci == oaci && rule.name == ruleName;
+	});
+	if (it != rules.end()) {
+		it->active = !it->active;
+	}
+	else {
+		loggerAPI_->log(Logger::LogLevel::Warning, "Rule not found when trying to switch state: " + ruleName + " for OACI: " + oaci);
+	}
+}
+
+void DataManager::switchAreaState(const std::string& oaci, const std::string& areaName)
+{
+	if (oaci.empty() || areaName.empty())
+		return;
+	auto it = std::find_if(areas.begin(), areas.end(), [&](const areaData& area) {
+		return area.oaci == oaci && area.name == areaName;
+	});
+	if (it != areas.end()) {
+		it->active = !it->active;
+	}
+	else {
+		loggerAPI_->log(Logger::LogLevel::Warning, "Area not found when trying to switch state: " + areaName + " for OACI: " + oaci);
+	}
+}
+
 void DataManager::addPilot(const std::string& callsign)
 {
 	Flightplan::Flightplan flightplan = flightplanAPI_->getByCallsign(callsign).value();
