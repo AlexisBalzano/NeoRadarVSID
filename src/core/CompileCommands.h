@@ -94,10 +94,13 @@ void NeoVSID::RegisterCommand() {
         definition.parameters.clear();
         parameter.name = "OACI";
         parameter.type = Chat::ParameterType::String;
+		parameter.minLength = 4;
+		parameter.maxLength = 4;
         parameter.required = true;
         definition.parameters.push_back(parameter);
         parameter.name = "RULENAME";
-        parameter.type = Chat::ParameterType::String;
+		parameter.minLength = 0;
+		parameter.maxLength = 0;
         parameter.required = true;
         definition.parameters.push_back(parameter);
 
@@ -215,7 +218,7 @@ Chat::CommandResult NeoVSIDCommandProvider::Execute( const std::string &commandI
             std::string message = "Areas: ";
             for (const auto& area : areas) {
 				++count;
-                message += area.oaci + " " + area.name + " " + std::string(area.active ? "Active" : "Incative") + ", ";
+                message += area.oaci + " " + area.name + " " + std::string(area.active ? "Active" : "Inactive") + ", ";
                 if (count >= 4) {
                     // Remove the trailing comma and space
                     message = message.substr(0, message.size() - 2);
@@ -243,7 +246,7 @@ Chat::CommandResult NeoVSIDCommandProvider::Execute( const std::string &commandI
             std::string message = "Rules: ";
             for (const auto& rule : rules) {
 				++count;
-                message += rule.oaci + " " + rule.name + " " + std::string(rule.active ? "Active": "Incative") + ", ";
+                message += rule.oaci + " " + rule.name + " " + std::string(rule.active ? "Active": "Inactive") + ", ";
                 if (count >= 4) {
                     // Remove the trailing comma and space
                     message = message.substr(0, message.size() - 2);
@@ -303,6 +306,7 @@ Chat::CommandResult NeoVSIDCommandProvider::Execute( const std::string &commandI
             return { true, std::nullopt };
         }
 		std::string oaci = args[0];
+		std::transform(oaci.begin(), oaci.end(), oaci.begin(), ::toupper);
 		std::string ruleName = args[1];
 
 		//check if rule exists
@@ -329,6 +333,7 @@ Chat::CommandResult NeoVSIDCommandProvider::Execute( const std::string &commandI
             return { true, std::nullopt };
         }
 		std::string oaci = args[0];
+		std::transform(oaci.begin(), oaci.end(), oaci.begin(), ::toupper);
 		std::string areaName = args[1];
 
 		//check if area exists
@@ -341,7 +346,7 @@ Chat::CommandResult NeoVSIDCommandProvider::Execute( const std::string &commandI
             neoVSID_->DisplayMessage(error);
             return { true, std::nullopt };
         }
-		neoVSID_->GetDataManager()->switchRuleState(oaci, areaName);
+		neoVSID_->GetDataManager()->switchAreaState(oaci, areaName);
 		std::string message = "Area " + areaName + " for OACI " + oaci + " is now " + (it->active ? "inactive" : "active") + ".";
 		neoVSID_->DisplayMessage(message);
 
