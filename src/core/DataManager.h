@@ -21,6 +21,19 @@ struct sidData {
 	int cfl;
 };
 
+struct ruleData {
+	std::string oaci;
+	std::string name;
+	bool active = false; 
+};
+
+struct areaData {
+	std::string oaci;
+	std::string name;
+	std::vector <std::pair<double, double>> coordinates;
+	bool active = false; 
+};
+
 using namespace PluginSDK;
 
 class DataManager {
@@ -41,6 +54,8 @@ public:
 	std::vector<std::string> getAllDepartureCallsigns();
 	std::vector<Pilot> getPilots() const { return pilots; }
 	Pilot getPilotByCallsign(std::string callsign) const;
+	std::vector<ruleData> getRules() const { return rules; }
+	std::vector<areaData> getAreas() const { return areas; }
 
 	void addPilot(const std::string& callsign);
 	bool removePilot(const std::string& callsign);
@@ -68,4 +83,6 @@ private:
 	nlohmann::json aircraftDataJson_;
 	std::vector<std::string> activeAirports;
 	std::vector<Pilot> pilots;
+	std::vector<ruleData> rules;
+	std::vector<areaData> areas;
 };

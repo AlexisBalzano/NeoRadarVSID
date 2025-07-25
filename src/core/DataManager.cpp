@@ -69,6 +69,8 @@ void DataManager::clearJson()
 {
 	configJson_.clear();
 	aircraftDataJson_.clear();
+	rules.clear();
+	areas.clear();
 }
 
 void DataManager::DisplayMessageFromDataManager(const std::string& message, const std::string& sender)
@@ -205,7 +207,63 @@ int DataManager::retrieveConfigJson(const std::string& oaci)
 		DisplayMessageFromDataManager("Error parsing JSON file: " + jsonPath.string(), "DataManager");
 		return -1;
 	}
-	return 0; // Return 0 if the JSON file was successfully retrieved
+
+	std::string oaciUpper = oaci;
+	std::transform(oaciUpper.begin(), oaciUpper.end(), oaciUpper.begin(), ::toupper);
+
+	if (configJson_[oaciUpper].contains("customRules")) {
+		loggerAPI_->log(Logger::LogLevel::Info, "Parsing Custom rules from config JSON for OACI: " + oaci);
+		auto iterator = configJson_[oaciUpper]["customRules"].begin();
+		while (iterator != configJson_[oaciUpper]["customRules"].end()) {
+			std::string ruleName = iterator.key();
+			// Check if rule already exists in rules vector
+			bool alreadyExists = std::any_of(rules.begin(), rules.end(), [&](const ruleData& rule) {
+				return rule.oaci == oaci && rule.name == ruleName;
+				});
+			if (alreadyExists) {
+				++iterator;
+				continue;
+			}
+			bool isActive = iterator.value().get<bool>();
+			rules.emplace_back(ruleData{ oaci, ruleName, isActive });
+			++iterator;
+		}
+	}
+
+	if (configJson_[oaciUpper].contains("areas")) {
+		loggerAPI_->log(Logger::LogLevel::Info, "Parsing Areas from config JSON for OACI: " + oaci);
+		auto areaIterator = configJson_[oaciUpper]["areas"].begin();
+		while (areaIterator != configJson_[oaciUpper]["areas"].end()) {
+			std::string areaName = areaIterator.key();
+			
+			// Check if area already exists in areas vector
+			bool alreadyExists = std::any_of(areas.begin(), areas.end(), [&](const areaData& area) {
+				return area.oaci == oaci && area.name == areaName;
+			});
+			if (alreadyExists) {
+				++areaIterator;
+				continue;
+			}
+
+			std::vector<std::pair<double, double>> waypointsList;
+			bool isActive = areaIterator.value()["active"].get<bool>();
+			auto waypointIterator = areaIterator.value().begin();
+			while (waypointIterator != areaIterator.value().end())
+			{
+				double lat, lon;
+				if (waypointIterator.key() != "active") {
+					lat = std::stod(waypointIterator.value()["lat"].get<std::string>());
+					lon = std::stod(waypointIterator.value()["lon"].get<std::string>());
+					waypointsList.emplace_back(lat, lon);
+				}
+				++waypointIterator;
+			}
+			areas.emplace_back(areaData{ oaci, areaName, waypointsList, isActive });
+			++areaIterator;
+		}
+	}
+
+	return 0;
 }
 
 void DataManager::loadAircraftDataJson()
