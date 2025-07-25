@@ -152,9 +152,13 @@ Chat::CommandResult NeoVSIDCommandProvider::Execute( const std::string &commandI
         neoVSID_->DisplayMessage(".vsid auto");
         neoVSID_->DisplayMessage(".vsid airports");
         neoVSID_->DisplayMessage(".vsid pilots");
+        neoVSID_->DisplayMessage(".vsid rules");
+        neoVSID_->DisplayMessage(".vsid areas");
         neoVSID_->DisplayMessage(".vsid reset");
         neoVSID_->DisplayMessage(".vsid remove <CALLSIGN>");
         neoVSID_->DisplayMessage(".vsid position <CALLSIGN>");
+        neoVSID_->DisplayMessage(".vsid rule <OACI> <RULENAME>");
+        neoVSID_->DisplayMessage(".vsid area <OACI> <AREANAME>");
     }
     else if (commandId == neoVSID_->autoModeCommandId_)
     {
