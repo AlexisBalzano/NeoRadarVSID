@@ -20,6 +20,7 @@ DataManager::DataManager(vsid::NeoVSID* neoVSID)
 	flightplanAPI_ = neoVSID_->GetFlightplanAPI();
 	airportAPI_ = neoVSID_->GetAirportAPI();
 	chatAPI_ = neoVSID_->GetChatAPI();
+	loggerAPI_ = neoVSID_->GetLogger();
 	controllerDataAPI_ = neoVSID_->GetControllerDataAPI();
 
 	configPath_ = getDllDirectory();
@@ -110,32 +111,37 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 		return { "------", 0 };
 	}
 
-	std::string suggestedSid = flightplan.route.suggestedSid;
-	std::string indicator = suggestedSid.substr(suggestedSid.length() - 2, 1);
 	std::string firstWaypoint = flightplan.route.waypoints[0].identifier;
+	std::string suggestedSid = flightplan.route.suggestedSid;
+	if (suggestedSid.empty() || suggestedSid.length() < 2) {
+		DisplayMessageFromDataManager("SID not found for waypoint: " + firstWaypoint + " for: " + flightplan.callsign, "SID Assigner");
+		return { "CHECKFP", 0 };
+	}
+	std::string indicator = suggestedSid.substr(suggestedSid.length() - 2, 1);
+
 
 	// Check if configJSON is already the right one, if not, retrieve it
 	std::string oaci = flightplan.origin;
 	if (!configJson_.contains(oaci) || configJson_.empty()) {
 		if (retrieveConfigJson(oaci) == -1) {
 			DisplayMessageFromDataManager("Error retrieving config JSON for OACI: " + oaci, "DataManager");
+			loggerAPI_->log(Logger::LogLevel::Error, "Error retrieving config JSON for OACI: " + oaci);
 			return { suggestedSid, 0};
 		}
 	}
 
-	// Extract waypoint only SID information
 	std::transform(oaci.begin(), oaci.end(), oaci.begin(), ::toupper); //Convert to uppercase
-
-	if (suggestedSid.empty() || suggestedSid.length() < 2) {
-		return { suggestedSid, 0};
-	}
-
+	
+	loggerAPI_->log(Logger::LogLevel::Info, "Generating SID for flightplan: " + flightplan.callsign + ", first waypoint: " + firstWaypoint + ", depRwy: " + depRwy);
+	
+	// Extract waypoint only SID information
 	nlohmann::json waypointSidData;
 	if (configJson_.contains(oaci) && configJson_[oaci]["sids"].contains(firstWaypoint)) {
 		waypointSidData = configJson_[oaci]["sids"][firstWaypoint];
 	} else {
-		DisplayMessageFromDataManager("SID not found in config JSON for waypoint: " + firstWaypoint + " for: " + flightplan.callsign, "DataManager");
-		return { suggestedSid, 0};
+		DisplayMessageFromDataManager("SID not found for waypoint: " + firstWaypoint + " for: " + flightplan.callsign, "SID Assigner");
+		loggerAPI_->log(Logger::LogLevel::Warning, "SID not found in config JSON for waypoint: " + firstWaypoint + " for: " + flightplan.callsign);
+		return { "CHECKFP", 0};
 	}
 
 	std::string aircraftType = flightplan.acType;
@@ -176,7 +182,9 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 		}
 		++sidIterator;
 	}
-	return { suggestedSid, 0};
+	DisplayMessageFromDataManager("No matching SID found for: " + flightplan.callsign + ", check flighplan, rerouting might be necessary", "SID Assigner");
+	loggerAPI_->log(Logger::LogLevel::Warning, "No matching SID found for: " + flightplan.callsign + ", check flightplan, rerouting might be necessary");
+	return { "CHECKFP", 0};
 }
 	
 int DataManager::retrieveConfigJson(const std::string& oaci)
@@ -292,8 +300,9 @@ bool DataManager::pilotExists(const std::string& callsign) const
 	return false;
 }
 
-bool DataManager::isInArea(const double& latitude, const double& longitude, const std::string& oaci)
+bool DataManager::isInArea(const double& latitude, const double& longitude, const std::string& oaci) // Choper areaName plutot que oaci
 {
+	// Dans l'idée dégage le code sur le json car il sera déjà chargé par la fonction assignSID
 	if (!configJson_.contains(oaci) || configJson_.empty()) {
 		if (retrieveConfigJson(oaci) == -1) {
 			DisplayMessageFromDataManager("Error retrieving config JSON for OACI: " + oaci, "DataManager");

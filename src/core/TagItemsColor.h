@@ -28,6 +28,7 @@ namespace vsid::tagitems {
             else return Colors::orange;
         }
 		static std::optional<std::array<unsigned int, 3>> colorizeSid(const std::string& sid, const std::string& vsidSid) {
+            if (vsidSid == "CHECKFP" && sid == "") return Colors::red;
             if (sid == "") return Colors::white;
             if (sid == vsidSid) return Colors::green;
             else return Colors::orange;

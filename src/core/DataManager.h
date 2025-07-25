@@ -61,6 +61,7 @@ private:
 	PluginSDK::ControllerData::ControllerDataAPI* controllerDataAPI_ = nullptr;
 	Chat::ChatAPI* chatAPI_ = nullptr;
 	vsid::NeoVSID* neoVSID_ = nullptr;
+	PluginSDK::Logger::LoggerAPI* loggerAPI_ = nullptr;
 
 	std::filesystem::path configPath_;
 	nlohmann::json configJson_;
