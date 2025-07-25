@@ -147,6 +147,23 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 	std::string aircraftType = flightplan.acType;
 	std::string engineType = "J"; // Defaulting to Jet if no type is found
 	std::string requiredEngineType = "J";
+	std::vector<std::string> rules;
+	std::vector<std::string> areas;
+
+	for (const auto& rule : this->rules) {
+		if (rule.oaci == oaci && rule.active) {
+			rules.push_back(rule.name);
+		}
+	}
+
+	for (const auto& area : this->areas) {
+		if (area.oaci == oaci && area.active) {
+			areas.push_back(area.name);
+		}
+	}
+
+	bool ruleActive = !rules.empty();
+
 	if (aircraftDataJson_.contains(aircraftType))
 		engineType = aircraftDataJson_[aircraftType]["engineType"].get<std::string>();
 
@@ -154,7 +171,7 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 	while (sidIterator != waypointSidData.end()) {
 		std::string sidLetter = sidIterator.key();
 		std::string sidRwy = waypointSidData[sidLetter]["1"]["rwy"].get<std::string>();
-		if (sidRwy.find(depRwy) == std::string::npos) {
+		if ((sidRwy.find(depRwy) == std::string::npos) || (!waypointSidData[sidLetter]["1"].contains("customRule") && ruleActive)) {
 			++sidIterator;
 			continue;
 		}
@@ -446,6 +463,7 @@ void DataManager::switchRuleState(const std::string& oaci, const std::string& ru
 	else {
 		loggerAPI_->log(Logger::LogLevel::Warning, "Rule not found when trying to switch state: " + ruleName + " for OACI: " + oaci);
 	}
+	removeAllPilots();
 }
 
 void DataManager::switchAreaState(const std::string& oaci, const std::string& areaName)
@@ -461,6 +479,7 @@ void DataManager::switchAreaState(const std::string& oaci, const std::string& ar
 	else {
 		loggerAPI_->log(Logger::LogLevel::Warning, "Area not found when trying to switch state: " + areaName + " for OACI: " + oaci);
 	}
+	removeAllPilots();
 }
 
 void DataManager::addPilot(const std::string& callsign)
