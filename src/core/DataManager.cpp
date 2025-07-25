@@ -101,7 +101,7 @@ void DataManager::populateActiveAirports()
 
 std::string DataManager::generateVRWY(const Flightplan::Flightplan& flightplan)
 {
-	/* TODO:
+	/* //TODO:
 	* - generer la piste en fonction des pistes de departs actuellement configur�es sur le terrain de d�part du trafic
 	* - generer la piste en fonction de la position du trafic par rapport au terrain de d�part si plusieurs pistes de d�part et config roulage mini
 	* - generer la piste en fonction de la direction du depart si config croisement au sol
@@ -147,22 +147,23 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 	std::string aircraftType = flightplan.acType;
 	std::string engineType = "J"; // Defaulting to Jet if no type is found
 	std::string requiredEngineType = "J";
-	std::vector<std::string> rules;
-	std::vector<std::string> areas;
+	std::vector<std::string> activeRules;
+	std::vector<std::string> activeAreas;
+	std::vector<std::string> depRwys = airportAPI_->getConfigurationByIcao(oaci)->depRunways;
 
 	for (const auto& rule : this->rules) {
 		if (rule.oaci == oaci && rule.active) {
-			rules.push_back(rule.name);
+			activeRules.push_back(rule.name);
 		}
 	}
 
 	for (const auto& area : this->areas) {
 		if (area.oaci == oaci && area.active) {
-			areas.push_back(area.name);
+			activeAreas.push_back(area.name);
 		}
 	}
 
-	bool ruleActive = !rules.empty();
+	bool ruleActive = !activeRules.empty();
 
 	if (aircraftDataJson_.contains(aircraftType))
 		engineType = aircraftDataJson_[aircraftType]["engineType"].get<std::string>();
@@ -171,14 +172,53 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 	while (sidIterator != waypointSidData.end()) {
 		std::string sidLetter = sidIterator.key();
 		std::string sidRwy = waypointSidData[sidLetter]["1"]["rwy"].get<std::string>();
-		if ((sidRwy.find(depRwy) == std::string::npos) || (!waypointSidData[sidLetter]["1"].contains("customRule") && ruleActive)) {
+		if (!waypointSidData[sidLetter]["1"].contains("customRule") && ruleActive) {
 			++sidIterator;
 			continue;
 		}
+
+		/*bool rwyMatches = false;
+		for (const auto& rwy : depRwys) {
+			if (sidRwy.find(rwy) != std::string::npos) {
+				rwyMatches = true;
+				break;
+			}
+		}
+		if (!rwyMatches) {
+			++sidIterator;
+			continue;
+		}*/
+		
+		//DELETE: This is a workaround to ensure that the SID matches the departure runway for the moment
+		if (sidRwy.find(depRwy) == std::string::npos) {
+			++sidIterator;
+			continue; // Skip this SID if runway does not match
+		}
+
 		auto variantIterator = waypointSidData[sidLetter].begin();
 		while (variantIterator != waypointSidData[sidLetter].end())
 		{
 			std::string variant = variantIterator.key();
+
+			std::vector<std::string> ruleNames;
+			if (ruleActive) {
+				if (waypointSidData[sidLetter][variant]["customRule"].is_array()) {
+					for (const auto& rule : waypointSidData[sidLetter][variant]["customRule"]) {
+						ruleNames.push_back(rule.get<std::string>());
+					}
+				}
+				else {
+					ruleNames.push_back(waypointSidData[sidLetter][variant]["customRule"].get<std::string>());
+				}
+
+				if(!std::all_of(activeRules.begin(), activeRules.end(), [&](const std::string& activeRuleName) {
+					return std::find(ruleNames.begin(), ruleNames.end(), activeRuleName) != ruleNames.end();
+				})) {
+					++variantIterator;
+					continue; // Skip this variant if not matching all active rules
+				}
+			}
+
 			if (waypointSidData[sidLetter][variant].contains("engineType")) {
 				requiredEngineType = waypointSidData[sidLetter][variant]["engineType"].get<std::string>();
 				if (requiredEngineType.find(engineType) != std::string::npos) {
