@@ -57,6 +57,8 @@ public:
 	std::vector<ruleData> getRules() const { return rules; }
 	std::vector<areaData> getAreas() const { return areas; }
 
+	void switchRuleState(const std::string& oaci, const std::string& ruleName);
+	void switchAreaState(const std::string& oaci, const std::string& areaName);
 	void addPilot(const std::string& callsign);
 	bool removePilot(const std::string& callsign);
 	void removeAllPilots();

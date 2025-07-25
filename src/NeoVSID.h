@@ -82,6 +82,9 @@ namespace vsid {
         std::string resetCommandId_;
         std::string removeCommandId_;
         std::string positionCommandId_;
+        std::string areaCommandId_;
+        std::string ruleCommandId_;
+
 
     private:
         // Plugin state
