@@ -149,6 +149,7 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 	std::string requiredEngineType = "J";
 	std::vector<std::string> activeRules;
 	std::vector<std::string> activeAreas;
+	std::vector<std::string> aircraftAreas;
 	std::vector<std::string> depRwys = airportAPI_->getConfigurationByIcao(oaci)->depRunways;
 
 	for (const auto& rule : this->rules) {
@@ -164,6 +165,7 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 	}
 
 	bool ruleActive = !activeRules.empty();
+	bool areaActive = !activeAreas.empty();
 
 	if (aircraftDataJson_.contains(aircraftType))
 		engineType = aircraftDataJson_[aircraftType]["engineType"].get<std::string>();
@@ -177,7 +179,7 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 			continue;
 		}
 
-		/*bool rwyMatches = false;
+		bool rwyMatches = false;
 		for (const auto& rwy : depRwys) {
 			if (sidRwy.find(rwy) != std::string::npos) {
 				rwyMatches = true;
@@ -187,13 +189,13 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 		if (!rwyMatches) {
 			++sidIterator;
 			continue;
-		}*/
+		}
 		
 		//DELETE: This is a workaround to ensure that the SID matches the departure runway for the moment
-		if (sidRwy.find(depRwy) == std::string::npos) {
-			++sidIterator;
-			continue; // Skip this SID if runway does not match
-		}
+		//if (sidRwy.find(depRwy) == std::string::npos) {
+		//	++sidIterator;
+		//	continue; // Skip this SID if runway does not match
+		//}
 
 		auto variantIterator = waypointSidData[sidLetter].begin();
 		while (variantIterator != waypointSidData[sidLetter].end())
@@ -216,6 +218,40 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 				})) {
 					++variantIterator;
 					continue; // Skip this variant if not matching all active rules
+				}
+			}
+			
+			if (areaActive) {
+				double aircraftLat = aircraftAPI_->getByCallsign(flightplan.callsign)->position.latitude;
+				double aircraftLon = aircraftAPI_->getByCallsign(flightplan.callsign)->position.longitude;
+				std::vector<std::string> areaNames;
+
+				for (const auto& areaName : activeAreas) {
+					if (isInArea(aircraftLat, aircraftLon, oaci, areaName)) {
+						aircraftAreas.push_back(areaName);
+					}
+				}
+				if (waypointSidData[sidLetter][variant].contains("area")) {
+					if (waypointSidData[sidLetter][variant]["area"].is_array()) {
+						for (const auto& area : waypointSidData[sidLetter][variant]["area"]) {
+							areaNames.push_back(area.get<std::string>());
+						}
+					}
+					else {
+						areaNames.push_back(waypointSidData[sidLetter][variant]["area"].get<std::string>());
+					}
+					if (!std::all_of(aircraftAreas.begin(), aircraftAreas.end(), [&](const std::string& activeAreaName) {
+						return std::find(areaNames.begin(), areaNames.end(), activeAreaName) != areaNames.end();
+						})) {
+						++variantIterator;
+						continue; // Skip this variant if not matching all areas
+					}
+				}
+			}
+			else {
+				if (waypointSidData[sidLetter][variant].contains("area")) {
+					++variantIterator;
+					continue;
 				}
 			}
 
@@ -442,7 +478,7 @@ bool DataManager::pilotExists(const std::string& callsign) const
 	return false;
 }
 
-bool DataManager::isInArea(const double& latitude, const double& longitude, const std::string& oaci) // Choper areaName plutot que oaci
+bool DataManager::isInArea(const double& latitude, const double& longitude, const std::string& oaci, const std::string& areaName)
 {
 	// Dans l'idée dégage le code sur le json car il sera déjà chargé par la fonction assignSID
 	if (!configJson_.contains(oaci) || configJson_.empty()) {
@@ -453,23 +489,14 @@ bool DataManager::isInArea(const double& latitude, const double& longitude, cons
 	}
 
 	std::vector<double> latitudes, longitudes;
-	if (configJson_[oaci].contains("areas")) {
-		if (configJson_[oaci]["areas"]["test"]["active"].get<bool>() == false) { // "test" hardocdé pour le moment
-			DisplayMessageFromDataManager("Area is not active in config JSON for OACI: " + oaci, "DataManager"); // pour le moment on ne peut l'activer/desactiver depuis neoRadar sans faire de .vsid reset
-			return false;
-		}
-		const auto& area = configJson_[oaci]["areas"]["test"]; // "test" hardocdé pour le moment
-		for (auto it = area.begin(); it != area.end(); ++it) {
-			if (it.key() == "active") continue;
-			const auto& waypoint = it.value();
-			double lat = std::stod(waypoint["lat"].get<std::string>());
-			double lon = std::stod(waypoint["lon"].get<std::string>());
-			latitudes.push_back(lat);
-			longitudes.push_back(lon);
-		}
-	} else {
-		DisplayMessageFromDataManager("Area not found in config JSON for OACI: " + oaci, "DataManager");
-		return false;
+
+	areaData area = areas.empty() ? areaData{} : *std::find_if(areas.begin(), areas.end(), [&](const areaData& area) {
+		return area.oaci == oaci && area.name == areaName;
+		});
+
+	for (const auto& waypoint : area.coordinates) {
+		latitudes.push_back(waypoint.first);
+		longitudes.push_back(waypoint.second);
 	}
 
 	// Ray casting algorithm for point-in-polygon
