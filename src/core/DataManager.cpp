@@ -93,6 +93,8 @@ void DataManager::populateActiveAirports()
 		if (airport.status == Airport::AirportStatus::Active)
 		{
 			activeAirports.push_back(airport.icao);
+			parseRules(airport.icao);
+			parseAreas(airport.icao);
 		}
 	}
 }
@@ -124,12 +126,8 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 
 	// Check if configJSON is already the right one, if not, retrieve it
 	std::string oaci = flightplan.origin;
-	if (!configJson_.contains(oaci) || configJson_.empty()) {
-		if (retrieveConfigJson(oaci) == -1) {
-			DisplayMessageFromDataManager("Error retrieving config JSON for OACI: " + oaci, "DataManager");
-			loggerAPI_->log(Logger::LogLevel::Error, "Error retrieving config JSON for OACI: " + oaci);
-			return { suggestedSid, 0};
-		}
+	if (!retrieveCorrectConfigJson(oaci)) {
+		return {suggestedSid, 0} ;
 	}
 
 	std::transform(oaci.begin(), oaci.end(), oaci.begin(), ::toupper); //Convert to uppercase
@@ -208,6 +206,44 @@ int DataManager::retrieveConfigJson(const std::string& oaci)
 		return -1;
 	}
 
+	return 0;
+}
+
+bool DataManager::retrieveCorrectConfigJson(const std::string& oaci)
+{
+	if (!configJson_.contains(oaci) || configJson_.empty()) {
+		if (retrieveConfigJson(oaci) == -1) {
+			DisplayMessageFromDataManager("Error retrieving config JSON for OACI: " + oaci, "DataManager");
+			loggerAPI_->log(Logger::LogLevel::Error, "Error retrieving config JSON for OACI: " + oaci);
+			return false;
+		}
+	}
+	return true;
+}
+
+void DataManager::loadAircraftDataJson()
+{
+	std::filesystem::path jsonPath = configPath_ / "NeoVSID" / "AircraftData.json";
+	std::ifstream aircraftDataFile(jsonPath);
+	if (!aircraftDataFile.is_open()) {
+		DisplayMessageFromDataManager("Could not open aircraft data JSON file: " + jsonPath.string(), "DataManager");
+		return;
+	}
+	try {
+		aircraftDataJson_ = nlohmann::json::parse(aircraftDataFile);
+	}
+	catch (...) {
+		DisplayMessageFromDataManager("Error parsing aircraft data JSON file: " + jsonPath.string(), "DataManager");
+		return;
+	}
+}
+
+void DataManager::parseRules(const std::string& oaci)
+{
+	if (!retrieveCorrectConfigJson(oaci)) {
+		return;
+	}
+
 	std::string oaciUpper = oaci;
 	std::transform(oaciUpper.begin(), oaciUpper.end(), oaciUpper.begin(), ::toupper);
 
@@ -229,17 +265,27 @@ int DataManager::retrieveConfigJson(const std::string& oaci)
 			++iterator;
 		}
 	}
+}
+
+void DataManager::parseAreas(const std::string& oaci)
+{
+	if (!retrieveCorrectConfigJson(oaci)) {
+		return;
+	}
+
+	std::string oaciUpper = oaci;
+	std::transform(oaciUpper.begin(), oaciUpper.end(), oaciUpper.begin(), ::toupper);
 
 	if (configJson_[oaciUpper].contains("areas")) {
 		loggerAPI_->log(Logger::LogLevel::Info, "Parsing Areas from config JSON for OACI: " + oaci);
 		auto areaIterator = configJson_[oaciUpper]["areas"].begin();
 		while (areaIterator != configJson_[oaciUpper]["areas"].end()) {
 			std::string areaName = areaIterator.key();
-			
+
 			// Check if area already exists in areas vector
 			bool alreadyExists = std::any_of(areas.begin(), areas.end(), [&](const areaData& area) {
 				return area.oaci == oaci && area.name == areaName;
-			});
+				});
 			if (alreadyExists) {
 				++areaIterator;
 				continue;
@@ -261,25 +307,6 @@ int DataManager::retrieveConfigJson(const std::string& oaci)
 			areas.emplace_back(areaData{ oaci, areaName, waypointsList, isActive });
 			++areaIterator;
 		}
-	}
-
-	return 0;
-}
-
-void DataManager::loadAircraftDataJson()
-{
-	std::filesystem::path jsonPath = configPath_ / "NeoVSID" / "AircraftData.json";
-	std::ifstream aircraftDataFile(jsonPath);
-	if (!aircraftDataFile.is_open()) {
-		DisplayMessageFromDataManager("Could not open aircraft data JSON file: " + jsonPath.string(), "DataManager");
-		return;
-	}
-	try {
-		aircraftDataJson_ = nlohmann::json::parse(aircraftDataFile);
-	}
-	catch (...) {
-		DisplayMessageFromDataManager("Error parsing aircraft data JSON file: " + jsonPath.string(), "DataManager");
-		return;
 	}
 }
 

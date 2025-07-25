@@ -48,7 +48,10 @@ public:
 	void DisplayMessageFromDataManager(const std::string& message, const std::string& sender = "");
 	void populateActiveAirports();
 	int retrieveConfigJson(const std::string& oaci);
+	bool retrieveCorrectConfigJson(const std::string& oaci);
 	void loadAircraftDataJson();
+	void parseRules(const std::string& oaci);
+	void parseAreas(const std::string& oaci);
 
 	std::vector<std::string> getActiveAirports() const { return activeAirports; }
 	std::vector<std::string> getAllDepartureCallsigns();
