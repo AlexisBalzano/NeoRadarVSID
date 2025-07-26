@@ -183,12 +183,6 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 			++sidIterator;
 			continue;
 		}
-		
-		//DELETE: This is a workaround to ensure that the SID matches the departure runway for the moment
-		//if (sidRwy.find(depRwy) == std::string::npos) {
-		//	++sidIterator;
-		//	continue; // Skip this SID if runway does not match
-		//}
 
 		auto variantIterator = waypointSidData[sidLetter].begin();
 		while (variantIterator != waypointSidData[sidLetter].end())
@@ -200,10 +194,12 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 				if (waypointSidData[sidLetter][variant]["customRule"].is_array()) {
 					for (const auto& rule : waypointSidData[sidLetter][variant]["customRule"]) {
 						ruleNames.push_back(rule.get<std::string>());
+						loggerAPI_->log(Logger::LogLevel::Info, "SID " + waypointSidData + indicator + sidLetter + " rule: " + rule.get<std::string>() + " for flightplan: " + flightplan.callsign);
 					}
 				}
 				else {
 					ruleNames.push_back(waypointSidData[sidLetter][variant]["customRule"].get<std::string>());
+					loggerAPI_->log(Logger::LogLevel::Info, "SID " + waypointSidData + indicator + sidLetter + " rule: " + ruleNames[0] + " for flightplan: " + flightplan.callsign);
 				}
 
 				if(!std::all_of(activeRules.begin(), activeRules.end(), [&](const std::string& activeRuleName) {
@@ -211,6 +207,12 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 				})) {
 					++variantIterator;
 					continue; // Skip this variant if not matching all active rules
+				}
+			}
+			else {
+				if (waypointSidData[sidLetter][variant].contains("customRule")) {
+					++variantIterator;
+					continue; // Skip this variant if it has a custom rule but no active rules
 				}
 			}
 			
@@ -222,6 +224,7 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 				for (const auto& areaName : activeAreas) {
 					if (isInArea(aircraftLat, aircraftLon, oaci, areaName)) {
 						aircraftAreas.push_back(areaName);
+						loggerAPI_->log(Logger::LogLevel::Info, "Aircraft " + flightplan.callsign + " is in area: " + areaName + " for OACI: " + oaci);
 					}
 				}
 				if (waypointSidData[sidLetter][variant].contains("area")) {
