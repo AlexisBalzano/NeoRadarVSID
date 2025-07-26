@@ -6,7 +6,6 @@
 #include "core/CompileCommands.h"
 #include "core/TagFunctions.h"
 #include "core/TagItems.h"
-#include "utils/String.h"
 
 using namespace vsid;
 

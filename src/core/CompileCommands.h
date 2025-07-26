@@ -1,7 +1,6 @@
 #include <algorithm>
 #include <string>
 
-#include "utils/String.h"
 #include "NeoVSID.h"
 
 using namespace vsid;
