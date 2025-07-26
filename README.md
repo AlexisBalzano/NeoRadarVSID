@@ -80,8 +80,7 @@ They will turn green when confirmed.<br>
 - `.vsid version` : display the current version of the plugin.<br>
 - `.vsid reset` : reset all plugin configurations.<br>
 - `.vsid airports` : display all currently active airports <br>
-- `.vsid auto` : **[COMMING SOON\]** toggle automatic SID & CFL assignment.<br>
-- `.vsid airport <ICAO>` : display all runways and SIDs for the given airport.<br>
+- `.vsid auto` : **[COMMING SOON\]** toggle automatic RWY, SID & CFL assignment.<br>
 - `.vsid pilots` : display all currently active pilots.<br>
 - `.vsid rules` : display all currently loaded rules and their active state.<br>
 - `.vsid areas` : display all currently loaded areas and their active state.<br>
