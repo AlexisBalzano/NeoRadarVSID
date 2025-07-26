@@ -1,0 +1,258 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/neoradar-project/schemas/main/systems/lists.schema.json
+---
+- name: ATC
+  type: atc
+  filters: ["*", "Z", "G", "T", "A", "C"]
+  style:
+    showHeaders: false
+  columns:
+    - name: ID
+      width: 62
+      tagItem:
+        itemName: controllerIdentifier
+        doubleClick: openPrivateMessage
+    - name: CALLSIGN
+      width: 90
+      tagItem:
+        itemName: controllerCallsign
+        doubleClick: openPrivateMessage
+        rightClick: showAtisLines
+        color:
+          - =colourControllerTimingOut
+    - name: FREQ
+      width: 72
+      tagItem:
+        itemName: controllerFrequency
+        mapping:
+          "0": "---"
+
+# METAR list with tagItem approach instead of metarField
+- name: WEATHER
+  type: metar
+  columns:
+    - name: INFO
+      width: 21
+      tagItem:
+        itemName: metarATISLetter
+        placeholder: "-"
+    - name: ICAO
+      width: 40
+      tagItem:
+        itemName: metarICAO
+        leftClick: focusMetar
+    - name: WIND
+      width: 80
+      tagItem:
+        itemName: metarWindString
+        leftClick: focusMetar
+
+    - name: QNH
+      width: 40
+      tagItem:
+        itemName: metarQNHString
+        leftClick: focusMetar
+
+- name: DEPARTURE LIST
+  filterExpressions:
+    ["AND", [["==", "isMyDeparture", "1"], ["==", "onGround", "1"]]]
+  columns:
+    - name: c/s
+      width: 80
+      tagItem:
+        itemName: callsign
+        color: |
+          =colourInboundTransfer
+          =colourOutboundTransfer
+          =colourAssumed
+          =colourConcerned
+          =colourUnconcerned
+        leftClick: callsignMenu
+    - name: v
+      width: 15
+      tagItem:
+        itemName: voiceType
+        leftClick: voiceTypeMenu
+        mapping:
+          0: "v"
+          1: "r"
+          2: "t"
+    - name: adep
+      width: 40
+      tagItem:
+        itemName: origin
+        leftClick: fpDialog
+    - name: ades
+      width: 40
+      tagItem:
+        itemName: destination
+        leftClick: fpDialog
+    - name: atyp
+      width: 40
+      tagItem:
+        itemName: acShortType
+        leftClick: fpDialog
+    - name: vrwy
+      width: 30
+      tagItem:
+        itemName: plugin:NeoVSID:TAG_RWY
+        leftClick: plugin:NeoVSID:ACTION_confirmRWY
+        rightClick: sidMenu
+    - name: vsid
+      width: 80
+      tagItem:
+        itemName: plugin:NeoVSID:TAG_SID
+        leftClick: plugin:NeoVSID:ACTION_confirmSID
+        rightClick: sidMenu
+    - name: vcfl
+      width: 40
+      tagItem:
+        itemName: plugin:NeoVSID:TAG_CFL
+        leftClick: plugin:NeoVSID:ACTION_confirmCFL
+        rightClick: cfl
+    - name: assr
+      width: 50
+      tagItem:
+        itemName: text
+        value:
+          - =emptyIfNoAssignedSquawk
+          - |
+            &assignedSquawk
+        placeholder: "----"
+        color: "=incorrectSquawkYellowColor"
+        leftClick: assignRandomSquawk
+        rightClick: assignSq1000
+    - name: e
+      width: 16
+      tagItem:
+        itemName: clearanceIssued
+        placeholder: ":fa-regular fa-square"
+        mapping:
+          0: ":fa-regular fa-square"
+          1: ":fa-solid fa-square"
+        color: [255, 174, 23]
+        leftClick: toggleClearanceFlag
+    - name: D
+      width: 16
+      tagItem:
+        itemName: datalinkStatus
+        color:
+          - =pdcRequestedColour
+          - =receivedMessageColour
+          - =rejectedColour
+          - =acknowledgmentColour
+          - =sentMessageColour
+          - =defaultDatalinkColour
+        blinkColor: ["=pdcRequestedTextBlinkColour"]
+        leftClick: pdcMenu
+    - name: pfl
+      width: 30
+      tagItem:
+        itemName: plannedFlightLevel
+        padWithZeroLeft: 5
+        truncate: [0, 3]
+        leftClick: pfl
+    - name: r
+      width: 12
+      tagItem:
+        itemName: flightRule
+    - name: sts
+      width: 45
+      tagItem:
+        itemName: groundStatus
+        mapping:
+          0: ""
+          1: "STUP"
+          2: "PUSH"
+          3: "TAXI"
+          4: "DEPA"
+        leftClick: groundStatusMenu
+- name: SECTOR LIST
+  filterExpressions:
+    ["OR", ["$isAssumed", "$isInboundTransfer", "$isOutboundTransfer"]]
+  columns:
+    - name: c/s
+      width: 80
+      tagItem:
+        itemName: callsign
+        color: |
+          =colourInboundTransfer
+          =colourOutboundTransfer
+          =colourAssumed
+        leftClick: callsignMenu
+    - name: v
+      width: 15
+      tagItem:
+        itemName: voiceType
+        leftClick: voiceTypeMenu
+        mapping:
+          0: "v"
+          1: "r"
+          2: "t"
+    - name: adep
+      width: 40
+      tagItem:
+        itemName: origin
+        leftClick: fpDialog
+    - name: ades
+      width: 40
+      tagItem:
+        itemName: destination
+        leftClick: fpDialog
+    - name: sid
+      width: 80
+      tagItem:
+        itemName: text
+        placeholder: "----"
+        value:
+          - =suggestedSidIfNoAssigned
+          - |
+            &sid
+        color:
+          - =suggestedSidColor
+          - =blueAssignedSid
+        leftClick: sidMenu
+    - name: star
+      width: 120
+      tagItem:
+        itemName: text
+        leftClick: starMenu
+        placeholder: "----"
+        value:
+          - =suggestedStarIfNoAssigned
+          - |
+            &star
+        color:
+          - =suggestedStarColor
+          - =blueAssignedStar
+    - name: arrR
+      width: 30
+      tagItem:
+        itemName: text
+        leftClick: starMenu
+        placeholder: "--"
+        value:
+          - =suggestedArrRunwayIfNoAssigned
+          - |
+            &arrRunway
+        color:
+          - =suggestedArrRunwayColor
+          - =blueArrRunway
+    - name: assr
+      width: 50
+      tagItem:
+        itemName: assignedSquawk
+        placeholder: "----"
+        color: "=incorrectSquawkColor"
+        leftClick: assignRandomSquawk
+        rightClick: assignSq1000
+    - name: pfl
+      width: 40
+      tagItem:
+        itemName: plannedFlightLevel
+        padWithZeroLeft: 5
+        truncate: [0, 3]
+        leftClick: pfl
+    - name: r
+      width: 30
+      tagItem:
+        itemName: flightRule
