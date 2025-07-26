@@ -194,12 +194,12 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 				if (waypointSidData[sidLetter][variant]["customRule"].is_array()) {
 					for (const auto& rule : waypointSidData[sidLetter][variant]["customRule"]) {
 						ruleNames.push_back(rule.get<std::string>());
-						loggerAPI_->log(Logger::LogLevel::Info, "SID " + waypointSidData + indicator + sidLetter + " rule: " + rule.get<std::string>() + " for flightplan: " + flightplan.callsign);
+						loggerAPI_->log(Logger::LogLevel::Info, "SID " + firstWaypoint + indicator + sidLetter + " rule: " + rule.get<std::string>() + " for flightplan: " + flightplan.callsign);
 					}
 				}
 				else {
 					ruleNames.push_back(waypointSidData[sidLetter][variant]["customRule"].get<std::string>());
-					loggerAPI_->log(Logger::LogLevel::Info, "SID " + waypointSidData + indicator + sidLetter + " rule: " + ruleNames[0] + " for flightplan: " + flightplan.callsign);
+					loggerAPI_->log(Logger::LogLevel::Info, "SID " + firstWaypoint + indicator + sidLetter + " rule: " + ruleNames[0] + " for flightplan: " + flightplan.callsign);
 				}
 
 				if(!std::all_of(activeRules.begin(), activeRules.end(), [&](const std::string& activeRuleName) {
