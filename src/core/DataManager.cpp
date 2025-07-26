@@ -87,6 +87,8 @@ void DataManager::populateActiveAirports()
 {
 	std::vector<Airport::AirportConfig> allAirports = airportAPI_->getConfigurations();
 	activeAirports.clear();
+	rules.clear();
+	areas.clear();
 
 	for (const auto& airport : allAirports)
 	{
