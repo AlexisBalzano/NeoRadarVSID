@@ -295,6 +295,7 @@ Chat::CommandResult NeoVSIDCommandProvider::Execute( const std::string &commandI
 		std::string callsign = args[0];
         std::string areaName = args[1];
 		std::transform(callsign.begin(), callsign.end(), callsign.begin(), ::toupper);
+		std::transform(areaName.begin(), areaName.end(), areaName.begin(), ::tolower);
         auto aircraftOpt = neoVSID_->GetAircraftAPI()->getByCallsign(callsign);
         if (!aircraftOpt) {
             neoVSID_->DisplayMessage("Aircraft " + callsign + " not found.");
@@ -317,6 +318,7 @@ Chat::CommandResult NeoVSIDCommandProvider::Execute( const std::string &commandI
 		std::string oaci = args[0];
 		std::transform(oaci.begin(), oaci.end(), oaci.begin(), ::toupper);
 		std::string ruleName = args[1];
+		std::transform(ruleName.begin(), ruleName.end(), ruleName.begin(), ::tolower);
 
 		//check if rule exists
 		auto rules = neoVSID_->GetDataManager()->getRules();
@@ -344,6 +346,7 @@ Chat::CommandResult NeoVSIDCommandProvider::Execute( const std::string &commandI
 		std::string oaci = args[0];
 		std::transform(oaci.begin(), oaci.end(), oaci.begin(), ::toupper);
 		std::string areaName = args[1];
+		std::transform(areaName.begin(), areaName.end(), areaName.begin(), ::tolower);
 
 		//check if area exists
 		auto areas = neoVSID_->GetDataManager()->getAreas();
