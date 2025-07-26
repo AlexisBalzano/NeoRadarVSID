@@ -99,27 +99,18 @@ void DataManager::populateActiveAirports()
 	}
 }
 
-std::string DataManager::generateVRWY(const Flightplan::Flightplan& flightplan)
-{
-	/* //TODO:
-	* - generer la piste en fonction des pistes de departs actuellement configur�es sur le terrain de d�part du trafic
-	* - generer la piste en fonction de la position du trafic par rapport au terrain de d�part si plusieurs pistes de d�part et config roulage mini
-	* - generer la piste en fonction de la direction du depart si config croisement au sol
-	*/ 
-	return flightplan.route.suggestedDepRunway;
-}
-
 sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, const std::string& depRwy)
 {
+	std::string suggestedRwy = flightplan.route.suggestedDepRunway;
 	if (flightplan.flightRule == "V" || flightplan.route.rawRoute.empty()) {
-		return { "------", 0 };
+		return { suggestedRwy, "------", 0 };
 	}
 
 	std::string firstWaypoint = flightplan.route.waypoints[0].identifier;
 	std::string suggestedSid = flightplan.route.suggestedSid;
 	if (suggestedSid.empty() || suggestedSid.length() < 2) {
 		DisplayMessageFromDataManager("SID not found for waypoint: " + firstWaypoint + " for: " + flightplan.callsign, "SID Assigner");
-		return { "CHECKFP", 0 };
+		return { suggestedRwy, "CHECKFP", 0 };
 	}
 	std::string indicator = suggestedSid.substr(suggestedSid.length() - 2, 1);
 
@@ -127,7 +118,7 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 	// Check if configJSON is already the right one, if not, retrieve it
 	std::string oaci = flightplan.origin;
 	if (!retrieveCorrectConfigJson(oaci)) {
-		return {suggestedSid, 0} ;
+		return { suggestedRwy, suggestedSid, 0} ;
 	}
 
 	std::transform(oaci.begin(), oaci.end(), oaci.begin(), ::toupper); //Convert to uppercase
@@ -141,7 +132,7 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 	} else {
 		DisplayMessageFromDataManager("SID not found for waypoint: " + firstWaypoint + " for: " + flightplan.callsign, "SID Assigner");
 		loggerAPI_->log(Logger::LogLevel::Warning, "SID not found in config JSON for waypoint: " + firstWaypoint + " for: " + flightplan.callsign);
-		return { "CHECKFP", 0};
+		return { suggestedRwy, "CHECKFP", 0};
 	}
 
 	std::string aircraftType = flightplan.acType;
@@ -255,12 +246,19 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 				}
 			}
 
+			std::string depRwy;
+			for (const auto& rwy : depRwys) {
+				if (sidRwy.find(rwy) != std::string::npos) {
+					depRwy = rwy;
+					break;
+				}
+			}
 			if (waypointSidData[sidLetter][variant].contains("engineType")) {
 				requiredEngineType = waypointSidData[sidLetter][variant]["engineType"].get<std::string>();
 				if (requiredEngineType.find(engineType) != std::string::npos) {
 					// Engine type matches, we can assign this SID and CFL
 					int fetchedCfl = waypointSidData[sidLetter][variant]["initial"].get<int>();
-					return { firstWaypoint + indicator + sidLetter, fetchedCfl };
+					return { depRwy, firstWaypoint + indicator + sidLetter, fetchedCfl };
 				}
 				else { // Engine type doesn't match
 					++variantIterator;
@@ -269,7 +267,7 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 			} 
 			else { //No engine restriction
 				int fetchedCfl = waypointSidData[sidLetter][variant]["initial"].get<int>();
-				return { firstWaypoint + indicator + sidLetter, fetchedCfl };
+				return { depRwy, firstWaypoint + indicator + sidLetter, fetchedCfl };
 			}
 			++variantIterator; // Fallback
 		}
@@ -277,7 +275,7 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 	}
 	DisplayMessageFromDataManager("No matching SID found for: " + flightplan.callsign + ", check flighplan, rerouting might be necessary", "SID Assigner");
 	loggerAPI_->log(Logger::LogLevel::Warning, "No matching SID found for: " + flightplan.callsign + ", check flightplan, rerouting might be necessary");
-	return { "CHECKFP", 0};
+	return { suggestedRwy, "CHECKFP", 0};
 }
 	
 int DataManager::retrieveConfigJson(const std::string& oaci)
@@ -441,9 +439,8 @@ std::vector<std::string> DataManager::getAllDepartureCallsigns() {
 		if (pilotExists(flightplan.callsign))
 			continue;
 
-		std::string vsidRwy = generateVRWY(flightplan);
-		sidData vsidData = generateVSID(flightplan, vsidRwy);
-		pilots.push_back(Pilot{ flightplan.callsign, vsidRwy, vsidData.sid, vsidData.cfl});
+		sidData vsidData = generateVSID(flightplan, flightplan.route.suggestedDepRunway);
+		pilots.push_back(Pilot{ flightplan.callsign, vsidData.rwy, vsidData.sid, vsidData.cfl});
 	}
 	return callsigns;
 }
@@ -560,9 +557,8 @@ void DataManager::addPilot(const std::string& callsign)
 	if (!isDepartureAirport(flightplan.origin))
 		return;
 
-	std::string vsidRwy = generateVRWY(flightplan);
-	sidData vsidData = generateVSID(flightplan, vsidRwy);
-	pilots.push_back(Pilot{ flightplan.callsign, vsidRwy, vsidData.sid, vsidData.cfl });
+	sidData vsidData = generateVSID(flightplan, flightplan.route.suggestedDepRunway);
+	pilots.push_back(Pilot{ flightplan.callsign, vsidData.rwy, vsidData.sid, vsidData.cfl });
 }
 
 bool DataManager::removePilot(const std::string& callsign)

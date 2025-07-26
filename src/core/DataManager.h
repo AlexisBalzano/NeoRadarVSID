@@ -17,6 +17,7 @@ struct Pilot {
 };
 
 struct sidData {
+	std::string rwy;
 	std::string sid;
 	int cfl;
 };
@@ -71,7 +72,6 @@ public:
 	bool pilotExists(const std::string& callsign) const;
 	bool isInArea(const double& latitude, const double& longitude, const std::string& oaci, const std::string& areaName);
 
-	std::string generateVRWY(const Flightplan::Flightplan& flightplan);
 	sidData generateVSID(const Flightplan::Flightplan& flightplan, const std::string& depRwy);
 
 private:
