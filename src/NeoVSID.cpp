@@ -66,6 +66,15 @@ void NeoVSID::Shutdown()
     this->unegisterCommand();
 }
 
+void vsid::NeoVSID::Reset()
+{
+    autoModeState = false;
+	requestingClearance.clear();
+	requestingPush.clear();
+	requestingTaxi.clear();
+	callsignsScope.clear();
+}
+
 void NeoVSID::DisplayMessage(const std::string &message, const std::string &sender) {
     Chat::ClientTextMessageEvent textMessage;
     textMessage.sentFrom = "NeoVSID";
@@ -80,7 +89,7 @@ void NeoVSID::runScopeUpdate() {
 }
 
 void NeoVSID::OnTimer(int Counter) {
-    if (Counter % 5 == 0) this->runScopeUpdate();
+    if (Counter % 5 == 0 && autoModeState) this->runScopeUpdate();
 }
 
 void vsid::NeoVSID::OnControllerDataUpdated(const ControllerData::ControllerDataUpdatedEvent* event)
@@ -88,8 +97,19 @@ void vsid::NeoVSID::OnControllerDataUpdated(const ControllerData::ControllerData
     if (!event || event->callsign.empty())
         return;
     ControllerData::ControllerDataModel controllerDataBlock = controllerDataAPI_->getByCallsign(event->callsign).value();
-    if (controllerDataBlock.groundStatus == ControllerData::GroundStatus::Dep)
+    if (controllerDataBlock.groundStatus == ControllerData::GroundStatus::Dep) {
 		dataManager_->removePilot(event->callsign);
+        return;
+    }
+    else {
+		std::string request = getRequestAndIndex(event->callsign).first;
+        if ((request == "clearance" && controllerDataBlock.clearanceIssued)
+            || (request == "push" && controllerDataBlock.groundStatus == ControllerData::GroundStatus::Push)
+            || (request == "taxi" && controllerDataBlock.groundStatus == ControllerData::GroundStatus::Taxi)) {
+            updateRequest(event->callsign, "ReqNoReq");
+        }
+         
+    }
 }
 
 void NeoVSID::OnAirportConfigurationsUpdated(const Airport::AirportConfigurationsUpdatedEvent* event) {
@@ -114,6 +134,19 @@ void vsid::NeoVSID::OnAircraftTemporaryAltitudeChanged(const ControllerData::Air
     }
 
     UpdateTagItems(event->callsign);
+}
+
+void vsid::NeoVSID::OnPositionUpdate(const Aircraft::PositionUpdateEvent* event)
+{
+    for (const auto& aircraft : event->aircrafts) {
+        if (aircraft.callsign.empty())
+            continue;
+        // Do not update tags if the callsign is not in the scope
+        if (std::find(callsignsScope.begin(), callsignsScope.end(), aircraft.callsign) == callsignsScope.end())
+            continue;
+        
+        updateAlert(aircraft.callsign);
+	}
 }
 
 void vsid::NeoVSID::OnFlightplanUpdated(const Flightplan::FlightplanUpdatedEvent* event)
@@ -153,6 +186,26 @@ void NeoVSID::run() {
         this->OnTimer(counter);
     }
     return;
+}
+
+std::pair<std::string, size_t> vsid::NeoVSID::getRequestAndIndex(const std::string& callsign)
+{
+    for (const auto& request : requestingClearance) {
+        if (request == callsign) {
+            return {"clearance", &request - &requestingClearance[0]};
+        }
+	}
+    for (const auto& request : requestingPush) {
+        if (request == callsign) {
+            return {"push", &request - &requestingPush[0]};
+        }
+    }
+    for (const auto& request : requestingTaxi) {
+        if (request == callsign) {
+            return {"taxi", &request - &requestingTaxi[0]};
+        }
+    }
+	return { "", 0 };
 }
 
 PluginSDK::PluginMetadata NeoVSID::GetMetadata() const

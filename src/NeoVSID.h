@@ -20,7 +20,6 @@ namespace vsid {
         PluginSDK::ControllerData::ControllerDataAPI* controllerDataAPI_;
         Tag::TagInterface* tagInterface_;
         std::string tagId_;
-        bool autoConfirm; // if true, vsid CFL/RWY/SID will be printed in FP
     };
 
     class NeoVSIDCommandProvider;
@@ -34,6 +33,7 @@ namespace vsid {
 		// Plugin lifecycle methods
         void Initialize(const PluginMetadata& metadata, CoreAPI* coreAPI, ClientInformation info) override;
         void Shutdown() override;
+        void Reset();
         PluginMetadata GetMetadata() const override;
 
         // Radar commands
@@ -46,6 +46,7 @@ namespace vsid {
         void OnControllerDataUpdated(const ControllerData::ControllerDataUpdatedEvent* event) override;
         void OnAirportConfigurationsUpdated(const Airport::AirportConfigurationsUpdatedEvent* event) override;
         void OnAircraftTemporaryAltitudeChanged(const ControllerData::AircraftTemporaryAltitudeChangedEvent* event) override;
+        void OnPositionUpdate(const Aircraft::PositionUpdateEvent* event) override;
         void OnFlightplanUpdated(const Flightplan::FlightplanUpdatedEvent* event) override;
         void OnFlightplanRemoved(const Flightplan::FlightplanRemovedEvent* event) override;
         void OnTimer(int Counter);
@@ -69,6 +70,7 @@ namespace vsid {
     private:
         void runScopeUpdate();
         void run();
+        std::pair<std::string, size_t> getRequestAndIndex(const std::string& callsign);
 
     public:
         // Command IDs
@@ -90,9 +92,12 @@ namespace vsid {
         // Plugin state
         std::vector<std::string> callsignsScope;
         bool initialized_ = false;
-        bool autoModeState = false; // Auto mode automatically assigns RWY SID & CFL using API without user confirmation
+		bool autoModeState = false; // auto update every 5 seconds (should be true when standard ops)
         std::thread m_worker;
         bool m_stop;
+        std::vector<std::string> requestingClearance;
+        std::vector<std::string> requestingPush;
+        std::vector<std::string> requestingTaxi;
 
         // APIs
         PluginMetadata metadata_;
@@ -120,11 +125,17 @@ namespace vsid {
         void updateCFL(tagUpdateParam param);
         void updateRWY(tagUpdateParam param);
         void updateSID(tagUpdateParam param);
+        void updateAlert(const std::string& callsign);
+		void updateRequest(const std::string& callsign, const std::string& request);
+        void updateAllRequests();
 
 	    // TAG Items IDs
 		std::string cflId_;
         std::string rwyId_;
         std::string sidId_;
+		std::string alertsId_;
+        std::string requestId_;
+		std::string requestMenuId_;
 
         // TAG Action IDs
         std::string confirmRwyId_;
