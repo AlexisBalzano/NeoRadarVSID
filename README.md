@@ -69,6 +69,7 @@ vSID adaptation for NeoRadar ATC Client <br>
 
 # Usage
 - Start NeoRadar and assign runways.<br>
+- Activate TAG update by executing the command `.vsid auto`.<br>
 At most, vSID will assign SID & CFL **every 5 seconds**.
 - Informations first appear white when unconfirmed (ie: not printed in the FP/TAG).<br>
 - Right clicking on SID and CFL open their respective menu to confirm them.<br>
@@ -80,7 +81,7 @@ They will turn green when confirmed.<br>
 - `.vsid version` : display the current version of the plugin.<br>
 - `.vsid reset` : reset all plugin configurations.<br>
 - `.vsid airports` : display all currently active airports <br>
-- `.vsid auto` : **[COMMING SOON\]** toggle automatic RWY, SID & CFL assignment.<br>
+- `.vsid auto` :toggle tag update every 5 seconds, need to be executed after runways configuration.<br>
 - `.vsid pilots` : display all currently active pilots.<br>
 - `.vsid rules` : display all currently loaded rules and their active state.<br>
 - `.vsid areas` : display all currently loaded areas and their active state.<br>
