@@ -112,6 +112,7 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 	std::string suggestedSid = flightplan.route.suggestedSid;
 	if (suggestedSid.empty() || suggestedSid.length() < 2) {
 		DisplayMessageFromDataManager("SID not found for waypoint: " + firstWaypoint + " for: " + flightplan.callsign, "SID Assigner");
+		loggerAPI_->log(Logger::LogLevel::Warning, "suggested SID length incorrect " + firstWaypoint + " for: " + flightplan.callsign);
 		return { suggestedRwy, "CHECKFP", 0 };
 	}
 	std::string indicator = suggestedSid.substr(suggestedSid.length() - 2, 1);
@@ -133,7 +134,7 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 		waypointSidData = configJson_[oaci]["sids"][firstWaypoint];
 	} else {
 		DisplayMessageFromDataManager("SID not found for waypoint: " + firstWaypoint + " for: " + flightplan.callsign, "SID Assigner");
-		loggerAPI_->log(Logger::LogLevel::Warning, "SID not found in config JSON for waypoint: " + firstWaypoint + " for: " + flightplan.callsign);
+		loggerAPI_->log(Logger::LogLevel::Warning, "No SID matching firstWaypoint: " + firstWaypoint + " for: " + flightplan.callsign);
 		return { suggestedRwy, "CHECKFP", 0};
 	}
 
@@ -291,6 +292,7 @@ int DataManager::retrieveConfigJson(const std::string& oaci)
 	std::ifstream config(jsonPath);
 	if (!config.is_open()) {
 		DisplayMessageFromDataManager("Could not open JSON file: " + jsonPath.string(), "DataManager");
+		loggerAPI_->log(Logger::LogLevel::Error, "Could not open JSON file: " + jsonPath.string());
 		return -1;
 	}
 
@@ -299,6 +301,7 @@ int DataManager::retrieveConfigJson(const std::string& oaci)
 	}
 	catch (...) {
 		DisplayMessageFromDataManager("Error parsing JSON file: " + jsonPath.string(), "DataManager");
+		loggerAPI_->log(Logger::LogLevel::Error, "Error parsing JSON file: " + jsonPath.string());
 		return -1;
 	}
 
@@ -323,6 +326,7 @@ void DataManager::loadAircraftDataJson()
 	std::ifstream aircraftDataFile(jsonPath);
 	if (!aircraftDataFile.is_open()) {
 		DisplayMessageFromDataManager("Could not open aircraft data JSON file: " + jsonPath.string(), "DataManager");
+		loggerAPI_->log(Logger::LogLevel::Error, "Could not open aircraft data JSON file: " + jsonPath.string());
 		return;
 	}
 	try {
@@ -330,6 +334,7 @@ void DataManager::loadAircraftDataJson()
 	}
 	catch (...) {
 		DisplayMessageFromDataManager("Error parsing aircraft data JSON file: " + jsonPath.string(), "DataManager");
+		loggerAPI_->log(Logger::LogLevel::Error, "Error parsing aircraft data JSON file: " + jsonPath.string());
 		return;
 	}
 }
@@ -482,19 +487,17 @@ bool DataManager::pilotExists(const std::string& callsign) const
 
 bool DataManager::isInArea(const double& latitude, const double& longitude, const std::string& oaci, const std::string& areaName)
 {
-	// Dans l'idée dégage le code sur le json car il sera déjà chargé par la fonction assignSID
-	if (!configJson_.contains(oaci) || configJson_.empty()) {
-		if (retrieveConfigJson(oaci) == -1) {
-			DisplayMessageFromDataManager("Error retrieving config JSON for OACI: " + oaci, "DataManager");
-			return false;
-		}
-	}
-
 	std::vector<double> latitudes, longitudes;
 
 	areaData area = areas.empty() ? areaData{} : *std::find_if(areas.begin(), areas.end(), [&](const areaData& area) {
 		return area.oaci == oaci && area.name == areaName;
 		});
+
+	if (area.coordinates.empty()) {
+		DisplayMessageFromDataManager("Area not found for OACI: " + oaci + ", Area: " + areaName, "DataManager");
+		loggerAPI_->log(Logger::LogLevel::Warning, "Area not found for OACI: " + oaci + ", Area: " + areaName);
+		return false;
+	}
 
 	for (const auto& waypoint : area.coordinates) {
 		latitudes.push_back(waypoint.first);
@@ -506,6 +509,7 @@ bool DataManager::isInArea(const double& latitude, const double& longitude, cons
 	size_t n = latitudes.size();
 	if (n < 3) {
 		DisplayMessageFromDataManager("Not enough points in area polygon for OACI: " + oaci, "DataManager");
+		loggerAPI_->log(Logger::LogLevel::Warning, "Not enough points in area polygon for OACI: " + oaci + ", Area: " + areaName);
 		return false;
 	}
 	for (size_t i = 0, j = n - 1; i < n; j = i++) {
