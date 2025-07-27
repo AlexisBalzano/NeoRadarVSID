@@ -28,6 +28,16 @@ void NeoVSID::RegisterTagItems()
     tagDef.defaultValue = "------";
     tagID = tagInterface_->RegisterTagItem(tagDef);
     sidId_ = tagID;
+    
+    tagDef.name = "ALERT";
+    tagDef.defaultValue = "";
+    tagID = tagInterface_->RegisterTagItem(tagDef);
+    alertsId_ = tagID;
+
+    tagDef.name = "REQUEST";
+    tagDef.defaultValue = "";
+    tagID = tagInterface_->RegisterTagItem(tagDef);
+    requestId_ = tagID;
 }
 
 
@@ -41,9 +51,6 @@ void NeoVSID::updateCFL(tagUpdateParam param) {
 
     if (cfl == 0) {
         cfl_string = std::to_string(vsidCfl);
-        if (param.autoConfirm) {
-            //TODO: Set CFL value to vsidCFL
-        }
     }
     else {
         cfl_string = std::to_string(cfl);
@@ -71,12 +78,7 @@ void NeoVSID::updateRWY(tagUpdateParam param) {
     }
 
     tagContext.colour = Color::colorizeRwy(rwy, vsidRwy, isDepRwy);
-    if (rwy == "") {
-        if (param.autoConfirm) {
-            //TODO: Set RWY value to vsidRwy
-        }
-        rwy = vsidRwy;
-    }
+    if (rwy == "") rwy = vsidRwy;
     tagInterface_->UpdateTagValue(param.tagId_, rwy, tagContext);
 }
 
@@ -88,16 +90,159 @@ void NeoVSID::updateSID(tagUpdateParam param) {
     std::string sid = fp->route.sid;
 
     tagContext.colour = Color::colorizeSid(sid, vsidSid);
-    if (sid == "")
-    {
-        if (param.autoConfirm) {
-            //TODO: Set SID value to vsidSid
-		}
-        sid = vsidSid;
-    }
+    if (sid == "") sid = vsidSid;
     tagInterface_->UpdateTagValue(param.tagId_, sid, tagContext);
 }
 
+inline void NeoVSID::updateAlert(const std::string& callsign)
+{
+    Tag::TagContext tagContext;
+    tagContext.callsign = callsign;
+
+    std::string alert = "";
+
+    int aircraftSpeed = aircraftAPI_->getByCallsign(callsign)->position.groundSpeed;
+    int aircraftHeading = aircraftAPI_->getByCallsign(callsign)->position.reportedHeading;
+    int aircraftTrackHeading = aircraftAPI_->getByCallsign(callsign)->position.trackHeading;
+    Aircraft::TransponderMode aircraftTransponder = aircraftAPI_->getByCallsign(callsign)->transponderMode;
+
+    ControllerData::GroundStatus groundStatus = controllerDataAPI_->getByCallsign(callsign)->groundStatus;
+
+	bool isOnGround = aircraftAPI_->getByCallsign(callsign)->position.onGround;
+    if(!isOnGround) {
+        return;
+	}
+
+    bool isReversing = false;
+    int headingDiff = std::abs(aircraftTrackHeading - aircraftHeading);
+    if (headingDiff >= 120 && headingDiff <= 240) { // Heading threshold 60°
+        isReversing = true;
+    }
+
+    bool isStopped = aircraftAPI_->getByCallsign(callsign)->position.stopped;
+
+    if (groundStatus == ControllerData::GroundStatus::Dep && aircraftTransponder == Aircraft::TransponderMode::Standby) {
+        alert = "Transponder STDBY";
+    }
+    else if (isStopped && groundStatus == ControllerData::GroundStatus::Dep) {
+        alert = "Stationary RPA";
+    }
+    else if (aircraftSpeed > 0 && isReversing && groundStatus != ControllerData::GroundStatus::Push) {
+        alert = "No Push Clearance";
+    }
+    else if (aircraftSpeed > 30 && groundStatus < ControllerData::GroundStatus::Dep) {
+        alert = "No TakeOff Clearance";
+    }
+    else if (aircraftSpeed > 5 && !isReversing && groundStatus < ControllerData::GroundStatus::Taxi) {
+        alert = "No Taxi Clearance";
+    }
+
+    tagContext.colour = Color::colorizeAlert();
+    tagInterface_->UpdateTagValue(alertsId_, alert, tagContext);
+}
+
+inline void NeoVSID::updateRequest(const std::string& callsign, const std::string& request)
+{
+    Tag::TagContext tagContext;
+    tagContext.callsign = callsign;
+    tagContext.colour = Color::colorizeRequest();
+
+    std::string text = "";
+    
+    std::pair<std::string, size_t> data = getRequestAndIndex(callsign);
+    std::string previousRequest = data.first;
+	size_t index = data.second;
+
+    if (request == "ReqNoReq") {
+        if (previousRequest == "clearance") {
+            requestingClearance.erase(requestingClearance.begin() + index);
+        }
+        else if (previousRequest == "push") {
+            requestingPush.erase(requestingPush.begin() + index);
+        }
+        else if (previousRequest == "taxi") {
+            requestingTaxi.erase(requestingTaxi.begin() + index);
+        }
+    }
+    else if (request == "ReqClearance") {
+        if (previousRequest == "push") {
+            requestingPush.erase(requestingPush.begin() + index);
+        }
+        else if (previousRequest == "taxi") {
+            requestingTaxi.erase(requestingTaxi.begin() + index);
+        }
+        else if (previousRequest == "clearance") {
+            requestingClearance.erase(requestingClearance.begin() + index);
+		}
+        requestingClearance.push_back(callsign);
+        text = "R" + std::to_string(requestingClearance.size()) + "C";
+    }
+    else if (request == "ReqPush") {
+        if (previousRequest == "push") {
+            requestingPush.erase(requestingPush.begin() + index);
+        }
+        else if (previousRequest == "taxi") {
+            requestingTaxi.erase(requestingTaxi.begin() + index);
+        }
+        else if (previousRequest == "clearance") {
+            requestingClearance.erase(requestingClearance.begin() + index);
+        }
+        requestingPush.push_back(callsign);
+        text = "R" + std::to_string(requestingPush.size()) + "P";
+    }
+    else if (request == "ReqTaxi") {
+        if (previousRequest == "push") {
+            requestingPush.erase(requestingPush.begin() + index);
+        }
+        else if (previousRequest == "taxi") {
+            requestingTaxi.erase(requestingTaxi.begin() + index);
+        }
+        else if (previousRequest == "clearance") {
+            requestingClearance.erase(requestingClearance.begin() + index);
+        }
+        requestingTaxi.push_back(callsign);
+        text = "R" + std::to_string(requestingTaxi.size()) + "T";
+    }
+    else {
+        if (previousRequest == "push") {
+            text = "R" + std::to_string(index + 1) + "P";
+        }
+        else if (previousRequest == "taxi") {
+			text = "R" + std::to_string(index + 1) + "T";
+        }
+        else if (previousRequest == "clearance") {
+			text = "R" + std::to_string(index + 1) + "C";
+        }
+	}
+    updateAllRequests();
+	tagInterface_->UpdateTagValue(requestId_, text, tagContext);
+}
+
+inline void NeoVSID::updateAllRequests()
+{
+    std::vector<std::string> callsigns = requestingClearance;
+    callsigns.insert(callsigns.end(), requestingPush.begin(), requestingPush.end());
+    callsigns.insert(callsigns.end(), requestingTaxi.begin(), requestingTaxi.end());
+    for (const auto& callsign : callsigns) {
+        Tag::TagContext tagContext;
+        tagContext.callsign = callsign;
+        tagContext.colour = Color::colorizeRequest();
+        std::pair<std::string, size_t> data = getRequestAndIndex(callsign);
+        std::string previousRequest = data.first;
+        size_t index = data.second;
+        std::string text = "";
+        if (previousRequest == "push") {
+            text = "R" + std::to_string(index + 1) + "P";
+        }
+        else if (previousRequest == "taxi") {
+            text = "R" + std::to_string(index + 1) + "T";
+        }
+        else if (previousRequest == "clearance") {
+            text = "R" + std::to_string(index + 1) + "C";
+        }
+        tagInterface_->UpdateTagValue(requestId_, text, tagContext);
+    }
+}
 
 // Update all tag items for all pilots
 void NeoVSID::UpdateTagItems() {
@@ -116,8 +261,9 @@ void NeoVSID::UpdateTagItems(std::string callsign) {
 	}
 	Pilot pilot = dataManager_->getPilotByCallsign(callsign);
 
-	updateCFL({ callsign, pilot, controllerDataAPI_, tagInterface_, cflId_, autoModeState });
-	updateRWY({ callsign, pilot, controllerDataAPI_, tagInterface_, rwyId_, autoModeState });
-	updateSID({ callsign, pilot, controllerDataAPI_, tagInterface_, sidId_, autoModeState });
+	updateCFL({ callsign, pilot, controllerDataAPI_, tagInterface_, cflId_});
+	updateRWY({ callsign, pilot, controllerDataAPI_, tagInterface_, rwyId_});
+	updateSID({ callsign, pilot, controllerDataAPI_, tagInterface_, sidId_});
+    updateAlert(callsign);
 }
 }  // namespace vsid

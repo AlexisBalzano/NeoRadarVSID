@@ -12,10 +12,6 @@ namespace vsid::tagitems {
         Color& operator=(const Color&) = delete;
         Color& operator=(Color&&) = delete;
 
-    
-    
-    
-    
         static std::optional<std::array<unsigned int, 3>> colorizeCfl(const int& cfl, const int& vsidCfl) {
 			if (cfl == 0) return Colors::white;
             if (cfl == vsidCfl) return Colors::green;
@@ -33,6 +29,14 @@ namespace vsid::tagitems {
             if (sid == vsidSid) return Colors::green;
             else return Colors::orange;
         }
+
+        static std::optional<std::array<unsigned int, 3>> colorizeAlert() {
+			return Colors::white;
+		}
+
+        static std::optional<std::array<unsigned int, 3>> colorizeRequest() {
+			return Colors::red;
+		}
     };
  
 }  // namespace vsid::tagitems

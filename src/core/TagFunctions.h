@@ -20,6 +20,40 @@ void NeoVSID::RegisterTagActions()
     tagDef.name = "confirmSID";
 	tagDef.description = "confirm the SID.";
     confirmSidId_ = tagInterface_->RegisterTagAction(tagDef);
+
+    tagDef.name = "requestMenu";
+    tagDef.description = "open the request menu";
+    requestMenuId_ = tagInterface_->RegisterTagAction(tagDef);
+
+    PluginSDK::Tag::DropdownDefinition dropdownDef;
+    dropdownDef.title = "REQUEST";
+    dropdownDef.width = 75;
+    dropdownDef.maxHeight = 150;
+
+    PluginSDK::Tag::DropdownComponent dropdownComponent;
+
+    dropdownComponent.id = "ReqNoReq";
+    dropdownComponent.type = PluginSDK::Tag::DropdownComponentType::Button;
+    dropdownComponent.text = "NoReq";
+    dropdownDef.components.push_back(dropdownComponent);
+
+    dropdownComponent.id = "ReqClearance";
+    dropdownComponent.type = PluginSDK::Tag::DropdownComponentType::Button;
+    dropdownComponent.text = "ReqClr";
+    dropdownDef.components.push_back(dropdownComponent);
+
+    dropdownComponent.id = "ReqPush";
+    dropdownComponent.type = PluginSDK::Tag::DropdownComponentType::Button;
+    dropdownComponent.text = "ReqPush";
+    dropdownDef.components.push_back(dropdownComponent);
+
+    dropdownComponent.id = "ReqTaxi";
+    dropdownComponent.type = PluginSDK::Tag::DropdownComponentType::Button;
+    dropdownComponent.text = "ReqTaxi";
+    dropdownDef.components.push_back(dropdownComponent);
+
+
+    tagInterface_->SetActionDropdown(requestMenuId_, dropdownDef);
 }
 
 void NeoVSID::OnTagAction(const PluginSDK::Tag::TagActionEvent *event)
@@ -38,6 +72,8 @@ void NeoVSID::OnTagDropdownAction(const PluginSDK::Tag::DropdownActionEvent *eve
     {
         return;
     }
+
+    updateRequest(event->callsign, event->componentId);
 }
 
 void NeoVSID::TagProcessing(const std::string &callsign, const std::string &actionId, const std::string &userInput)
@@ -48,22 +84,21 @@ void NeoVSID::TagProcessing(const std::string &callsign, const std::string &acti
         dataManager_->addPilot(callsign);
     }
 
-	bool printToTag = true;
     Pilot pilot = dataManager_->getPilotByCallsign(callsign);
 
     if (actionId == confirmCFLId_)
     {
-        updateCFL({ callsign, pilot, controllerDataAPI_, tagInterface_, cflId_, printToTag });
+        updateCFL({ callsign, pilot, controllerDataAPI_, tagInterface_, cflId_ });
 	}
 
     if (actionId == confirmRwyId_)
     {
-        updateRWY({ callsign, pilot, controllerDataAPI_, tagInterface_, rwyId_, printToTag });
+        updateRWY({ callsign, pilot, controllerDataAPI_, tagInterface_, rwyId_ });
 	}
 
     if (actionId == confirmSidId_)
     {
-        updateSID({ callsign, pilot, controllerDataAPI_, tagInterface_, sidId_, printToTag });
+        updateSID({ callsign, pilot, controllerDataAPI_, tagInterface_, sidId_ });
 	}
 }
 }  // namespace vsid
