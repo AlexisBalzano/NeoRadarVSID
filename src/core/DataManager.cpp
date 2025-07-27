@@ -169,6 +169,7 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 		std::string sidLetter = sidIterator.key();
 		std::string sidRwy = waypointSidData[sidLetter]["1"]["rwy"].get<std::string>();
 		if (!waypointSidData[sidLetter]["1"].contains("customRule") && ruleActive) {
+			loggerAPI_->log(Logger::LogLevel::Info, "SID " + firstWaypoint + indicator + sidLetter + " has no custom rule but rules are active for flightplan: " + flightplan.callsign);
 			++sidIterator;
 			continue;
 		}
@@ -181,6 +182,7 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 			}
 		}
 		if (!rwyMatches) {
+			loggerAPI_->log(Logger::LogLevel::Info, "SID " + firstWaypoint + indicator + sidLetter + " does not match any departure runway for flightplan: " + flightplan.callsign);
 			++sidIterator;
 			continue;
 		}
@@ -206,12 +208,14 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 				if(!std::all_of(activeRules.begin(), activeRules.end(), [&](const std::string& activeRuleName) {
 					return std::find(ruleNames.begin(), ruleNames.end(), activeRuleName) != ruleNames.end();
 				})) {
+					loggerAPI_->log(Logger::LogLevel::Info, "SID " + firstWaypoint + indicator + sidLetter + " does not match all active rules for flightplan: " + flightplan.callsign);
 					++variantIterator;
 					continue; // Skip this variant if not matching all active rules
 				}
 			}
 			else {
 				if (waypointSidData[sidLetter][variant].contains("customRule")) {
+					loggerAPI_->log(Logger::LogLevel::Info, "SID " + firstWaypoint + indicator + sidLetter + " has a custom rule but no active rules for flightplan: " + flightplan.callsign);
 					++variantIterator;
 					continue; // Skip this variant if it has a custom rule but no active rules
 				}
@@ -240,6 +244,7 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 					if (!std::all_of(aircraftAreas.begin(), aircraftAreas.end(), [&](const std::string& activeAreaName) {
 						return std::find(areaNames.begin(), areaNames.end(), activeAreaName) != areaNames.end();
 						})) {
+						loggerAPI_->log(Logger::LogLevel::Info, "SID " + firstWaypoint + indicator + sidLetter + " does not match all active areas for flightplan: " + flightplan.callsign);
 						++variantIterator;
 						continue; // Skip this variant if not matching all areas
 					}
@@ -247,6 +252,7 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 			}
 			else {
 				if (waypointSidData[sidLetter][variant].contains("area")) {
+					loggerAPI_->log(Logger::LogLevel::Info, "SID " + firstWaypoint + indicator + sidLetter + " has an area restriction but no active areas for flightplan: " + flightplan.callsign);
 					++variantIterator;
 					continue;
 				}
@@ -267,6 +273,7 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 					return { depRwy, firstWaypoint + indicator + sidLetter, fetchedCfl };
 				}
 				else { // Engine type doesn't match
+					loggerAPI_->log(Logger::LogLevel::Info, "Engine type mismatch for: " + flightplan.callsign + ", on: " + firstWaypoint + indicator + sidLetter);
 					++variantIterator;
 					continue;
 				}
