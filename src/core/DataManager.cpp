@@ -105,6 +105,7 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 {
 	std::string suggestedRwy = flightplan.route.suggestedDepRunway;
 	if (flightplan.flightRule == "V" || flightplan.route.rawRoute.empty()) {
+		loggerAPI_->log(Logger::LogLevel::Warning, "Flightplan has no route or is VFR: " + flightplan.callsign);
 		return { suggestedRwy, "------", 0 };
 	}
 
@@ -270,6 +271,7 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 				if (requiredEngineType.find(engineType) != std::string::npos) {
 					// Engine type matches, we can assign this SID and CFL
 					int fetchedCfl = waypointSidData[sidLetter][variant]["initial"].get<int>();
+					loggerAPI_->log(Logger::LogLevel::Info, "Assigning SID : " + firstWaypoint + indicator + sidLetter + " for: " + flightplan.callsign);
 					return { depRwy, firstWaypoint + indicator + sidLetter, fetchedCfl };
 				}
 				else { // Engine type doesn't match
@@ -280,6 +282,7 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 			} 
 			else { //No engine restriction
 				int fetchedCfl = waypointSidData[sidLetter][variant]["initial"].get<int>();
+				loggerAPI_->log(Logger::LogLevel::Info, "Assigning SID : " + firstWaypoint + indicator + sidLetter + " for: " + flightplan.callsign);
 				return { depRwy, firstWaypoint + indicator + sidLetter, fetchedCfl };
 			}
 			++variantIterator; // Fallback
