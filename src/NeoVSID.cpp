@@ -117,7 +117,7 @@ void NeoVSID::OnAirportConfigurationsUpdated(const Airport::AirportConfiguration
     //Force recomputation of all RWY, SID & CFL
     dataManager_->removeAllPilots();
     dataManager_->populateActiveAirports();
-    dataManager_->getAllDepartureCallsigns();
+    //dataManager_->getAllDepartureCallsigns();
 }
 
 void vsid::NeoVSID::OnAircraftTemporaryAltitudeChanged(const ControllerData::AircraftTemporaryAltitudeChangedEvent* event)
