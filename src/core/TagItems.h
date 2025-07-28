@@ -122,19 +122,19 @@ inline void NeoVSID::updateAlert(const std::string& callsign)
     bool isStopped = aircraftAPI_->getByCallsign(callsign)->position.stopped;
 
     if (groundStatus == ControllerData::GroundStatus::Dep && aircraftTransponder == Aircraft::TransponderMode::Standby) {
-        alert = "Transponder STDBY";
+        alert = "XPDR STDBY";
     }
     else if (isStopped && groundStatus == ControllerData::GroundStatus::Dep) {
-        alert = "Stationary RPA";
+        alert = "STAT RPA";
     }
     else if (aircraftSpeed > 0 && isReversing && groundStatus != ControllerData::GroundStatus::Push) {
-        alert = "No Push Clearance";
+        alert = "PUSH CLR";
     }
     else if (aircraftSpeed > 30 && groundStatus < ControllerData::GroundStatus::Dep) {
-        alert = "No TakeOff Clearance";
+        alert = "TKOF CLR";
     }
     else if (aircraftSpeed > 5 && !isReversing && groundStatus < ControllerData::GroundStatus::Taxi) {
-        alert = "No Taxi Clearance";
+        alert = "TAXI CLR";
     }
 
     tagContext.colour = Color::colorizeAlert();
