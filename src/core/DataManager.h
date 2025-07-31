@@ -72,6 +72,7 @@ public:
 	bool pilotExists(const std::string& callsign) const;
 	bool isInArea(const double& latitude, const double& longitude, const std::string& oaci, const std::string& areaName);
 
+	int fetchCFL(const Flightplan::Flightplan& flightplan, const std::vector<std::string> activeRules, const std::string& vsid);
 	sidData generateVSID(const Flightplan::Flightplan& flightplan, const std::string& depRwy);
 
 private:
