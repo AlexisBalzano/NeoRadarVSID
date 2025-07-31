@@ -128,13 +128,13 @@ inline void NeoVSID::updateAlert(const std::string& callsign)
         alert = "STAT RPA";
     }
     else if (aircraftSpeed > 0 && isReversing && groundStatus != ControllerData::GroundStatus::Push) {
-        alert = "PUSH CLR";
+        alert = "NO PUSH CLR";
     }
     else if (aircraftSpeed > 30 && groundStatus < ControllerData::GroundStatus::Dep) {
-        alert = "TKOF CLR";
+        alert = "NO TKOF CLR";
     }
     else if (aircraftSpeed > 5 && !isReversing && groundStatus < ControllerData::GroundStatus::Taxi) {
-        alert = "TAXI CLR";
+        alert = "NO TAXI CLR";
     }
 
     tagContext.colour = Color::colorizeAlert();
