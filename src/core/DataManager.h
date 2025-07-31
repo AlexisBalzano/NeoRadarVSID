@@ -84,7 +84,7 @@ private:
 	PluginSDK::Logger::LoggerAPI* loggerAPI_ = nullptr;
 
 	std::filesystem::path configPath_;
-	nlohmann::json configJson_;
+	nlohmann::ordered_json configJson_;
 	nlohmann::json aircraftDataJson_;
 	std::vector<std::string> activeAirports;
 	std::vector<Pilot> pilots;

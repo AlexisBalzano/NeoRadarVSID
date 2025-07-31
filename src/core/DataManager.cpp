@@ -1,5 +1,5 @@
-#include <fstream>
 #include <algorithm>
+#include <fstream>
 
 #include "../NeoVSID.h"
 #include "DataManager.h"
@@ -130,7 +130,7 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 	loggerAPI_->log(Logger::LogLevel::Info, "Generating SID for flightplan: " + flightplan.callsign + ", first waypoint: " + firstWaypoint + ", depRwy: " + depRwy);
 	
 	// Extract waypoint only SID information
-	nlohmann::json waypointSidData;
+	nlohmann::ordered_json waypointSidData;
 	if (configJson_.contains(oaci) && configJson_[oaci]["sids"].contains(firstWaypoint)) {
 		waypointSidData = configJson_[oaci]["sids"][firstWaypoint];
 	} else {
@@ -161,6 +161,18 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 
 	bool ruleActive = !activeRules.empty();
 	bool areaActive = !activeAreas.empty();
+
+	double aircraftLat = aircraftAPI_->getByCallsign(flightplan.callsign)->position.latitude;
+	double aircraftLon = aircraftAPI_->getByCallsign(flightplan.callsign)->position.longitude;
+	std::vector<std::string> areaNames;
+
+	// Get aircraft areas based on its position
+	for (const auto& areaName : activeAreas) {
+		if (isInArea(aircraftLat, aircraftLon, oaci, areaName)) {
+			aircraftAreas.push_back(areaName);
+			loggerAPI_->log(Logger::LogLevel::Info, "Aircraft " + flightplan.callsign + " is in area: " + areaName + " for OACI: " + oaci);
+		}
+	}
 
 	if (aircraftDataJson_.contains(aircraftType))
 		engineType = aircraftDataJson_[aircraftType]["engineType"].get<std::string>();
@@ -223,16 +235,6 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 			}
 			
 			if (areaActive) {
-				double aircraftLat = aircraftAPI_->getByCallsign(flightplan.callsign)->position.latitude;
-				double aircraftLon = aircraftAPI_->getByCallsign(flightplan.callsign)->position.longitude;
-				std::vector<std::string> areaNames;
-
-				for (const auto& areaName : activeAreas) {
-					if (isInArea(aircraftLat, aircraftLon, oaci, areaName)) {
-						aircraftAreas.push_back(areaName);
-						loggerAPI_->log(Logger::LogLevel::Info, "Aircraft " + flightplan.callsign + " is in area: " + areaName + " for OACI: " + oaci);
-					}
-				}
 				if (waypointSidData[sidLetter][variant].contains("area")) {
 					if (waypointSidData[sidLetter][variant]["area"].is_array()) {
 						for (const auto& area : waypointSidData[sidLetter][variant]["area"]) {
@@ -271,7 +273,7 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 				if (requiredEngineType.find(engineType) != std::string::npos) {
 					// Engine type matches, we can assign this SID and CFL
 					int fetchedCfl = waypointSidData[sidLetter][variant]["initial"].get<int>();
-					loggerAPI_->log(Logger::LogLevel::Info, "Assigning SID : " + firstWaypoint + indicator + sidLetter + " for: " + flightplan.callsign);
+					loggerAPI_->log(Logger::LogLevel::Info, "Assigning SID with engineType restriction : " + firstWaypoint + indicator + sidLetter + " for: " + flightplan.callsign);
 					return { depRwy, firstWaypoint + indicator + sidLetter, fetchedCfl };
 				}
 				else { // Engine type doesn't match

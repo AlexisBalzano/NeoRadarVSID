@@ -1,6 +1,8 @@
 # Prerequisites
 *.d
 
+key.txt
+key.txt.pub
 todo.txt
 
 vsid-lfxx-config
