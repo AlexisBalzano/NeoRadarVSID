@@ -56,6 +56,11 @@
   filterExpressions:
     ["AND", [["==", "isMyDeparture", "1"], ["==", "onGround", "1"]]]
   columns:
+    - name: req
+      width: 30
+      tagItem:
+        itemName: plugin:NeoVSID:TAG_REQUEST
+        leftClick: plugin:NeoVSID:ACTION_requestMenu
     - name: c/s
       width: 80
       tagItem:
