@@ -109,6 +109,9 @@ int DataManager::fetchCFL(const Flightplan::Flightplan& flightplan, const std::v
 		if (vsid == "") return 0;
 		else sid = vsid;
 	}
+	else {
+		sid = flightplan.route.sid;
+	}
 	
 	std::string oaci = flightplan.origin;
 	std::string waypoint = sid.substr(0, sid.length() - 2);
