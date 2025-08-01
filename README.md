@@ -8,8 +8,13 @@ vSID adaptation for NeoRadar ATC Client <br>
 - Extract the contents of the zip file to your NeoRadar plugins directory _(./Documents/NeoRadar)_.
 - Either:
   - replace your `list.yaml` _(./Documents/NeoRadar/package/'yourpackage'/system/list.yaml)_ file with the one provided in the release
-  - add the following line to your NeoRadar `list.yaml` config file :
+  - add the following line to your NeoRadar `list.yaml` departure list config file :
 ```yaml
+    - name: req
+      width: 30
+      tagItem:
+        itemName: plugin:NeoVSID:TAG_REQUEST
+        leftClick: plugin:NeoVSID:ACTION_requestMenu
     - name: vrwy
       width: 30
       tagItem:
@@ -75,13 +80,14 @@ At most, vSID will assign SID & CFL **every 5 seconds**.
 - Right clicking on SID and CFL open their respective menu to confirm them.<br>
 They will turn green when confirmed.<br>
 - If another value is assigned to the SID or CFL, they will turn orange while displaying the new assigned value to indicate deviation from config.<br>
+- If you need to reconfigure runways, first deactivate the auto update by executing `.vsid auto`, then reconfigure runways and reactivate the auto update again.<br>
 
 # Commands
 - `.vsid help` : display all available commands and their usage.<br>
 - `.vsid version` : display the current version of the plugin.<br>
 - `.vsid reset` : reset all plugin configurations.<br>
 - `.vsid airports` : display all currently active airports <br>
-- `.vsid auto` :toggle tag update every 5 seconds, need to be executed after runways configuration.<br>
+- `.vsid auto` : toggle tag update every 5 seconds, need to be executed after runways configuration.<br>
 - `.vsid pilots` : display all currently active pilots.<br>
 - `.vsid rules` : display all currently loaded rules and their active state.<br>
 - `.vsid areas` : display all currently loaded areas and their active state.<br>
