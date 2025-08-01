@@ -101,44 +101,85 @@ void DataManager::populateActiveAirports()
 	}
 }
 
+int DataManager::fetchCFL(const Flightplan::Flightplan& flightplan, const std::vector<std::string> activeRules, const std::string& vsid)
+{
+	//Config should already be the correct one since loaded in generateVSID(), check not needed
+	std::string sid;
+	if (flightplan.route.sid.length() < 3) {
+		if (vsid == "") return 0;
+		else sid = vsid;
+	}
+	else {
+		sid = flightplan.route.sid;
+	}
+	
+	std::string oaci = flightplan.origin;
+	std::string waypoint = sid.substr(0, sid.length() - 2);
+	std::string letter = sid.substr(sid.length() - 1, 1);
+	nlohmann::ordered_json waypointSidData;
+
+	if (configJson_.contains(oaci) && configJson_[oaci]["sids"].contains(waypoint)) {
+		waypointSidData = configJson_[oaci]["sids"][waypoint];
+	}
+	if (!waypointSidData.contains(letter)) {
+		loggerAPI_->log(Logger::LogLevel::Warning, "SID letter not found in waypoint SID data for: " + flightplan.callsign + " when trying to fetch CFL");
+		return 0;
+	}
+
+	bool ruleActive = !activeRules.empty();
+	auto iterator = waypointSidData[letter].begin();
+
+	while (iterator != waypointSidData[letter].end())
+	{
+		std::string variant = iterator.key();
+		loggerAPI_->log(Logger::LogLevel::Info, "Checking variant: " + variant + " for flightplan: " + flightplan.callsign + ", SID: " + sid);
+
+		if ((ruleActive && !waypointSidData[letter][variant].contains("customRule")) || (!ruleActive && waypointSidData[letter][variant].contains("customRule"))) {
+			++iterator;
+			continue;
+		}
+		if (ruleActive) {
+			bool ruleMatch = false;
+			for (const auto& rule : activeRules) {
+				if (waypointSidData[letter][variant]["customRule"].get<std::string>() == rule) {
+					ruleMatch = true;
+					break;
+				}
+			}
+			if (!ruleMatch) {
+				++iterator;
+				continue;
+			}
+		}
+
+		if (waypointSidData[letter][variant].contains("engineType")) {
+			std::string aircraftType = flightplan.acType;
+			std::string engineType = "J"; // Defaulting to Jet if no type is found
+			std::string requiredEngineType = "J";
+	
+			if (aircraftDataJson_.contains(aircraftType))
+				engineType = aircraftDataJson_[aircraftType]["engineType"].get<std::string>();
+
+			requiredEngineType = waypointSidData[letter][variant]["engineType"].get<std::string>();
+			if (requiredEngineType.find(engineType) != std::string::npos) {
+				return waypointSidData[letter][variant]["initial"].get<int>();
+			}
+			else { // Engine type doesn't match
+				++iterator;
+				continue;
+			}
+		}
+		else {
+			return waypointSidData[letter][variant]["initial"].get<int>();
+		}
+	}
+	loggerAPI_->log(Logger::LogLevel::Warning, "No valid CFL found for flightplan: " + flightplan.callsign + " with SID: " + sid);
+	return 0; // No valid CFL found
+}
+
 sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, const std::string& depRwy)
 {
-	std::string suggestedRwy = flightplan.route.suggestedDepRunway;
-	if (flightplan.flightRule == "V" || flightplan.route.rawRoute.empty()) {
-		loggerAPI_->log(Logger::LogLevel::Warning, "Flightplan has no route or is VFR: " + flightplan.callsign);
-		return { suggestedRwy, "------", 0 };
-	}
-
-	std::string firstWaypoint = flightplan.route.waypoints[0].identifier;
-	std::string suggestedSid = flightplan.route.suggestedSid;
-	if (suggestedSid.empty() || suggestedSid.length() < 2) {
-		DisplayMessageFromDataManager("SID not found for waypoint: " + firstWaypoint + " for: " + flightplan.callsign, "SID Assigner");
-		loggerAPI_->log(Logger::LogLevel::Warning, "suggested SID length incorrect " + firstWaypoint + " for: " + flightplan.callsign);
-		return { suggestedRwy, "CHECKFP", 0 };
-	}
-	std::string indicator = suggestedSid.substr(suggestedSid.length() - 2, 1);
-
-
-	// Check if configJSON is already the right one, if not, retrieve it
 	std::string oaci = flightplan.origin;
-	if (!retrieveCorrectConfigJson(oaci)) {
-		return { suggestedRwy, suggestedSid, 0} ;
-	}
-
-	std::transform(oaci.begin(), oaci.end(), oaci.begin(), ::toupper); //Convert to uppercase
-	
-	loggerAPI_->log(Logger::LogLevel::Info, "Generating SID for flightplan: " + flightplan.callsign + ", first waypoint: " + firstWaypoint + ", depRwy: " + depRwy);
-	
-	// Extract waypoint only SID information
-	nlohmann::ordered_json waypointSidData;
-	if (configJson_.contains(oaci) && configJson_[oaci]["sids"].contains(firstWaypoint)) {
-		waypointSidData = configJson_[oaci]["sids"][firstWaypoint];
-	} else {
-		DisplayMessageFromDataManager("SID not found for waypoint: " + firstWaypoint + " for: " + flightplan.callsign, "SID Assigner");
-		loggerAPI_->log(Logger::LogLevel::Warning, "No SID matching firstWaypoint: " + firstWaypoint + " for: " + flightplan.callsign);
-		return { suggestedRwy, "CHECKFP", 0};
-	}
-
 	std::string aircraftType = flightplan.acType;
 	std::string engineType = "J"; // Defaulting to Jet if no type is found
 	std::string requiredEngineType = "J";
@@ -158,6 +199,42 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 			activeAreas.push_back(area.name);
 		}
 	}
+
+	std::string suggestedRwy = flightplan.route.suggestedDepRunway;
+	if (flightplan.flightRule == "V" || flightplan.route.rawRoute.empty()) {
+		loggerAPI_->log(Logger::LogLevel::Warning, "Flightplan has no route or is VFR: " + flightplan.callsign);
+		return { suggestedRwy, "------", fetchCFL(flightplan, activeRules, "")};
+	}
+
+	std::string firstWaypoint = flightplan.route.waypoints[0].identifier;
+	std::string suggestedSid = flightplan.route.suggestedSid;
+	if (suggestedSid.empty() || suggestedSid.length() < 2) {
+		DisplayMessageFromDataManager("SID not found for waypoint: " + firstWaypoint + " for: " + flightplan.callsign, "SID Assigner");
+		loggerAPI_->log(Logger::LogLevel::Warning, "suggested SID length incorrect " + firstWaypoint + " for: " + flightplan.callsign);
+		return { suggestedRwy, "CHECKFP", fetchCFL(flightplan, activeRules, "")};
+	}
+	std::string indicator = suggestedSid.substr(suggestedSid.length() - 2, 1);
+
+
+	// Check if configJSON is already the right one, if not, retrieve it
+	if (!retrieveCorrectConfigJson(oaci)) {
+		return { suggestedRwy, suggestedSid, fetchCFL(flightplan, activeRules, "")};
+	}
+
+	std::transform(oaci.begin(), oaci.end(), oaci.begin(), ::toupper); //Convert to uppercase
+	
+	loggerAPI_->log(Logger::LogLevel::Info, "Generating SID for flightplan: " + flightplan.callsign + ", first waypoint: " + firstWaypoint + ", depRwy: " + depRwy);
+	
+	// Extract waypoint only SID information
+	nlohmann::ordered_json waypointSidData;
+	if (configJson_.contains(oaci) && configJson_[oaci]["sids"].contains(firstWaypoint)) {
+		waypointSidData = configJson_[oaci]["sids"][firstWaypoint];
+	} else {
+		DisplayMessageFromDataManager("SID not found for waypoint: " + firstWaypoint + " for: " + flightplan.callsign, "SID Assigner");
+		loggerAPI_->log(Logger::LogLevel::Warning, "No SID matching firstWaypoint: " + firstWaypoint + " for: " + flightplan.callsign);
+		return { suggestedRwy, "CHECKFP", fetchCFL(flightplan, activeRules, "")};
+	}
+
 
 	bool ruleActive = !activeRules.empty();
 	bool areaActive = !activeAreas.empty();
@@ -272,9 +349,8 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 				requiredEngineType = waypointSidData[sidLetter][variant]["engineType"].get<std::string>();
 				if (requiredEngineType.find(engineType) != std::string::npos) {
 					// Engine type matches, we can assign this SID and CFL
-					int fetchedCfl = waypointSidData[sidLetter][variant]["initial"].get<int>();
 					loggerAPI_->log(Logger::LogLevel::Info, "Assigning SID with engineType restriction : " + firstWaypoint + indicator + sidLetter + " for: " + flightplan.callsign);
-					return { depRwy, firstWaypoint + indicator + sidLetter, fetchedCfl };
+					return { depRwy, firstWaypoint + indicator + sidLetter, fetchCFL(flightplan, activeRules, firstWaypoint + indicator + sidLetter) };
 				}
 				else { // Engine type doesn't match
 					loggerAPI_->log(Logger::LogLevel::Info, "Engine type mismatch for: " + flightplan.callsign + ", on: " + firstWaypoint + indicator + sidLetter);
@@ -283,9 +359,8 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 				}
 			} 
 			else { //No engine restriction
-				int fetchedCfl = waypointSidData[sidLetter][variant]["initial"].get<int>();
 				loggerAPI_->log(Logger::LogLevel::Info, "Assigning SID : " + firstWaypoint + indicator + sidLetter + " for: " + flightplan.callsign);
-				return { depRwy, firstWaypoint + indicator + sidLetter, fetchedCfl };
+				return { depRwy, firstWaypoint + indicator + sidLetter, fetchCFL(flightplan, activeRules, firstWaypoint + indicator + sidLetter) };
 			}
 			++variantIterator; // Fallback
 		}
@@ -293,7 +368,7 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 	}
 	DisplayMessageFromDataManager("No matching SID found for: " + flightplan.callsign + ", check flighplan, rerouting might be necessary", "SID Assigner");
 	loggerAPI_->log(Logger::LogLevel::Warning, "No matching SID found for: " + flightplan.callsign + ", check flightplan, rerouting might be necessary");
-	return { suggestedRwy, "CHECKFP", 0};
+	return { suggestedRwy, "CHECKFP", fetchCFL(flightplan, activeRules, "")};
 }
 	
 int DataManager::retrieveConfigJson(const std::string& oaci)
