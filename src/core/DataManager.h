@@ -71,8 +71,10 @@ public:
 	bool aircraftExists(const std::string& callsign) const;
 	bool pilotExists(const std::string& callsign) const;
 	bool isInArea(const double& latitude, const double& longitude, const std::string& oaci, const std::string& areaName);
+	bool isMatchingRules(const nlohmann::ordered_json waypointSidData, const std::vector<std::string> activeRules, const std::string& letter, const std::string& variant);
+	bool isMatchingAreas(const nlohmann::ordered_json waypointSidData, const std::vector<std::string> activeAreas, const std::string& letter, const std::string& variant, const Flightplan::Flightplan fp);
 
-	int fetchCFL(const Flightplan::Flightplan& flightplan, const std::vector<std::string> activeRules, const std::string& vsid);
+	int fetchCFL(const Flightplan::Flightplan& flightplan, const std::vector<std::string> activeRules, const std::vector<std::string> activeAreas, const std::string& vsid);
 	sidData generateVSID(const Flightplan::Flightplan& flightplan, const std::string& depRwy);
 
 private:
