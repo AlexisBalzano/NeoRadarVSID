@@ -103,7 +103,12 @@ void DataManager::populateActiveAirports()
 
 int DataManager::fetchCFL(const Flightplan::Flightplan& flightplan, const std::vector<std::string> activeRules, const std::string& vsid)
 {
-	//Config should already be the correct one since loaded in generateVSID(), check not needed
+	std::string oaci = flightplan.origin;
+	// Check if configJSON is already the right one, if not, retrieve it
+	if (!retrieveCorrectConfigJson(oaci)) {
+		return 0;
+	}
+
 	std::string sid;
 	if (flightplan.route.sid.length() < 3) {
 		if (vsid == "") return 0;
@@ -113,12 +118,11 @@ int DataManager::fetchCFL(const Flightplan::Flightplan& flightplan, const std::v
 		sid = flightplan.route.sid;
 	}
 	
-	std::string oaci = flightplan.origin;
 	std::string waypoint = sid.substr(0, sid.length() - 2);
 	std::string letter = sid.substr(sid.length() - 1, 1);
 	nlohmann::ordered_json waypointSidData;
 
-	if (configJson_.contains(oaci) && configJson_[oaci]["sids"].contains(waypoint)) {
+	if (configJson_[oaci]["sids"].contains(waypoint)) {
 		waypointSidData = configJson_[oaci]["sids"][waypoint];
 	}
 	if (!waypointSidData.contains(letter)) {
@@ -138,17 +142,23 @@ int DataManager::fetchCFL(const Flightplan::Flightplan& flightplan, const std::v
 			++iterator;
 			continue;
 		}
+		
+		std::vector<std::string> ruleNames;
 		if (ruleActive) {
-			bool ruleMatch = false;
-			for (const auto& rule : activeRules) {
-				if (waypointSidData[letter][variant]["customRule"].get<std::string>() == rule) {
-					ruleMatch = true;
-					break;
+			if (waypointSidData[letter][variant]["customRule"].is_array()) {
+				for (const auto& rule : waypointSidData[letter][variant]["customRule"]) {
+					ruleNames.push_back(rule.get<std::string>());
 				}
 			}
-			if (!ruleMatch) {
+			else {
+				ruleNames.push_back(waypointSidData[letter][variant]["customRule"].get<std::string>());
+			}
+
+			if (!std::all_of(activeRules.begin(), activeRules.end(), [&](const std::string& activeRuleName) {
+				return std::find(ruleNames.begin(), ruleNames.end(), activeRuleName) != ruleNames.end();
+				})) {
 				++iterator;
-				continue;
+				continue; // Skip this variant if not matching all active rules
 			}
 		}
 
