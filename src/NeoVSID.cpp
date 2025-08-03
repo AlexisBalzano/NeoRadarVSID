@@ -28,7 +28,7 @@ void NeoVSID::Initialize(const PluginMetadata &metadata, CoreAPI *coreAPI, Clien
 	dataManager_ = std::make_unique<DataManager>(this);
 
     DisplayMessage("Version " + std::string(PLUGIN_VERSION) + " loaded, remember to configure all your runways and then use .vsid auto to start auto assignement." 
-                   + "If you need to modify runway assignement, first deactivate auto assignement using the same command.", "Initialisation");
+                   + " If you need to modify runway assignement, first deactivate auto assignement using the same command.", "Initialisation");
     
     callsignsScope.clear();
 	dataManager_->removeAllPilots();
