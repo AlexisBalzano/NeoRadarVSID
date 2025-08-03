@@ -92,7 +92,7 @@ void DataManager::populateActiveAirports()
 
 	for (const auto& airport : allAirports)
 	{
-		if (airport.status == Airport::AirportStatus::Active)
+		if (!airport.depRunways.empty())
 		{
 			activeAirports.push_back(airport.icao);
 			parseRules(airport.icao);
