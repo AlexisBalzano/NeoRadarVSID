@@ -165,7 +165,7 @@ void vsid::NeoVSID::OnFlightplanUpdated(const Flightplan::FlightplanUpdatedEvent
     // Force recomputation of RWY, SID and CFL
     dataManager_->removePilot(event->callsign);
 	
-    UpdateTagItems(event->callsign);
+	//UpdateTagItems(event->callsign); //Might be the cause of the crash when changing runway config
 }
 
 
