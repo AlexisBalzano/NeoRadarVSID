@@ -73,6 +73,8 @@ public:
 	bool isInArea(const double& latitude, const double& longitude, const std::string& oaci, const std::string& areaName);
 	bool isMatchingRules(const nlohmann::ordered_json waypointSidData, const std::vector<std::string> activeRules, const std::string& letter, const std::string& variant);
 	bool isMatchingAreas(const nlohmann::ordered_json waypointSidData, const std::vector<std::string> activeAreas, const std::string& letter, const std::string& variant, const Flightplan::Flightplan fp);
+	bool isMatchingEngineRestrictions(const nlohmann::ordered_json sidData, const std::string& aircraftType);
+	bool isRNAV(const std::string& aircraftType);
 
 	int fetchCFL(const Flightplan::Flightplan& flightplan, const std::vector<std::string> activeRules, const std::vector<std::string> activeAreas, const std::string& vsid, bool singleRwy);
 	sidData generateVSID(const Flightplan::Flightplan& flightplan, const std::string& depRwy);

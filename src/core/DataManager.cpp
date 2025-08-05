@@ -161,22 +161,14 @@ int DataManager::fetchCFL(const Flightplan::Flightplan& flightplan, const std::v
 		}
 
 		if (waypointSidData[letter][variant].contains("engineType")) {
-			std::string aircraftType = flightplan.acType;
-			std::string engineType = "J"; // Defaulting to Jet if no type is found
-			std::string requiredEngineType = "J";
-	
-			if (aircraftDataJson_.contains(aircraftType))
-				engineType = aircraftDataJson_[aircraftType]["engineType"].get<std::string>();
-
-			requiredEngineType = waypointSidData[letter][variant]["engineType"].get<std::string>();
-			if (requiredEngineType.find(engineType) != std::string::npos) {
-				loggerAPI_->log(Logger::LogLevel::Info, "SID engine type matches for: " + flightplan.callsign + " with SID: " + sid + ", variant: " + letter + variant);
-				return waypointSidData[letter][variant]["initial"].get<int>();
-			}
-			else { // Engine type doesn't match
-				loggerAPI_->log(Logger::LogLevel::Info, "SID engine type mismatch for: " + flightplan.callsign + " with SID: " + sid + ", variant: " + letter + variant);
+			if (!isMatchingEngineRestrictions(waypointSidData[letter][variant], flightplan.acType)) {
+				loggerAPI_->log(Logger::LogLevel::Info, "SID engine type restriction not matching for: " + flightplan.callsign + " with SID: " + sid + ", variant: " + letter + variant);
 				++iterator;
 				continue;
+			}
+			else {
+				loggerAPI_->log(Logger::LogLevel::Info, "SID engine type restriction matches for: " + flightplan.callsign + " with SID: " + sid + ", variant: " + letter + variant);
+				return waypointSidData[letter][variant]["initial"].get<int>();
 			}
 		}
 		else {
@@ -191,9 +183,6 @@ int DataManager::fetchCFL(const Flightplan::Flightplan& flightplan, const std::v
 sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, const std::string& depRwy)
 {
 	std::string oaci = flightplan.origin;
-	std::string aircraftType = flightplan.acType;
-	std::string engineType = "J"; // Defaulting to Jet if no type is found
-	std::string requiredEngineType = "J";
 	std::vector<std::string> activeRules;
 	std::vector<std::string> activeAreas;
 	std::vector<std::string> aircraftAreas;
@@ -264,9 +253,6 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 		}
 	}
 
-	if (aircraftDataJson_.contains(aircraftType))
-		engineType = aircraftDataJson_[aircraftType]["engineType"].get<std::string>();
-
 	auto sidIterator = waypointSidData.begin();
 	while (sidIterator != waypointSidData.end()) {
 		std::string sidLetter = sidIterator.key();
@@ -325,6 +311,17 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 				}
 			}
 
+			if (waypointSidData[sidLetter][variant].contains("equip") && waypointSidData[sidLetter][variant]["equip"].contains("RNAV")) {
+				if (!isRNAV(flightplan.acType)) {
+					loggerAPI_->log(Logger::LogLevel::Info, "SID " + firstWaypoint + indicator + sidLetter + " requires RNAV but aircraft does not support it for flightplan: " + flightplan.callsign);
+					++variantIterator;
+					continue; // Skip this variant if RNAV is required but aircraft does not support it
+				}
+				else {
+					loggerAPI_->log(Logger::LogLevel::Info, "SID " + firstWaypoint + indicator + sidLetter + " matches RNAV for flightplan: " + flightplan.callsign);
+				}
+			}
+
 			std::string depRwy;
 			for (const auto& rwy : depRwys) {
 				if (sidRwy.find(rwy) != std::string::npos) {
@@ -332,17 +329,16 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 					break;
 				}
 			}
+
 			if (waypointSidData[sidLetter][variant].contains("engineType")) {
-				requiredEngineType = waypointSidData[sidLetter][variant]["engineType"].get<std::string>();
-				if (requiredEngineType.find(engineType) != std::string::npos) {
-					// Engine type matches, we can assign this SID and CFL
-					loggerAPI_->log(Logger::LogLevel::Info, "Assigning SID with engineType restriction : " + firstWaypoint + indicator + sidLetter + " for: " + flightplan.callsign);
-					return { depRwy, firstWaypoint + indicator + sidLetter, fetchCFL(flightplan, activeRules, activeAreas, firstWaypoint + indicator + sidLetter, singleRwy) };
-				}
-				else { // Engine type doesn't match
-					loggerAPI_->log(Logger::LogLevel::Info, "Engine type mismatch for: " + flightplan.callsign + ", on: " + firstWaypoint + indicator + sidLetter);
+				if (!isMatchingEngineRestrictions(waypointSidData[sidLetter][variant], flightplan.acType)) {
+					loggerAPI_->log(Logger::LogLevel::Info, "SID " + firstWaypoint + indicator + sidLetter + " has an engine type restriction that does not match for flightplan: " + flightplan.callsign);
 					++variantIterator;
-					continue;
+					continue; // Skip this variant if it doesn't match engine type
+				}
+				else {
+					loggerAPI_->log(Logger::LogLevel::Info, "SID " + firstWaypoint + indicator + sidLetter + " matches engine type for flightplan: " + flightplan.callsign);
+					return { depRwy, firstWaypoint + indicator + sidLetter, fetchCFL(flightplan, activeRules, activeAreas, firstWaypoint + indicator + sidLetter, singleRwy) };
 				}
 			} 
 			else { //No engine restriction
@@ -644,6 +640,34 @@ bool DataManager::isMatchingAreas(const nlohmann::ordered_json waypointSidData, 
 		}
 	}
 	return true;
+}
+
+bool DataManager::isMatchingEngineRestrictions(const nlohmann::ordered_json sidData, const std::string& aircraftType)
+{
+	std::string engineType = "J"; // Defaulting to Jet if no type is found
+	std::string requiredEngineType = "J";
+
+	if (aircraftDataJson_.contains(aircraftType))
+		engineType = aircraftDataJson_[aircraftType]["engineType"].get<std::string>();
+
+	requiredEngineType = sidData["engineType"].get<std::string>();
+	if (requiredEngineType.find(engineType) != std::string::npos) {
+		return true;
+	}
+	return false;
+}
+
+bool DataManager::isRNAV(const std::string& aircraftType)
+{
+	if (aircraftDataJson_.contains(aircraftType)) {
+		if (aircraftDataJson_[aircraftType].contains("rnav")) {
+			return aircraftDataJson_[aircraftType]["rnav"].get<bool>();
+		}
+		else {
+			loggerAPI_->log(Logger::LogLevel::Warning, "RNAV data not found for aircraft type: " + aircraftType);
+			return false;
+		}
+	}
 }
 
 void DataManager::switchRuleState(const std::string& oaci, const std::string& ruleName)
