@@ -168,6 +168,7 @@ Chat::CommandResult NeoVSIDCommandProvider::Execute( const std::string &commandI
         neoVSID_->switchAutoModeState();
         std::string message = "Automode set to " + (neoVSID_->getAutoModeState() ? std::string("True") : std::string("False"));
         neoVSID_->DisplayMessage(message);
+		neoVSID_->OnTimer(0); // Trigger an immediate update
 		return { true, std::nullopt };
     }
     else if (commandId == neoVSID_->airportsCommandId_)
