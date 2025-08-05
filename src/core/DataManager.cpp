@@ -519,7 +519,10 @@ std::vector<std::string> DataManager::getAllDepartureCallsigns() {
 		if (pilotExists(flightplan.callsign))
 			continue;
 
-		sidData vsidData = generateVSID(flightplan, flightplan.route.suggestedDepRunway);
+		std::string depRwy = flightplan.route.suggestedDepRunway;
+		if (flightplan.route.depRunway != "") depRwy = flightplan.route.depRunway;
+
+		sidData vsidData = generateVSID(flightplan, depRwy);
 		pilots.push_back(Pilot{ flightplan.callsign, vsidData.rwy, vsidData.sid, vsidData.cfl});
 	}
 	return callsigns;
@@ -712,8 +715,11 @@ void DataManager::addPilot(const std::string& callsign)
 		return;
 	if (!isDepartureAirport(flightplan.origin))
 		return;
+	std::string depRwy = flightplan.route.suggestedDepRunway;
+	if (flightplan.route.depRunway != "")
+		depRwy = flightplan.route.depRunway;
 
-	sidData vsidData = generateVSID(flightplan, flightplan.route.suggestedDepRunway);
+	sidData vsidData = generateVSID(flightplan, depRwy);
 	pilots.push_back(Pilot{ flightplan.callsign, vsidData.rwy, vsidData.sid, vsidData.cfl });
 }
 
