@@ -210,7 +210,7 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 	}
 
 	std::string suggestedRwy = flightplan.route.suggestedDepRunway;
-	if (flightplan.flightRule == "V" || flightplan.route.rawRoute.empty()) {
+	if (flightplan.flightRule == "V" || flightplan.route.rawRoute.empty() || flightplan.route.waypoints.empty()) {
 		loggerAPI_->log(Logger::LogLevel::Warning, "Flightplan has no route or is VFR: " + flightplan.callsign);
 		return { suggestedRwy, "------", fetchCFL(flightplan, activeRules, activeAreas, "", singleRwy)};
 	}
