@@ -156,12 +156,12 @@ void vsid::NeoVSID::OnPositionUpdate(const Aircraft::PositionUpdateEvent* event)
     for (const auto& aircraft : event->aircrafts) {
         if (aircraft.callsign.empty())
             continue;
-   //     {
-			//std::lock_guard<std::mutex> lock(callsignsMutex);
-   //         // Do not update tags if the callsign is not in the scope
-   //         if (std::find(callsignsScope.begin(), callsignsScope.end(), aircraft.callsign) == callsignsScope.end())
-   //             continue;
-   //     }
+        {
+			std::lock_guard<std::mutex> lock(callsignsMutex);
+            // Do not update tags if the callsign is not in the scope
+            if (std::find(callsignsScope.begin(), callsignsScope.end(), aircraft.callsign) == callsignsScope.end())
+                continue;
+        }
         
         updateAlert(aircraft.callsign);
 	}
