@@ -186,7 +186,14 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 	std::vector<std::string> activeRules;
 	std::vector<std::string> activeAreas;
 	std::vector<std::string> aircraftAreas;
-	std::vector<std::string> depRwys = airportAPI_->getConfigurationByIcao(oaci)->depRunways;
+
+	auto airportConfig = airportAPI_->getConfigurationByIcao(oaci);
+	if (!airportConfig) {
+		loggerAPI_->log(Logger::LogLevel::Warning, "Airport configuration not found for: " + oaci);
+		return { depRwy, "CHECKFP", 0};
+	}
+	std::vector<std::string> depRwys = airportConfig->depRunways;
+
 
 	bool singleRwy = depRwys.size() < 2;
 
@@ -241,8 +248,12 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 	bool ruleActive = !activeRules.empty();
 	bool areaActive = !activeAreas.empty();
 
-	double aircraftLat = aircraftAPI_->getByCallsign(flightplan.callsign)->position.latitude;
-	double aircraftLon = aircraftAPI_->getByCallsign(flightplan.callsign)->position.longitude;
+	std::optional<Aircraft::Aircraft> aircraft = aircraftAPI_->getByCallsign(flightplan.callsign);
+
+	if (!aircraft.has_value()) return { suggestedRwy, "CHECKFP", 0 };
+
+	double aircraftLat = aircraft->position.latitude;
+	double aircraftLon = aircraft->position.longitude;
 	std::vector<std::string> areaNames;
 
 	// Get aircraft areas based on its position
@@ -508,10 +519,17 @@ std::vector<std::string> DataManager::getAllDepartureCallsigns() {
 		if (!isDepartureAirport(flightplan.origin))
 			continue;
 
-		if (aircraftAPI_->getDistanceFromOrigin(flightplan.callsign) > MAX_DISTANCE)
+		std::optional<double> distanceFromOrigin = aircraftAPI_->getDistanceFromOrigin(flightplan.callsign);
+		if (!distanceFromOrigin.has_value()) {
+			loggerAPI_->log(Logger::LogLevel::Error, "Failed to retrieve distance from origin for callsign: " + flightplan.callsign);
+			continue;
+		}
+		if (distanceFromOrigin > MAX_DISTANCE)
 			continue;
 
-		if (controllerDataAPI_->getByCallsign(flightplan.callsign)->groundStatus == ControllerData::GroundStatus::Dep)
+		std::optional<PluginSDK::ControllerData::ControllerDataModel> controllerData = controllerDataAPI_->getByCallsign(flightplan.callsign);
+		if (!controllerData.has_value()) continue;
+		if (controllerData->groundStatus == ControllerData::GroundStatus::Dep)
 			continue;
 
 		callsigns.push_back(flightplan.callsign);
@@ -524,6 +542,7 @@ std::vector<std::string> DataManager::getAllDepartureCallsigns() {
 
 		sidData vsidData = generateVSID(flightplan, depRwy);
 		pilots.push_back(Pilot{ flightplan.callsign, vsidData.rwy, vsidData.sid, vsidData.cfl});
+		loggerAPI_->log(Logger::LogLevel::Info, "Added pilot: " + flightplan.callsign + " with SID: " + vsidData.sid + " and CFL: " + std::to_string(vsidData.cfl));
 	}
 	return callsigns;
 }
@@ -619,8 +638,13 @@ bool DataManager::isMatchingRules(const nlohmann::ordered_json waypointSidData, 
 bool DataManager::isMatchingAreas(const nlohmann::ordered_json waypointSidData, const std::vector<std::string> activeAreas, const std::string& letter, const std::string& variant, const Flightplan::Flightplan fp)
 {
 	std::vector<std::string> aircraftAreas;
-	double aircraftLat = aircraftAPI_->getByCallsign(fp.callsign)->position.latitude;
-	double aircraftLon = aircraftAPI_->getByCallsign(fp.callsign)->position.longitude;
+
+	auto aircraft = aircraftAPI_->getByCallsign(fp.callsign);
+	if (!aircraft.has_value()) {
+		return false;
+	}
+	double aircraftLat = aircraft->position.latitude;
+	double aircraftLon = aircraft->position.longitude;
 	for (const auto& areaName : activeAreas) {
 		if (isInArea(aircraftLat, aircraftLon, fp.origin, areaName)) {
 			aircraftAreas.push_back(areaName);
@@ -707,20 +731,24 @@ void DataManager::switchAreaState(const std::string& oaci, const std::string& ar
 
 void DataManager::addPilot(const std::string& callsign)
 {
-	Flightplan::Flightplan flightplan = flightplanAPI_->getByCallsign(callsign).value();
+	auto flightplan = flightplanAPI_->getByCallsign(callsign);
+
+	if (!flightplan.has_value()) {
+		return;
+	}
 
 	if (callsign.empty())
 		return;
 	if (pilotExists(callsign))
 		return;
-	if (!isDepartureAirport(flightplan.origin))
+	if (!isDepartureAirport(flightplan->origin))
 		return;
-	std::string depRwy = flightplan.route.suggestedDepRunway;
-	if (flightplan.route.depRunway != "")
-		depRwy = flightplan.route.depRunway;
+	std::string depRwy = flightplan->route.suggestedDepRunway;
+	if (flightplan->route.depRunway != "")
+		depRwy = flightplan->route.depRunway;
 
-	sidData vsidData = generateVSID(flightplan, depRwy);
-	pilots.push_back(Pilot{ flightplan.callsign, vsidData.rwy, vsidData.sid, vsidData.cfl });
+	sidData vsidData = generateVSID(flightplan.value(), depRwy);
+	pilots.push_back(Pilot{ flightplan->callsign, vsidData.rwy, vsidData.sid, vsidData.cfl });
 }
 
 bool DataManager::removePilot(const std::string& callsign)

@@ -87,6 +87,7 @@ void NeoVSID::DisplayMessage(const std::string &message, const std::string &send
 
 void NeoVSID::runScopeUpdate() {
 	std::lock_guard<std::mutex> lock(callsignsMutex);
+	logger_->info("Running scope update.");
     UpdateTagItems();
 }
 
@@ -98,19 +99,21 @@ void vsid::NeoVSID::OnControllerDataUpdated(const ControllerData::ControllerData
 {
     if (!event || event->callsign.empty())
         return;
-    ControllerData::ControllerDataModel controllerDataBlock = controllerDataAPI_->getByCallsign(event->callsign).value();
-    if (controllerDataBlock.groundStatus == ControllerData::GroundStatus::Dep) {
-		dataManager_->removePilot(event->callsign);
+    logger_->info("Controller data updated for callsign: " + event->callsign);
+    std::optional<ControllerData::ControllerDataModel> controllerDataBlock = controllerDataAPI_->getByCallsign(event->callsign);
+    if (!controllerDataBlock.has_value()) return;
+    if (controllerDataBlock->groundStatus == ControllerData::GroundStatus::Dep) {
+        dataManager_->removePilot(event->callsign);
         return;
     }
     else {
-		std::string request = getRequestAndIndex(event->callsign).first;
-        if ((request == "clearance" && controllerDataBlock.clearanceIssued)
-            || (request == "push" && controllerDataBlock.groundStatus == ControllerData::GroundStatus::Push)
-            || (request == "taxi" && controllerDataBlock.groundStatus == ControllerData::GroundStatus::Taxi)) {
+        std::string request = getRequestAndIndex(event->callsign).first;
+        if ((request == "clearance" && controllerDataBlock->clearanceIssued)
+            || (request == "push" && controllerDataBlock->groundStatus == ControllerData::GroundStatus::Push)
+            || (request == "taxi" && controllerDataBlock->groundStatus == ControllerData::GroundStatus::Taxi)) {
             updateRequest(event->callsign, "ReqNoReq");
         }
-         
+
     }
 }
 
@@ -119,6 +122,7 @@ void NeoVSID::OnAirportConfigurationsUpdated(const Airport::AirportConfiguration
     //Force recomputation of all RWY, SID & CFL
     dataManager_->removeAllPilots();
     dataManager_->populateActiveAirports();
+	logger_->info("Airport configurations updated.");
 }
 
 void vsid::NeoVSID::OnAircraftTemporaryAltitudeChanged(const ControllerData::AircraftTemporaryAltitudeChangedEvent* event)
@@ -132,8 +136,14 @@ void vsid::NeoVSID::OnAircraftTemporaryAltitudeChanged(const ControllerData::Air
         if (std::find(callsignsScope.begin(), callsignsScope.end(), event->callsign) == callsignsScope.end())
             return;
     }
+	logger_->info("Temporary altitude changed for callsign: " + event->callsign);
 
-    if (aircraftAPI_->getDistanceFromOrigin(event->callsign) > MAX_DISTANCE) {
+	std::optional<double> distanceFromOrigin = aircraftAPI_->getDistanceFromOrigin(event->callsign);
+	if (!distanceFromOrigin.has_value()) {
+		logger_->error("Failed to retrieve distance from origin for callsign: " + event->callsign);
+		return;
+	}
+    if (distanceFromOrigin > MAX_DISTANCE) {
 		dataManager_->removePilot(event->callsign);
         return;
     }
@@ -146,12 +156,12 @@ void vsid::NeoVSID::OnPositionUpdate(const Aircraft::PositionUpdateEvent* event)
     for (const auto& aircraft : event->aircrafts) {
         if (aircraft.callsign.empty())
             continue;
-        {
-			std::lock_guard<std::mutex> lock(callsignsMutex);
-            // Do not update tags if the callsign is not in the scope
-            if (std::find(callsignsScope.begin(), callsignsScope.end(), aircraft.callsign) == callsignsScope.end())
-                continue;
-        }
+   //     {
+			//std::lock_guard<std::mutex> lock(callsignsMutex);
+   //         // Do not update tags if the callsign is not in the scope
+   //         if (std::find(callsignsScope.begin(), callsignsScope.end(), aircraft.callsign) == callsignsScope.end())
+   //             continue;
+   //     }
         
         updateAlert(aircraft.callsign);
 	}
@@ -169,10 +179,17 @@ void vsid::NeoVSID::OnFlightplanUpdated(const Flightplan::FlightplanUpdatedEvent
             return;
 	}
 
+	logger_->info("Flightplan updated for callsign: " + event->callsign);
+
     // Force recomputation of RWY, SID and CFL
     dataManager_->removePilot(event->callsign);
 	
-    if (aircraftAPI_->getDistanceFromOrigin(event->callsign) > MAX_DISTANCE)
+	std::optional<double> distanceFromOrigin = aircraftAPI_->getDistanceFromOrigin(event->callsign);
+	if (!distanceFromOrigin.has_value()) {
+		logger_->error("Failed to retrieve distance from origin for callsign: " + event->callsign);
+		return;
+	}
+    if (distanceFromOrigin > MAX_DISTANCE)
 		return;
 
 	UpdateTagItems(event->callsign); //Might be the cause of the crash when changing runway config
