@@ -2,6 +2,7 @@
 #include <vector>
 #include <filesystem>
 #include <nlohmann/json.hpp>
+#include <mutex>
 
 #include "SDK.h"
 
@@ -57,7 +58,7 @@ public:
 	std::vector<std::string> getActiveAirports() const { return activeAirports; }
 	std::vector<std::string> getAllDepartureCallsigns();
 	std::vector<Pilot> getPilots() const { return pilots; }
-	Pilot getPilotByCallsign(std::string callsign) const;
+	Pilot getPilotByCallsign(std::string callsign);
 	std::vector<ruleData> getRules() const { return rules; }
 	std::vector<areaData> getAreas() const { return areas; }
 
@@ -67,9 +68,9 @@ public:
 	bool removePilot(const std::string& callsign);
 	void removeAllPilots();
 
-	bool isDepartureAirport(const std::string& oaci) const;
+	bool isDepartureAirport(const std::string& oaci);
 	bool aircraftExists(const std::string& callsign) const;
-	bool pilotExists(const std::string& callsign) const;
+	bool pilotExists(const std::string& callsign);
 	bool isInArea(const double& latitude, const double& longitude, const std::string& oaci, const std::string& areaName);
 	bool isMatchingRules(const nlohmann::ordered_json waypointSidData, const std::vector<std::string> activeRules, const std::string& letter, const std::string& variant);
 	bool isMatchingAreas(const nlohmann::ordered_json waypointSidData, const std::vector<std::string> activeAreas, const std::string& letter, const std::string& variant, const Flightplan::Flightplan fp);
@@ -95,4 +96,7 @@ private:
 	std::vector<Pilot> pilots;
 	std::vector<ruleData> rules;
 	std::vector<areaData> areas;
+
+	std::mutex dataMutex_;
+
 };

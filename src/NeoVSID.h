@@ -2,7 +2,6 @@
 #include <memory>
 #include <thread>
 #include <vector>
-#include <mutex>
 
 #include "SDK.h"
 #include "core/NeoVSIDCommandProvider.h"
