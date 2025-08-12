@@ -7,6 +7,12 @@
 #include "core/TagFunctions.h"
 #include "core/TagItems.h"
 
+#ifdef DEV
+#define LOG_DEBUG(loglevel, message) logger_->log(loglevel, message)
+#else
+#define LOG_DEBUG(loglevel, message) void(0)
+#endif
+
 using namespace vsid;
 
 NeoVSID::NeoVSID() : m_stop(false), controllerDataAPI_(nullptr) {};
@@ -55,7 +61,7 @@ void NeoVSID::Shutdown()
     if (initialized_)
     {
         initialized_ = false;
-        logger_->info("NeoVSID shutdown complete");
+        LOG_DEBUG(Logger::LogLevel::Info, "NeoVSID shutdown complete");
     }
 
 	if (dataManager_) dataManager_.reset();
@@ -86,7 +92,7 @@ void NeoVSID::DisplayMessage(const std::string &message, const std::string &send
 
 void NeoVSID::runScopeUpdate() {
 	std::lock_guard<std::mutex> lock(callsignsMutex);
-	logger_->info("Running scope update.");
+	LOG_DEBUG(Logger::LogLevel::Info, "Running scope update.");
     UpdateTagItems();
 }
 
@@ -120,7 +126,7 @@ void NeoVSID::OnAirportConfigurationsUpdated(const Airport::AirportConfiguration
     //Force recomputation of all RWY, SID & CFL
     dataManager_->removeAllPilots();
     dataManager_->populateActiveAirports();
-	logger_->info("Airport configurations updated.");
+	LOG_DEBUG(Logger::LogLevel::Info, "Airport configurations updated.");
 }
 
 void vsid::NeoVSID::OnAircraftTemporaryAltitudeChanged(const ControllerData::AircraftTemporaryAltitudeChangedEvent* event)
@@ -134,7 +140,7 @@ void vsid::NeoVSID::OnAircraftTemporaryAltitudeChanged(const ControllerData::Air
         if (std::find(callsignsScope.begin(), callsignsScope.end(), event->callsign) == callsignsScope.end())
             return;
     }
-	logger_->info("Temporary altitude changed for callsign: " + event->callsign);
+	LOG_DEBUG(Logger::LogLevel::Info, "Temporary altitude changed for callsign: " + event->callsign);
 
 	std::optional<double> distanceFromOrigin = aircraftAPI_->getDistanceFromOrigin(event->callsign);
 	if (!distanceFromOrigin.has_value()) {
@@ -177,7 +183,7 @@ void vsid::NeoVSID::OnFlightplanUpdated(const Flightplan::FlightplanUpdatedEvent
             return;
 	}
 
-	logger_->info("Flightplan updated for callsign: " + event->callsign);
+	LOG_DEBUG(Logger::LogLevel::Info, "Flightplan updated for callsign: " + event->callsign);
 
     // Force recomputation of RWY, SID and CFL
     dataManager_->removePilot(event->callsign);

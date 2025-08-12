@@ -13,6 +13,11 @@
 #include <cstdlib>
 #endif
 
+#ifdef DEV
+#define LOG_DEBUG(loglevel, message) loggerAPI_->log(loglevel, message)
+#else
+#define LOG_DEBUG(loglevel, message) void(0)
+#endif
 
 DataManager::DataManager(vsid::NeoVSID* neoVSID)
 	: neoVSID_(neoVSID) {
@@ -137,7 +142,7 @@ int DataManager::fetchCFL(const Flightplan::Flightplan& flightplan, const std::v
 	}
 
 	if (!waypointSidData.contains(letter)) {
-		loggerAPI_->log(Logger::LogLevel::Info, "SID letter not found in waypoint SID data for: " + flightplan.callsign + " when trying to fetch CFL");
+		LOG_DEBUG(Logger::LogLevel::Info, "SID letter not found in waypoint SID data for: " + flightplan.callsign + " when trying to fetch CFL");
 		return 0;
 	}
 
@@ -147,18 +152,18 @@ int DataManager::fetchCFL(const Flightplan::Flightplan& flightplan, const std::v
 
 	while (iterator != waypointSidData[letter].end())
 	{
-		loggerAPI_->log(Logger::LogLevel::Info, "Checking SID variant: " + iterator.key() + " for flightplan: " + flightplan.callsign);
+		LOG_DEBUG(Logger::LogLevel::Info, "Checking SID variant: " + iterator.key() + " for flightplan: " + flightplan.callsign);
 		std::string variant = iterator.key();
 
 		if ((ruleActive && !waypointSidData[letter][variant].contains("customRule")) || (!ruleActive && waypointSidData[letter][variant].contains("customRule"))) {
-			loggerAPI_->log(Logger::LogLevel::Info, "SID has no custom rule but rules are active for: " + flightplan.callsign + " with SID: " + sid + ", variant: " + letter + variant);
+			LOG_DEBUG(Logger::LogLevel::Info, "SID has no custom rule but rules are active for: " + flightplan.callsign + " with SID: " + sid + ", variant: " + letter + variant);
 			++iterator;
 			continue;
 		}
 		
 		if (ruleActive) {
 			if (!isMatchingRules(waypointSidData, activeRules, letter, variant)) {
-				loggerAPI_->log(Logger::LogLevel::Info, "SID rule not matching for: " + flightplan.callsign + " with SID: " + sid + ", variant: " + letter + variant);
+				LOG_DEBUG(Logger::LogLevel::Info, "SID rule not matching for: " + flightplan.callsign + " with SID: " + sid + ", variant: " + letter + variant);
 				++iterator;
 				continue;
 			}
@@ -166,17 +171,17 @@ int DataManager::fetchCFL(const Flightplan::Flightplan& flightplan, const std::v
 
 		if (waypointSidData[letter][variant].contains("engineType")) {
 			if (!isMatchingEngineRestrictions(waypointSidData[letter][variant], flightplan.acType)) {
-				loggerAPI_->log(Logger::LogLevel::Info, "SID engine type restriction not matching for: " + flightplan.callsign + " with SID: " + sid + ", variant: " + letter + variant);
+				LOG_DEBUG(Logger::LogLevel::Info, "SID engine type restriction not matching for: " + flightplan.callsign + " with SID: " + sid + ", variant: " + letter + variant);
 				++iterator;
 				continue;
 			}
 			else {
-				loggerAPI_->log(Logger::LogLevel::Info, "SID engine type restriction matches for: " + flightplan.callsign + " with SID: " + sid + ", variant: " + letter + variant);
+				LOG_DEBUG(Logger::LogLevel::Info, "SID engine type restriction matches for: " + flightplan.callsign + " with SID: " + sid + ", variant: " + letter + variant);
 				return waypointSidData[letter][variant]["initial"].get<int>();
 			}
 		}
 		else {
-			loggerAPI_->log(Logger::LogLevel::Info, "SID has no engine type restriction for: " + flightplan.callsign + " with SID: " + sid + ", variant: " + letter + variant);
+			LOG_DEBUG(Logger::LogLevel::Info, "SID has no engine type restriction for: " + flightplan.callsign + " with SID: " + sid + ", variant: " + letter + variant);
 			return waypointSidData[letter][variant]["initial"].get<int>();
 		}
 	}
@@ -238,7 +243,7 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 
 	std::transform(oaci.begin(), oaci.end(), oaci.begin(), ::toupper); //Convert to uppercase
 	
-	loggerAPI_->log(Logger::LogLevel::Info, "Generating SID for flightplan: " + flightplan.callsign + ", first waypoint: " + firstWaypoint + ", depRwy: " + depRwy);
+	LOG_DEBUG(Logger::LogLevel::Info, "Generating SID for flightplan: " + flightplan.callsign + ", first waypoint: " + firstWaypoint + ", depRwy: " + depRwy);
 	
 	nlohmann::ordered_json waypointSidData;
 	{
@@ -270,7 +275,7 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 		std::lock_guard<std::mutex> lock(dataMutex_);
 		if (isInArea(aircraftLat, aircraftLon, oaci, areaName)) {
 			aircraftAreas.push_back(areaName);
-			loggerAPI_->log(Logger::LogLevel::Info, "Aircraft " + flightplan.callsign + " is in area: " + areaName + " for OACI: " + oaci);
+			LOG_DEBUG(Logger::LogLevel::Info, "Aircraft " + flightplan.callsign + " is in area: " + areaName + " for OACI: " + oaci);
 		}
 	}
 
@@ -279,7 +284,7 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 		std::string sidLetter = sidIterator.key();
 		std::string sidRwy = waypointSidData[sidLetter]["1"]["rwy"].get<std::string>();
 		if (!waypointSidData[sidLetter]["1"].contains("customRule") && ruleActive) {
-			loggerAPI_->log(Logger::LogLevel::Info, "SID " + firstWaypoint + indicator + sidLetter + " has no custom rule but rules are active for flightplan: " + flightplan.callsign);
+			LOG_DEBUG(Logger::LogLevel::Info, "SID " + firstWaypoint + indicator + sidLetter + " has no custom rule but rules are active for flightplan: " + flightplan.callsign);
 			++sidIterator;
 			continue;
 		}
@@ -292,7 +297,7 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 			}
 		}
 		if (!rwyMatches) {
-			loggerAPI_->log(Logger::LogLevel::Info, "SID " + firstWaypoint + indicator + sidLetter + " does not match any departure runway for flightplan: " + flightplan.callsign);
+			LOG_DEBUG(Logger::LogLevel::Info, "SID " + firstWaypoint + indicator + sidLetter + " does not match any departure runway for flightplan: " + flightplan.callsign);
 			++sidIterator;
 			continue;
 		}
@@ -310,7 +315,7 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 			}
 			else {
 				if (waypointSidData[sidLetter][variant].contains("customRule")) {
-					loggerAPI_->log(Logger::LogLevel::Info, "SID " + firstWaypoint + indicator + sidLetter + " has a custom rule but no active rules for flightplan: " + flightplan.callsign);
+					LOG_DEBUG(Logger::LogLevel::Info, "SID " + firstWaypoint + indicator + sidLetter + " has a custom rule but no active rules for flightplan: " + flightplan.callsign);
 					++variantIterator;
 					continue; // Skip this variant if it has a custom rule but no active rules
 				}
@@ -325,7 +330,7 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 				}
 				else {
 					if (waypointSidData[sidLetter][variant].contains("area")) {
-						loggerAPI_->log(Logger::LogLevel::Info, "SID " + firstWaypoint + indicator + sidLetter + " has an area restriction but no active areas for flightplan: " + flightplan.callsign);
+						LOG_DEBUG(Logger::LogLevel::Info, "SID " + firstWaypoint + indicator + sidLetter + " has an area restriction but no active areas for flightplan: " + flightplan.callsign);
 						++variantIterator;
 						continue;
 					}
@@ -334,12 +339,12 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 
 			if (waypointSidData[sidLetter][variant].contains("equip") && waypointSidData[sidLetter][variant]["equip"].contains("RNAV")) {
 				if (!isRNAV(flightplan.acType)) {
-					loggerAPI_->log(Logger::LogLevel::Info, "SID " + firstWaypoint + indicator + sidLetter + " requires RNAV but aircraft does not support it for flightplan: " + flightplan.callsign);
+					LOG_DEBUG(Logger::LogLevel::Info, "SID " + firstWaypoint + indicator + sidLetter + " requires RNAV but aircraft does not support it for flightplan: " + flightplan.callsign);
 					++variantIterator;
 					continue; // Skip this variant if RNAV is required but aircraft does not support it
 				}
 				else {
-					loggerAPI_->log(Logger::LogLevel::Info, "SID " + firstWaypoint + indicator + sidLetter + " matches RNAV for flightplan: " + flightplan.callsign);
+					LOG_DEBUG(Logger::LogLevel::Info, "SID " + firstWaypoint + indicator + sidLetter + " matches RNAV for flightplan: " + flightplan.callsign);
 				}
 			}
 
@@ -353,17 +358,17 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 
 			if (waypointSidData[sidLetter][variant].contains("engineType")) {
 				if (!isMatchingEngineRestrictions(waypointSidData[sidLetter][variant], flightplan.acType)) {
-					loggerAPI_->log(Logger::LogLevel::Info, "SID " + firstWaypoint + indicator + sidLetter + " has an engine type restriction that does not match for flightplan: " + flightplan.callsign);
+					LOG_DEBUG(Logger::LogLevel::Info, "SID " + firstWaypoint + indicator + sidLetter + " has an engine type restriction that does not match for flightplan: " + flightplan.callsign);
 					++variantIterator;
 					continue; // Skip this variant if it doesn't match engine type
 				}
 				else {
-					loggerAPI_->log(Logger::LogLevel::Info, "SID " + firstWaypoint + indicator + sidLetter + " matches engine type for flightplan: " + flightplan.callsign);
+					LOG_DEBUG(Logger::LogLevel::Info, "SID " + firstWaypoint + indicator + sidLetter + " matches engine type for flightplan: " + flightplan.callsign);
 					return { depRwy, firstWaypoint + indicator + sidLetter, fetchCFL(flightplan, activeRules, activeAreas, firstWaypoint + indicator + sidLetter, singleRwy) };
 				}
 			} 
 			else { //No engine restriction
-				loggerAPI_->log(Logger::LogLevel::Info, "Assigning SID : " + firstWaypoint + indicator + sidLetter + " for: " + flightplan.callsign);
+				LOG_DEBUG(Logger::LogLevel::Info, "Assigning SID : " + firstWaypoint + indicator + sidLetter + " for: " + flightplan.callsign);
 				return { depRwy, firstWaypoint + indicator + sidLetter, fetchCFL(flightplan, activeRules, activeAreas, firstWaypoint + indicator + sidLetter, singleRwy) };
 			}
 			++variantIterator; // Fallback
@@ -442,7 +447,7 @@ void DataManager::parseRules(const std::string& oaci)
 	std::transform(oaciUpper.begin(), oaciUpper.end(), oaciUpper.begin(), ::toupper);
 
 	if (configJson_[oaciUpper].contains("customRules")) {
-		loggerAPI_->log(Logger::LogLevel::Info, "Parsing Custom rules from config JSON for OACI: " + oaci);
+		LOG_DEBUG(Logger::LogLevel::Info, "Parsing Custom rules from config JSON for OACI: " + oaci);
 		auto iterator = configJson_[oaciUpper]["customRules"].begin();
 		while (iterator != configJson_[oaciUpper]["customRules"].end()) {
 			std::string ruleName = iterator.key();
@@ -471,7 +476,7 @@ void DataManager::parseAreas(const std::string& oaci)
 	std::transform(oaciUpper.begin(), oaciUpper.end(), oaciUpper.begin(), ::toupper);
 
 	if (configJson_[oaciUpper].contains("areas")) {
-		loggerAPI_->log(Logger::LogLevel::Info, "Parsing Areas from config JSON for OACI: " + oaci);
+		LOG_DEBUG(Logger::LogLevel::Info, "Parsing Areas from config JSON for OACI: " + oaci);
 		auto areaIterator = configJson_[oaciUpper]["areas"].begin();
 		while (areaIterator != configJson_[oaciUpper]["areas"].end()) {
 			std::string areaName = areaIterator.key();
@@ -555,7 +560,7 @@ std::vector<std::string> DataManager::getAllDepartureCallsigns() {
 
 		sidData vsidData = generateVSID(flightplan, depRwy);
 		pilots.push_back(Pilot{ flightplan.callsign, vsidData.rwy, vsidData.sid, vsidData.cfl});
-		loggerAPI_->log(Logger::LogLevel::Info, "Added pilot: " + flightplan.callsign + " with SID: " + vsidData.sid + " and CFL: " + std::to_string(vsidData.cfl));
+		LOG_DEBUG(Logger::LogLevel::Info, "Added pilot: " + flightplan.callsign + " with SID: " + vsidData.sid + " and CFL: " + std::to_string(vsidData.cfl));
 	}
 	return callsigns;
 }

@@ -7,6 +7,12 @@
 #include "NeoVSID.h"
 #include "../utils/Format.h"
 
+#ifdef DEV
+#define LOG_DEBUG(loglevel, message) logger_->log(loglevel, message)
+#else
+#define LOG_DEBUG(loglevel, message) void(0)
+#endif
+
 using namespace vsid::tagitems;
 
 namespace vsid {
@@ -287,16 +293,16 @@ void NeoVSID::UpdateTagItems(std::string callsign) {
 	Pilot pilot = dataManager_->getPilotByCallsign(callsign);
     if (pilot.empty()) return;
 
-	logger_->info("Updating tag items for: " + callsign);
+	LOG_DEBUG(Logger::LogLevel::Info, "Updating tag items for: " + callsign);
 
-	logger_->info("updating CFL for " + callsign);
+	LOG_DEBUG(Logger::LogLevel::Info, "updating CFL for " + callsign);
 	updateCFL({ callsign, pilot, controllerDataAPI_, tagInterface_, cflId_});
-	logger_->info("updating RWY for " + callsign);
+	LOG_DEBUG(Logger::LogLevel::Info, "updating RWY for " + callsign);
 	updateRWY({ callsign, pilot, controllerDataAPI_, tagInterface_, rwyId_});
-	logger_->info("updating SID for " + callsign);
+	LOG_DEBUG(Logger::LogLevel::Info, "updating SID for " + callsign);
 	updateSID({ callsign, pilot, controllerDataAPI_, tagInterface_, sidId_});
-	logger_->info("updating ALERT for " + callsign);
+	LOG_DEBUG(Logger::LogLevel::Info, "updating ALERT for " + callsign);
     updateAlert(callsign);
-	logger_->info("update completed for " + callsign);
+	LOG_DEBUG(Logger::LogLevel::Info, "update completed for " + callsign);
 }
 }  // namespace vsid
