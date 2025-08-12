@@ -714,6 +714,7 @@ bool DataManager::isRNAV(const std::string& aircraftType)
 			return false;
 		}
 	}
+	return false;
 }
 
 void DataManager::switchRuleState(const std::string& oaci, const std::string& ruleName)
