@@ -67,6 +67,7 @@ void DataManager::clearData()
 
 void DataManager::clearJson()
 {
+	std::lock_guard<std::mutex> lock(dataMutex_);
 	configJson_.clear();
 	aircraftDataJson_.clear();
 	rules.clear();
@@ -86,9 +87,12 @@ void DataManager::DisplayMessageFromDataManager(const std::string& message, cons
 void DataManager::populateActiveAirports()
 {
 	std::vector<Airport::AirportConfig> allAirports = airportAPI_->getConfigurations();
-	activeAirports.clear();
-	rules.clear();
-	areas.clear();
+	{
+		std::lock_guard<std::mutex> lock(dataMutex_);
+		activeAirports.clear();
+		rules.clear();
+		areas.clear();
+	}
 
 	for (const auto& airport : allAirports)
 	{
@@ -196,16 +200,18 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 
 
 	bool singleRwy = depRwys.size() < 2;
-
-	for (const auto& rule : this->rules) {
-		if (rule.oaci == oaci && rule.active) {
-			activeRules.push_back(rule.name);
+	{
+		std::lock_guard<std::mutex> lock(dataMutex_);
+		for (const auto& rule : this->rules) {
+			if (rule.oaci == oaci && rule.active) {
+				activeRules.push_back(rule.name);
+			}
 		}
-	}
 
-	for (const auto& area : this->areas) {
-		if (area.oaci == oaci && area.active) {
-			activeAreas.push_back(area.name);
+		for (const auto& area : this->areas) {
+			if (area.oaci == oaci && area.active) {
+				activeAreas.push_back(area.name);
+			}
 		}
 	}
 
@@ -234,14 +240,17 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 	
 	loggerAPI_->log(Logger::LogLevel::Info, "Generating SID for flightplan: " + flightplan.callsign + ", first waypoint: " + firstWaypoint + ", depRwy: " + depRwy);
 	
-	// Extract waypoint only SID information
 	nlohmann::ordered_json waypointSidData;
-	if (configJson_.contains(oaci) && configJson_[oaci]["sids"].contains(firstWaypoint)) {
-		waypointSidData = configJson_[oaci]["sids"][firstWaypoint];
-	} else {
-		DisplayMessageFromDataManager("SID not found for waypoint: " + firstWaypoint + " for: " + flightplan.callsign, "SID Assigner");
-		loggerAPI_->log(Logger::LogLevel::Warning, "No SID matching firstWaypoint: " + firstWaypoint + " for: " + flightplan.callsign);
-		return { suggestedRwy, "CHECKFP", fetchCFL(flightplan, activeRules, activeAreas, "", singleRwy)};
+	{
+		std::lock_guard<std::mutex> lock(dataMutex_);
+		// Extract waypoint only SID information
+		if (configJson_.contains(oaci) && configJson_[oaci]["sids"].contains(firstWaypoint)) {
+			waypointSidData = configJson_[oaci]["sids"][firstWaypoint];
+		} else {
+			DisplayMessageFromDataManager("SID not found for waypoint: " + firstWaypoint + " for: " + flightplan.callsign, "SID Assigner");
+			loggerAPI_->log(Logger::LogLevel::Warning, "No SID matching firstWaypoint: " + firstWaypoint + " for: " + flightplan.callsign);
+			return { suggestedRwy, "CHECKFP", fetchCFL(flightplan, activeRules, activeAreas, "", singleRwy)};
+		}
 	}
 
 
@@ -367,6 +376,7 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 	
 int DataManager::retrieveConfigJson(const std::string& oaci)
 {
+	std::lock_guard<std::mutex> lock(dataMutex_);
 	std::string fileName = oaci + ".json";
 	std::filesystem::path jsonPath = configPath_ / "NeoVSID" / fileName;
 
@@ -403,6 +413,7 @@ bool DataManager::retrieveCorrectConfigJson(const std::string& oaci)
 
 void DataManager::loadAircraftDataJson()
 {
+	std::lock_guard<std::mutex> lock(dataMutex_);
 	std::filesystem::path jsonPath = configPath_ / "NeoVSID" / "AircraftData.json";
 	std::ifstream aircraftDataFile(jsonPath);
 	if (!aircraftDataFile.is_open()) {
@@ -492,8 +503,9 @@ void DataManager::parseAreas(const std::string& oaci)
 	}
 }
 
-Pilot DataManager::getPilotByCallsign(std::string callsign) const
+Pilot DataManager::getPilotByCallsign(std::string callsign)
 {
+	std::lock_guard<std::mutex> lock(dataMutex_);
 	if (callsign.empty())
 		return Pilot{};
 	for (const auto& pilot : pilots)
@@ -547,8 +559,9 @@ std::vector<std::string> DataManager::getAllDepartureCallsigns() {
 	return callsigns;
 }
 
-bool DataManager::isDepartureAirport(const std::string& oaci) const
+bool DataManager::isDepartureAirport(const std::string& oaci)
 {
+	std::lock_guard<std::mutex> lock(dataMutex_);
 	if (oaci.empty())
 		return false;
 
@@ -570,8 +583,9 @@ bool DataManager::aircraftExists(const std::string& callsign) const
 	return false;
 }
 
-bool DataManager::pilotExists(const std::string& callsign) const
+bool DataManager::pilotExists(const std::string& callsign)
 {
+	std::lock_guard<std::mutex> lock(dataMutex_);
 	if (std::find_if(pilots.begin(), pilots.end(), [&](const Pilot& p) { return p.callsign == callsign; }) != pilots.end())
 		return true;
 	return false;
@@ -579,6 +593,7 @@ bool DataManager::pilotExists(const std::string& callsign) const
 
 bool DataManager::isInArea(const double& latitude, const double& longitude, const std::string& oaci, const std::string& areaName)
 {
+	std::lock_guard<std::mutex> lock(dataMutex_);
 	std::vector<double> latitudes, longitudes;
 
 	areaData area = areas.empty() ? areaData{} : *std::find_if(areas.begin(), areas.end(), [&](const areaData& area) {
@@ -617,6 +632,7 @@ bool DataManager::isInArea(const double& latitude, const double& longitude, cons
 
 bool DataManager::isMatchingRules(const nlohmann::ordered_json waypointSidData, const std::vector<std::string> activeRules, const std::string& letter, const std::string& variant)
 {
+	std::lock_guard	<std::mutex> lock(dataMutex_);
 	std::vector<std::string> ruleNames;
 	if (waypointSidData[letter][variant]["customRule"].is_array()) {
 		for (const auto& rule : waypointSidData[letter][variant]["customRule"]) {
@@ -637,6 +653,7 @@ bool DataManager::isMatchingRules(const nlohmann::ordered_json waypointSidData, 
 
 bool DataManager::isMatchingAreas(const nlohmann::ordered_json waypointSidData, const std::vector<std::string> activeAreas, const std::string& letter, const std::string& variant, const Flightplan::Flightplan fp)
 {
+	std::lock_guard<std::mutex> lock(dataMutex_);
 	std::vector<std::string> aircraftAreas;
 
 	auto aircraft = aircraftAPI_->getByCallsign(fp.callsign);
@@ -671,6 +688,7 @@ bool DataManager::isMatchingAreas(const nlohmann::ordered_json waypointSidData, 
 
 bool DataManager::isMatchingEngineRestrictions(const nlohmann::ordered_json sidData, const std::string& aircraftType)
 {
+	std::lock_guard<std::mutex> lock(dataMutex_);
 	std::string engineType = "J"; // Defaulting to Jet if no type is found
 	std::string requiredEngineType = "J";
 
@@ -686,6 +704,7 @@ bool DataManager::isMatchingEngineRestrictions(const nlohmann::ordered_json sidD
 
 bool DataManager::isRNAV(const std::string& aircraftType)
 {
+	std::lock_guard<std::mutex> lock(dataMutex_);
 	if (aircraftDataJson_.contains(aircraftType)) {
 		if (aircraftDataJson_[aircraftType].contains("rnav")) {
 			return aircraftDataJson_[aircraftType]["rnav"].get<bool>();
@@ -699,32 +718,38 @@ bool DataManager::isRNAV(const std::string& aircraftType)
 
 void DataManager::switchRuleState(const std::string& oaci, const std::string& ruleName)
 {
-	if (oaci.empty() || ruleName.empty())
-		return;
-	auto it = std::find_if(rules.begin(), rules.end(), [&](const ruleData& rule) {
-		return rule.oaci == oaci && rule.name == ruleName;
-	});
-	if (it != rules.end()) {
-		it->active = !it->active;
-	}
-	else {
-		loggerAPI_->log(Logger::LogLevel::Warning, "Rule not found when trying to switch state: " + ruleName + " for OACI: " + oaci);
+	{
+		std::lock_guard<std::mutex> lock(dataMutex_);
+		if (oaci.empty() || ruleName.empty())
+			return;
+		auto it = std::find_if(rules.begin(), rules.end(), [&](const ruleData& rule) {
+			return rule.oaci == oaci && rule.name == ruleName;
+		});
+		if (it != rules.end()) {
+			it->active = !it->active;
+		}
+		else {
+			loggerAPI_->log(Logger::LogLevel::Warning, "Rule not found when trying to switch state: " + ruleName + " for OACI: " + oaci);
+		}
 	}
 	removeAllPilots();
 }
 
 void DataManager::switchAreaState(const std::string& oaci, const std::string& areaName)
 {
-	if (oaci.empty() || areaName.empty())
-		return;
-	auto it = std::find_if(areas.begin(), areas.end(), [&](const areaData& area) {
-		return area.oaci == oaci && area.name == areaName;
-	});
-	if (it != areas.end()) {
-		it->active = !it->active;
-	}
-	else {
-		loggerAPI_->log(Logger::LogLevel::Warning, "Area not found when trying to switch state: " + areaName + " for OACI: " + oaci);
+	{
+		std::lock_guard<std::mutex> lock(dataMutex_);
+		if (oaci.empty() || areaName.empty())
+			return;
+		auto it = std::find_if(areas.begin(), areas.end(), [&](const areaData& area) {
+			return area.oaci == oaci && area.name == areaName;
+		});
+		if (it != areas.end()) {
+			it->active = !it->active;
+		}
+		else {
+			loggerAPI_->log(Logger::LogLevel::Warning, "Area not found when trying to switch state: " + areaName + " for OACI: " + oaci);
+		}
 	}
 	removeAllPilots();
 }
@@ -753,6 +778,7 @@ void DataManager::addPilot(const std::string& callsign)
 
 bool DataManager::removePilot(const std::string& callsign)
 {
+	std::lock_guard<std::mutex> lock(dataMutex_);
 	if (callsign.empty())
 		return false;
 	auto previousSize = pilots.size();
@@ -764,5 +790,6 @@ bool DataManager::removePilot(const std::string& callsign)
 
 void DataManager::removeAllPilots()
 {
+	std::lock_guard<std::mutex> lock(dataMutex_);
 	pilots.clear();
 }
