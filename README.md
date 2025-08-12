@@ -81,15 +81,15 @@ They will turn green when confirmed.<br>
 - If another value is assigned to the SID or CFL, they will turn orange while displaying the new assigned value to indicate deviation from config.<br>
 
 # Commands
-- `.vsid help` : display all available commands and their usage.<br>
+- `.vsid help` : display all available commands.<br>
 - `.vsid version` : display the current version of the plugin.<br>
 - `.vsid reset` : reset all plugin configurations.<br>
 - `.vsid airports` : display all currently active airports <br>
-- `.vsid auto` : toggle tag update every 5 seconds, need to be executed after runways configuration.<br>
+- `.vsid auto` : toggle tag update every 5 seconds.<br>
 - `.vsid pilots` : display all currently active pilots.<br>
 - `.vsid rules` : display all currently loaded rules and their active state.<br>
 - `.vsid areas` : display all currently loaded areas and their active state.<br>
 - `.vsid rule <OACI> <RULENAME>` : toggle rule for the given OACI and rule name.<br>
 - `.vsid area <OACI> <AREANAME>` : toggle area for the given OACI and area name.<br>
 - `.vsid position <CALLSIGN> <AREANAME>` (*debug command*) : to check pilot position and if in area.<br>
-- `.vsid remove <CALLSIGN>` (*debug command*) : remove pilot from the plugin (it will be readded on next plugin update if matching criteria, used to remove stuck aircraft).<br>
+- `.vsid remove <CALLSIGN>` (*debug command*) : remove pilot from the plugin (it will be readded on next plugin update if required criterias are met, used to remove stuck aircraft).<br>
