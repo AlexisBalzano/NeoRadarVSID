@@ -4,7 +4,7 @@
       "name": "Release",
       "generator": "Ninja",
       "configurationType": "Release",
-      "inheritEnvironments": ["msvc_x64"],
+      "inheritEnvironments": [ "msvc_x64" ],
       "buildRoot": "${projectDir}\\out\\build\\${name}",
       "installRoot": "${projectDir}\\out\\install\\${name}",
       "cmakeCommandArgs": "",
@@ -12,21 +12,16 @@
       "ctestCommandArgs": ""
     },
     {
-      "name": "Debug",
+      "name": "DevRelease",
       "generator": "Ninja",
-      "configurationType": "Debug",
+      "configurationType": "Release",
       "buildRoot": "${projectDir}\\out\\build\\${name}",
       "installRoot": "${projectDir}\\out\\install\\${name}",
-      "cmakeCommandArgs": "-DDEV_BUILD=ON",
+      "cmakeCommandArgs": "-DDEV=1",
+      "buildCommandArgs": "",
       "ctestCommandArgs": "",
-      "inheritEnvironments": ["msvc_x64"],
-      "variables": [
-        {
-          "name": "DEV_RELEASE_NUMBER",
-          "value": "-1",
-          "type": "STRING"
-        }
-      ]
+      "inheritEnvironments": [ "msvc_x64" ],
+      "variables": []
     }
   ]
 }

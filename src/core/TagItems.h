@@ -7,6 +7,12 @@
 #include "NeoVSID.h"
 #include "../utils/Format.h"
 
+#ifdef DEV
+#define LOG_DEBUG(loglevel, message) logger_->log(loglevel, message)
+#else
+#define LOG_DEBUG(loglevel, message) void(0)
+#endif
+
 using namespace vsid::tagitems;
 
 namespace vsid {
@@ -46,7 +52,12 @@ void NeoVSID::updateCFL(tagUpdateParam param) {
     Tag::TagContext tagContext;
 	tagContext.callsign = param.callsign;
     int vsidCfl = param.pilot.cfl; // Get vsid assigned CFL
-    int cfl = param.controllerDataAPI_->getByCallsign(param.callsign)->clearedFlightLevel;
+
+    int cfl = 0;
+	std::optional<ControllerData::ControllerDataModel> controllerData = controllerDataAPI_->getByCallsign(param.callsign);
+    if (controllerData.has_value()) {
+        cfl = controllerData->clearedFlightLevel;
+    }
     std::string cfl_string;
 
     if (cfl == 0) {
@@ -67,14 +78,21 @@ void NeoVSID::updateRWY(tagUpdateParam param) {
     tagContext.callsign = param.callsign;
     std::string vsidRwy = param.pilot.rwy;
     std::optional<Flightplan::Flightplan> fp = flightplanAPI_->getByCallsign(param.callsign);
-    std::string rwy = fp->route.depRunway;
-
-    std::vector<std::string> depRwys = airportAPI_->getConfigurationByIcao(fp->origin)->depRunways;
+    std::string rwy = "";
     bool isDepRwy = false;
-    for (const auto& rwy_ : depRwys)
-    {
-        if (vsidRwy == rwy_)
-            isDepRwy = true;
+
+    if (fp.has_value()) {
+        rwy = fp->route.depRunway;
+        auto airportConfig = airportAPI_->getConfigurationByIcao(fp->origin);
+        if (!airportConfig.has_value()) {
+            return; // No airport configuration found
+		}
+
+        for (const auto& rwy_ : airportConfig->depRunways)
+        {
+            if (vsidRwy == rwy_)
+                isDepRwy = true;
+        }
     }
 
     tagContext.colour = Color::colorizeRwy(rwy, vsidRwy, isDepRwy);
@@ -87,7 +105,11 @@ void NeoVSID::updateSID(tagUpdateParam param) {
     tagContext.callsign = param.callsign;
     std::string vsidSid = param.pilot.sid;
     std::optional<Flightplan::Flightplan> fp = flightplanAPI_->getByCallsign(param.callsign);
-    std::string sid = fp->route.sid;
+    std::string sid = "";
+    
+    if (fp.has_value()) {
+        sid = fp->route.sid;
+    }
 
     tagContext.colour = Color::colorizeSid(sid, vsidSid);
     if (sid == "") sid = vsidSid;
@@ -101,14 +123,23 @@ inline void NeoVSID::updateAlert(const std::string& callsign)
 
     std::string alert = "";
 
-    int aircraftSpeed = aircraftAPI_->getByCallsign(callsign)->position.groundSpeed;
-    int aircraftHeading = aircraftAPI_->getByCallsign(callsign)->position.reportedHeading;
-    int aircraftTrackHeading = aircraftAPI_->getByCallsign(callsign)->position.trackHeading;
-    Aircraft::TransponderMode aircraftTransponder = aircraftAPI_->getByCallsign(callsign)->transponderMode;
+	std::optional<Aircraft::Aircraft> aircraft = aircraftAPI_->getByCallsign(callsign);
+    if (!aircraft.has_value()) {
+		return; // Aircraft not found
+    }
 
-    ControllerData::GroundStatus groundStatus = controllerDataAPI_->getByCallsign(callsign)->groundStatus;
+    int aircraftSpeed = aircraft->position.groundSpeed;
+    int aircraftHeading = aircraft->position.reportedHeading;
+    int aircraftTrackHeading = aircraft->position.trackHeading;
+    Aircraft::TransponderMode aircraftTransponder = aircraft->transponderMode;
 
-	bool isOnGround = aircraftAPI_->getByCallsign(callsign)->position.onGround;
+    ControllerData::GroundStatus groundStatus = ControllerData::GroundStatus::None;
+	std::optional<ControllerData::ControllerDataModel> controllerData = controllerDataAPI_->getByCallsign(callsign);
+    if (controllerData.has_value()) {
+        groundStatus = controllerData->groundStatus;
+    }
+
+	bool isOnGround = aircraft->position.onGround;
     if(!isOnGround) {
         return;
 	}
@@ -119,7 +150,7 @@ inline void NeoVSID::updateAlert(const std::string& callsign)
         isReversing = true;
     }
 
-    bool isStopped = aircraftAPI_->getByCallsign(callsign)->position.stopped;
+    bool isStopped = aircraft->position.stopped;
 
     if (groundStatus == ControllerData::GroundStatus::Dep && aircraftTransponder == Aircraft::TransponderMode::Standby) {
         alert = "XPDR STDBY";
@@ -260,10 +291,18 @@ void NeoVSID::UpdateTagItems(std::string callsign) {
 		dataManager_->addPilot(callsign);
 	}
 	Pilot pilot = dataManager_->getPilotByCallsign(callsign);
+    if (pilot.empty()) return;
 
+	LOG_DEBUG(Logger::LogLevel::Info, "Updating tag items for: " + callsign);
+
+	LOG_DEBUG(Logger::LogLevel::Info, "updating CFL for " + callsign);
 	updateCFL({ callsign, pilot, controllerDataAPI_, tagInterface_, cflId_});
+	LOG_DEBUG(Logger::LogLevel::Info, "updating RWY for " + callsign);
 	updateRWY({ callsign, pilot, controllerDataAPI_, tagInterface_, rwyId_});
+	LOG_DEBUG(Logger::LogLevel::Info, "updating SID for " + callsign);
 	updateSID({ callsign, pilot, controllerDataAPI_, tagInterface_, sidId_});
+	LOG_DEBUG(Logger::LogLevel::Info, "updating ALERT for " + callsign);
     updateAlert(callsign);
+	LOG_DEBUG(Logger::LogLevel::Info, "update completed for " + callsign);
 }
 }  // namespace vsid

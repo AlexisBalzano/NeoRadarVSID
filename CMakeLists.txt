@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake)
-project(NeoVSID VERSION "1.2.0")
+project(NeoVSID VERSION "1.3.0")
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -15,6 +15,12 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
 else()
     add_compile_definitions(DIR_SEPARATOR="/")
 endif()
+
+if(DEV)
+    message(STATUS "Development mode enabled")
+    add_compile_definitions(DEV=1)
+endif()
+
 
 configure_file(
     ${CMAKE_SOURCE_DIR}/src/Version.h.in

@@ -91,8 +91,9 @@ namespace vsid {
     private:
         // Plugin state
         std::vector<std::string> callsignsScope;
+		std::mutex callsignsMutex;
         bool initialized_ = false;
-		bool autoModeState = false; // auto update every 5 seconds (should be true when standard ops)
+		bool autoModeState = true; // auto update every 5 seconds (should be true when standard ops)
         std::thread m_worker;
         bool m_stop;
         std::vector<std::string> requestingClearance;

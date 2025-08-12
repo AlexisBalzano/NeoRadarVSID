@@ -3,8 +3,8 @@
 // prevents C2018 during compilation
 namespace {
 const char *PLUGIN_NAME{ "vSID" };
-#if DEV_BUILD 
-const char *PLUGIN_VERSION{ "@CMAKE_PROJECT_VERSION@-vaccFR+@DEV_RELEASE_NUMBER@"};
+#if DEV
+const char *PLUGIN_VERSION{ "@CMAKE_PROJECT_VERSION@-dev"};
 #else
 const char *PLUGIN_VERSION{ "@CMAKE_PROJECT_VERSION@" };
 #endif
