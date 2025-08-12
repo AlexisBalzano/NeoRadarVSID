@@ -267,6 +267,7 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 
 	// Get aircraft areas based on its position
 	for (const auto& areaName : activeAreas) {
+		std::lock_guard<std::mutex> lock(dataMutex_);
 		if (isInArea(aircraftLat, aircraftLon, oaci, areaName)) {
 			aircraftAreas.push_back(areaName);
 			loggerAPI_->log(Logger::LogLevel::Info, "Aircraft " + flightplan.callsign + " is in area: " + areaName + " for OACI: " + oaci);
@@ -593,7 +594,6 @@ bool DataManager::pilotExists(const std::string& callsign)
 
 bool DataManager::isInArea(const double& latitude, const double& longitude, const std::string& oaci, const std::string& areaName)
 {
-	std::lock_guard<std::mutex> lock(dataMutex_);
 	std::vector<double> latitudes, longitudes;
 
 	areaData area = areas.empty() ? areaData{} : *std::find_if(areas.begin(), areas.end(), [&](const areaData& area) {
