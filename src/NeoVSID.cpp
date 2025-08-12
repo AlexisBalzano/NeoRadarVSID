@@ -99,7 +99,6 @@ void vsid::NeoVSID::OnControllerDataUpdated(const ControllerData::ControllerData
 {
     if (!event || event->callsign.empty())
         return;
-    logger_->info("Controller data updated for callsign: " + event->callsign);
     std::optional<ControllerData::ControllerDataModel> controllerDataBlock = controllerDataAPI_->getByCallsign(event->callsign);
     if (!controllerDataBlock.has_value()) return;
     if (controllerDataBlock->groundStatus == ControllerData::GroundStatus::Dep) {
