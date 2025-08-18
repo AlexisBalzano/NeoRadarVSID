@@ -7,7 +7,7 @@
 #include "core/NeoVSIDCommandProvider.h"
 #include "core/DataManager.h"
 
-constexpr double MAX_DISTANCE = 2.; //Max distance from origin airport for auto assigning SID/CFL/RWY
+constexpr double MAX_DISTANCE = 4.; //Max distance from origin airport for auto assigning SID/CFL/RWY
 
 using namespace PluginSDK;
 
