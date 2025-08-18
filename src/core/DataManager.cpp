@@ -223,7 +223,7 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 	std::string firstWaypoint = flightplan.route.waypoints[0].identifier;
 	std::string suggestedSid = flightplan.route.suggestedSid;
 	if (suggestedSid.empty() || suggestedSid.length() < 2) {
-		DisplayMessageFromDataManager("SID not found for waypoint: " + firstWaypoint + " for: " + flightplan.callsign, "SID Assigner");
+		DisplayMessageFromDataManager("SID not found for waypoint: " + firstWaypoint + " for: " + flightplan.callsign + " (incorrect suggested SID length)", "SID Assigner");
 		loggerAPI_->log(Logger::LogLevel::Warning, "suggested SID length incorrect " + firstWaypoint + " for: " + flightplan.callsign);
 		return { suggestedRwy, "CHECKFP", fetchCFL(flightplan, activeRules, activeAreas, "", singleRwy)};
 	}
@@ -246,7 +246,7 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 		if (configJson_.contains(oaci) && configJson_[oaci]["sids"].contains(firstWaypoint)) {
 			waypointSidData = configJson_[oaci]["sids"][firstWaypoint];
 		} else {
-			DisplayMessageFromDataManager("SID not found for waypoint: " + firstWaypoint + " for: " + flightplan.callsign, "SID Assigner");
+			DisplayMessageFromDataManager("SID not found for waypoint: " + firstWaypoint + " for: " + flightplan.callsign + " (No SID matching firstWaypoint)", "SID Assigner");
 			loggerAPI_->log(Logger::LogLevel::Warning, "No SID matching firstWaypoint: " + firstWaypoint + " for: " + flightplan.callsign);
 			return { suggestedRwy, "CHECKFP", fetchCFL(flightplan, activeRules, activeAreas, "", singleRwy)};
 		}
