@@ -166,6 +166,16 @@ void vsid::NeoVSID::OnPositionUpdate(const Aircraft::PositionUpdateEvent* event)
             if (std::find(callsignsScope.begin(), callsignsScope.end(), aircraft.callsign) == callsignsScope.end())
                 continue;
         }
+
+        std::optional<double> distanceFromOrigin = aircraftAPI_->getDistanceFromOrigin(aircraft.callsign);
+        if (!distanceFromOrigin.has_value()) {
+            logger_->error("Failed to retrieve distance from origin for callsign: " + aircraft.callsign);
+            return;
+        }
+        if (distanceFromOrigin > MAX_DISTANCE) {
+            dataManager_->removePilot(aircraft.callsign);
+            return;
+        }
         
         updateAlert(aircraft.callsign);
 	}
