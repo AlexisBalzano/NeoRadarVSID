@@ -293,16 +293,10 @@ void NeoVSID::UpdateTagItems(std::string callsign) {
 	Pilot pilot = dataManager_->getPilotByCallsign(callsign);
     if (pilot.empty()) return;
 
-	LOG_DEBUG(Logger::LogLevel::Info, "Updating tag items for: " + callsign);
 
-	LOG_DEBUG(Logger::LogLevel::Info, "updating CFL for " + callsign);
 	updateCFL({ callsign, pilot, controllerDataAPI_, tagInterface_, cflId_});
-	LOG_DEBUG(Logger::LogLevel::Info, "updating RWY for " + callsign);
 	updateRWY({ callsign, pilot, controllerDataAPI_, tagInterface_, rwyId_});
-	LOG_DEBUG(Logger::LogLevel::Info, "updating SID for " + callsign);
 	updateSID({ callsign, pilot, controllerDataAPI_, tagInterface_, sidId_});
-	LOG_DEBUG(Logger::LogLevel::Info, "updating ALERT for " + callsign);
     updateAlert(callsign);
-	LOG_DEBUG(Logger::LogLevel::Info, "update completed for " + callsign);
 }
 }  // namespace vsid

@@ -92,7 +92,6 @@ void NeoVSID::DisplayMessage(const std::string &message, const std::string &send
 
 void NeoVSID::runScopeUpdate() {
 	std::lock_guard<std::mutex> lock(callsignsMutex);
-	LOG_DEBUG(Logger::LogLevel::Info, "Running scope update.");
     UpdateTagItems();
 }
 
@@ -140,7 +139,6 @@ void vsid::NeoVSID::OnAircraftTemporaryAltitudeChanged(const ControllerData::Air
         if (std::find(callsignsScope.begin(), callsignsScope.end(), event->callsign) == callsignsScope.end())
             return;
     }
-	LOG_DEBUG(Logger::LogLevel::Info, "Temporary altitude changed for callsign: " + event->callsign);
 
 	std::optional<double> distanceFromOrigin = aircraftAPI_->getDistanceFromOrigin(event->callsign);
 	if (!distanceFromOrigin.has_value()) {
@@ -193,7 +191,6 @@ void vsid::NeoVSID::OnFlightplanUpdated(const Flightplan::FlightplanUpdatedEvent
             return;
 	}
 
-	LOG_DEBUG(Logger::LogLevel::Info, "Flightplan updated for callsign: " + event->callsign);
 
     // Force recomputation of RWY, SID and CFL
     dataManager_->removePilot(event->callsign);
