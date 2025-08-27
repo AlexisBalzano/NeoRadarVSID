@@ -67,7 +67,7 @@ void NeoVSID::updateCFL(tagUpdateParam param) {
         cfl_string = std::to_string(cfl);
     }
 
-    cfl_string = formatCFL(cfl_string);
+	cfl_string = formatCFL(cfl_string, 5000); // Transition Altitude hardcoded to 5000 ft for now
     tagContext.colour = Color::colorizeCfl(cfl, vsidCfl);
 
     param.tagInterface_->UpdateTagValue(param.tagId_, cfl_string, tagContext);
