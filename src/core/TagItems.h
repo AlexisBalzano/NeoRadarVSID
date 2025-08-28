@@ -155,7 +155,7 @@ inline void NeoVSID::updateAlert(const std::string& callsign)
     if (groundStatus == ControllerData::GroundStatus::Dep && aircraftTransponder == Aircraft::TransponderMode::Standby) {
         alert = "XPDR STDBY";
     }
-    else if (isStopped && aircraftSpeed > 5 && groundStatus == ControllerData::GroundStatus::Dep) {
+    else if (isStopped && aircraftSpeed < 5 && groundStatus == ControllerData::GroundStatus::Dep) {
         alert = "STAT RPA";
     }
     else if (aircraftSpeed > 0 && isReversing && groundStatus != ControllerData::GroundStatus::Push) {
