@@ -148,11 +148,6 @@ inline void NeoVSID::updateAlert(const std::string& callsign)
         groundStatus = controllerData->groundStatus;
     }
 
-	bool isOnGround = aircraft->position.onGround;
-    if(!isOnGround) {
-        return;
-	}
-
     bool isReversing = false;
     int headingDiff = std::abs(aircraftTrackHeading - aircraftHeading);
     if (headingDiff >= 120 && headingDiff <= 240) { // Heading threshold 60°
@@ -170,14 +165,13 @@ inline void NeoVSID::updateAlert(const std::string& callsign)
     else if (aircraftSpeed > 0 && isReversing && groundStatus != ControllerData::GroundStatus::Push) {
         alert = "NO PUSH CLR";
     }
-    else if (aircraftSpeed > 30 && groundStatus < ControllerData::GroundStatus::Dep) {
+    else if (aircraftSpeed > 35 && groundStatus < ControllerData::GroundStatus::Dep) {
         alert = "NO TKOF CLR";
     }
     else if (aircraftSpeed > 5 && !isReversing && groundStatus < ControllerData::GroundStatus::Taxi) {
         alert = "NO TAXI CLR";
     }
 
-    tagContext.colour = Color::colorizeAlert();
     tagInterface_->UpdateTagValue(alertsId_, alert, tagContext);
 }
 
