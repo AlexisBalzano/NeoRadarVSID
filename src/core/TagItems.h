@@ -120,17 +120,26 @@ inline void NeoVSID::updateAlert(const std::string& callsign)
 {
     Tag::TagContext tagContext;
     tagContext.callsign = callsign;
+    tagContext.colour = Color::colorizeAlert();
 
     std::string alert = "";
 
 	std::optional<Aircraft::Aircraft> aircraft = aircraftAPI_->getByCallsign(callsign);
     if (!aircraft.has_value()) {
+        tagInterface_->UpdateTagValue(alertsId_, alert, tagContext);
 		return; // Aircraft not found
     }
 
     int aircraftSpeed = aircraft->position.groundSpeed;
     int aircraftHeading = aircraft->position.reportedHeading;
     int aircraftTrackHeading = aircraft->position.trackHeading;
+    int aircraftAlitude = aircraft->position.altitude;
+
+	if (aircraftAlitude > ALERT_MAX_ALTITUDE) {
+        tagInterface_->UpdateTagValue(alertsId_, alert, tagContext);
+		return;
+	}
+
     Aircraft::TransponderMode aircraftTransponder = aircraft->transponderMode;
 
     ControllerData::GroundStatus groundStatus = ControllerData::GroundStatus::None;
@@ -155,7 +164,7 @@ inline void NeoVSID::updateAlert(const std::string& callsign)
     if (groundStatus == ControllerData::GroundStatus::Dep && aircraftTransponder == Aircraft::TransponderMode::Standby) {
         alert = "XPDR STDBY";
     }
-    else if (isStopped && aircraftSpeed < 5 && groundStatus == ControllerData::GroundStatus::Dep) {
+    else if (isStopped && groundStatus == ControllerData::GroundStatus::Dep) {
         alert = "STAT RPA";
     }
     else if (aircraftSpeed > 0 && isReversing && groundStatus != ControllerData::GroundStatus::Push) {
