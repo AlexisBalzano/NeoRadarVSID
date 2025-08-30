@@ -565,7 +565,7 @@ std::vector<std::string> DataManager::getAllDepartureCallsigns() {
 		if (flightplan.route.depRunway != "") depRwy = flightplan.route.depRunway;
 
 		sidData vsidData = generateVSID(flightplan, depRwy);
-		pilots.push_back(Pilot{ flightplan.callsign, vsidData.rwy, vsidData.sid, vsidData.cfl});
+		pilots.push_back(Pilot{ flightplan.callsign, vsidData.rwy, vsidData.sid, flightplan.origin, vsidData.cfl});
 		LOG_DEBUG(Logger::LogLevel::Info, "Added pilot: " + flightplan.callsign + " with SID: " + vsidData.sid + " and CFL: " + std::to_string(vsidData.cfl));
 	}
 	return callsigns;
@@ -728,6 +728,18 @@ bool DataManager::isRNAV(const std::string& aircraftType)
 	return false;
 }
 
+int DataManager::getTransAltitude(const std::string& oaci)
+{
+	if (!retrieveCorrectConfigJson(oaci)) {
+		loggerAPI_->log(Logger::LogLevel::Warning, "Failed to retrieve config when retrieving Trans Alt for: " + oaci);
+		return 5000;
+	}
+	if (configJson_[oaci].contains("transAlt")) {
+		return configJson_[oaci]["transAlt"].get<int>();
+	}
+	return 5000; // Fallback transition altitude
+}
+
 void DataManager::switchRuleState(const std::string& oaci, const std::string& ruleName)
 {
 	{
@@ -785,7 +797,7 @@ void DataManager::addPilot(const std::string& callsign)
 		depRwy = flightplan->route.depRunway;
 
 	sidData vsidData = generateVSID(flightplan.value(), depRwy);
-	pilots.push_back(Pilot{ flightplan->callsign, vsidData.rwy, vsidData.sid, vsidData.cfl });
+	pilots.push_back(Pilot{ flightplan->callsign, vsidData.rwy, vsidData.sid, flightplan->origin, vsidData.cfl });
 }
 
 bool DataManager::removePilot(const std::string& callsign)

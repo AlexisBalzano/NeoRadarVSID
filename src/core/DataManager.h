@@ -11,6 +11,7 @@ struct Pilot {
 	std::string callsign;
 	std::string rwy;
 	std::string sid;
+	std::string oaci;
 	int cfl;
 
 	bool empty() const {
@@ -63,6 +64,7 @@ public:
 	Pilot getPilotByCallsign(std::string callsign);
 	std::vector<ruleData> getRules() const { return rules; }
 	std::vector<areaData> getAreas() const { return areas; }
+	int getTransAltitude(const std::string& oaci);
 
 	void switchRuleState(const std::string& oaci, const std::string& ruleName);
 	void switchAreaState(const std::string& oaci, const std::string& areaName);
