@@ -111,7 +111,7 @@ void NeoVSID::Shutdown()
 
 void vsid::NeoVSID::Reset()
 {
-    autoModeState = false;
+    autoModeState = true;
 	requestingClearance.clear();
 	requestingPush.clear();
 	requestingTaxi.clear();
