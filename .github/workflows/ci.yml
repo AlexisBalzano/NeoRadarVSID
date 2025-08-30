@@ -78,17 +78,23 @@ jobs:
           brew update
           brew install utf8proc
 
+      - name: Set allowUnsupported for vcpkg
+        run: echo "VCPKG_FEATURE_FLAGS=allowUnsupported" >> $GITHUB_ENV
+
       - name: Configure CMake (Windows and Linux)
         if: matrix.os != 'macos-latest'
-        shell: bash
+        shell: bash 
         run: |
-          cmake . -DPLUGIN_VERSION=${{ steps.compute_version.outputs.version }}
+          cmake -G Ninja . -DPLUGIN_VERSION=${{ steps.compute_version.outputs.version }}
 
       - name: Configure CMake (MacOS)
         if: matrix.os == 'macos-latest'
         shell: bash
         run: |
-          cmake . -DPLUGIN_VERSION=${{ steps.compute_version.outputs.version }} -DCMAKE_APPLE_SILICON_PROCESSOR=${{ matrix.architecture }}
+          cmake -G Ninja . \
+            -DPLUGIN_VERSION=${{ steps.compute_version.outputs.version }} \
+            -DCMAKE_APPLE_SILICON_PROCESSOR=${{ matrix.architecture }} \
+            -DVCPKG_FEATURE_FLAGS=allowUnsupported
 
       - name: Build
         shell: bash
