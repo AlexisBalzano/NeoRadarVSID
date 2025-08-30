@@ -78,8 +78,8 @@ jobs:
           brew update
           brew install utf8proc
 
-      - name: vcpkg install
-        run: vcpkg install --allow-unsupported
+      - name: Set allowUnsupported for vcpkg
+        run: echo "VCPKG_FEATURE_FLAGS=allowUnsupported" >> $GITHUB_ENV
 
       - name: Configure CMake (Windows and Linux)
         if: matrix.os != 'macos-latest'
