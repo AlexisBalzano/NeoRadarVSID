@@ -42,8 +42,11 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/src
 )
 
+include_directories(${VCPKG_INCLUDE_DIRS})
+
 # Find external dependencies
 find_package(nlohmann_json CONFIG REQUIRED)
+find_package(OpenSSL REQUIRED)
 
 # Source files
 # To set after starting development
@@ -60,6 +63,8 @@ add_library(${PROJECT_NAME} SHARED ${SOURCES}  "src/core/DataManager.cpp" "src/u
 # Link dependencies
 target_link_libraries(${PROJECT_NAME} PRIVATE 
     nlohmann_json::nlohmann_json
+    OpenSSL::SSL
+    OpenSSL::Crypto
 )
 
 # Set output directory and properties
