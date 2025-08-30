@@ -1,4 +1,9 @@
 #pragma once
+
+#define PLUGIN_SDK_VERSION_MAJOR 1
+#define PLUGIN_SDK_VERSION_MINOR 0
+#define PLUGIN_SDK_VERSION_PATCH 0
+
 #include "Aircraft.h"
 #include "Flightplan.h"
 #include "Controller.h"
@@ -12,6 +17,7 @@
 #include "Sectors.h"
 #include "Chat.h"
 #include <filesystem>
+#include <string>
 
 namespace PluginSDK {
 
@@ -25,6 +31,10 @@ struct PluginMetadata {
     std::string author;
 };
 
+/**
+ * @struct ClientInformation
+ * @brief Information about the client application
+ */
 struct ClientInformation {
     std::string clientName;
     std::string clientVersion;
@@ -109,10 +119,12 @@ public:
 class BasePlugin {
 public:
     virtual ~BasePlugin() = default;
+
     /**
      * @brief Initialize the plugin
      * @param metadata The plugin's metadata
      * @param coreAPI Pointer to the core API interface
+     * @param info Client information
      */
     virtual void Initialize(const PluginMetadata& metadata, CoreAPI* coreAPI, ClientInformation info) = 0;
 
@@ -197,25 +209,23 @@ public:
     // Squawk events
     virtual void OnSquawkAssigned(const Squawk::SquawkAssignedEvent* event) {}
 
+    // Tag events
     virtual void OnTagAction(const Tag::TagActionEvent* event) {}
     virtual void OnTagDropdownAction(const Tag::DropdownActionEvent* event) {}
 };
 
 } // namespace PluginSDK
 
-// Define export symbol for different platforms
 #if defined(_MSC_VER)
 #define PLUGIN_API __declspec(dllexport)
 #else
 #define PLUGIN_API __attribute__((visibility("default")))
 #endif
 
-// C-style export that plugins must implement
 extern "C" {
-/**
- * @brief Create a new instance of your plugin
- * @return Pointer to a newly created plugin instance
- * @note The system takes ownership of this pointer and will delete it when done
- */
+inline PLUGIN_API int PLUGIN_SDK_VERSION_MAJOR_EXPORTED = PLUGIN_SDK_VERSION_MAJOR;
+inline PLUGIN_API int PLUGIN_SDK_VERSION_MINOR_EXPORTED = PLUGIN_SDK_VERSION_MINOR;
+inline PLUGIN_API int PLUGIN_SDK_VERSION_PATCH_EXPORTED = PLUGIN_SDK_VERSION_PATCH;
+
 PLUGIN_API PluginSDK::BasePlugin* CreatePluginInstance();
 }

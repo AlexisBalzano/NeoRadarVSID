@@ -66,6 +66,7 @@ struct DropdownComponent {
     std::string text;
     std::map<std::string, std::string> data;
     DropdownComponentStyle style;
+    bool requiresInput = false;
     std::vector<DropdownComponent> children;
 };
 
@@ -81,6 +82,7 @@ struct DropdownActionEvent {
     std::string componentId;
     std::string tagId;
     std::string callsign;
+    std::string userInput;
     std::map<std::string, std::string> data;
 };
 
