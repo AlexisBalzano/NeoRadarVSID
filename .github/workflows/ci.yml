@@ -63,6 +63,9 @@ jobs:
             version=$(echo ${{ github.ref }} | sed -E 's/refs\/tags\/(v)?//g')
           fi
           echo "version=$version" >> $GITHUB_OUTPUT
+      
+      - name: Install dependencies
+        run: vcpkg install openssl:x64-windows
 
       - name: Setup cmake
         uses: jwlawson/actions-setup-cmake@v2
