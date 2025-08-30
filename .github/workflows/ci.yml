@@ -81,8 +81,14 @@ jobs:
       - name: Set allowUnsupported for vcpkg
         run: echo "VCPKG_FEATURE_FLAGS=allowUnsupported" >> $GITHUB_ENV
 
-      - name: Configure CMake (Windows and Linux)
-        if: matrix.os != 'macos-latest'
+      - name: Configure CMake (Windows)
+        if: matrix.os == 'windows-2022'
+        shell: bash
+        run: |
+            cmake -G "Ninja" -A x64 -DCMAKE_BUILD_TYPE=${{ env.build_type }} -DPLUGIN_VERSION=${{ steps.compute_version.outputs.version }} .
+
+      - name: Configure CMake (Linux)
+        if: matrix.os == 'ubuntu-latest'
         shell: bash 
         run: |
           cmake -G "Ninja" -DCMAKE_BUILD_TYPE=${{ env.build_type }} -DPLUGIN_VERSION=${{ steps.compute_version.outputs.version }} .
