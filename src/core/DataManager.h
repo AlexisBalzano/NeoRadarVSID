@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <nlohmann/json.hpp>
 #include <mutex>
+#include <unordered_set>
 
 #include "SDK.h"
 
@@ -51,6 +52,7 @@ public:
 	void populateActiveAirports();
 	int retrieveConfigJson(const std::string& oaci);
 	bool retrieveCorrectConfigJson(const std::string& oaci);
+	bool isCorrectJsonVersion(const std::string& config_version, const std::string& fileName);
 	void loadAircraftDataJson();
 	void parseRules(const std::string& oaci);
 	void parseAreas(const std::string& oaci);
@@ -96,6 +98,8 @@ private:
 	std::vector<Pilot> pilots;
 	std::vector<ruleData> rules;
 	std::vector<areaData> areas;
+
+	std::unordered_set<std::string> configsError;
 
 	std::mutex dataMutex_;
 

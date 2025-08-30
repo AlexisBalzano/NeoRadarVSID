@@ -368,6 +368,7 @@ Chat::CommandResult NeoVSIDCommandProvider::Execute( const std::string &commandI
     {
         neoVSID_->DisplayMessage("NeoVSID resetted.");
         neoVSID_->GetDataManager()->removeAllPilots();
+		neoVSID_->GetDataManager()->clearData();
 		neoVSID_->GetDataManager()->clearJson();
 		neoVSID_->GetDataManager()->loadAircraftDataJson();
         neoVSID_->GetDataManager()->populateActiveAirports();
