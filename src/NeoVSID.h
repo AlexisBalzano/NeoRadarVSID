@@ -7,7 +7,9 @@
 #include "core/NeoVSIDCommandProvider.h"
 #include "core/DataManager.h"
 
-constexpr double MAX_DISTANCE = 2.; //Max distance from origin airport for auto assigning SID/CFL/RWY
+constexpr const char* NEOVSID_VERSION = "v1.3.2";
+constexpr double MAX_DISTANCE = 4.; //Max distance from origin airport for auto assigning SID/CFL/RWY
+constexpr int ALERT_MAX_ALTITUDE = 5000; // Max altitude to show ground alerts
 
 using namespace PluginSDK;
 
@@ -32,6 +34,7 @@ namespace vsid {
 
 		// Plugin lifecycle methods
         void Initialize(const PluginMetadata& metadata, CoreAPI* coreAPI, ClientInformation info) override;
+        std::pair<bool, std::string> newVersionAvailable();
         void Shutdown() override;
         void Reset();
         PluginMetadata GetMetadata() const override;

@@ -67,7 +67,7 @@ void NeoVSID::updateCFL(tagUpdateParam param) {
         cfl_string = std::to_string(cfl);
     }
 
-    cfl_string = formatCFL(cfl_string);
+	cfl_string = formatCFL(cfl_string, 5000); // Transition Altitude hardcoded to 5000 ft for now
     tagContext.colour = Color::colorizeCfl(cfl, vsidCfl);
 
     param.tagInterface_->UpdateTagValue(param.tagId_, cfl_string, tagContext);
@@ -120,17 +120,26 @@ inline void NeoVSID::updateAlert(const std::string& callsign)
 {
     Tag::TagContext tagContext;
     tagContext.callsign = callsign;
+    tagContext.colour = Color::colorizeAlert();
 
     std::string alert = "";
 
 	std::optional<Aircraft::Aircraft> aircraft = aircraftAPI_->getByCallsign(callsign);
     if (!aircraft.has_value()) {
+        tagInterface_->UpdateTagValue(alertsId_, alert, tagContext);
 		return; // Aircraft not found
     }
 
     int aircraftSpeed = aircraft->position.groundSpeed;
     int aircraftHeading = aircraft->position.reportedHeading;
     int aircraftTrackHeading = aircraft->position.trackHeading;
+    int aircraftAlitude = aircraft->position.altitude;
+
+	if (aircraftAlitude > ALERT_MAX_ALTITUDE) {
+        tagInterface_->UpdateTagValue(alertsId_, alert, tagContext);
+		return;
+	}
+
     Aircraft::TransponderMode aircraftTransponder = aircraft->transponderMode;
 
     ControllerData::GroundStatus groundStatus = ControllerData::GroundStatus::None;
@@ -138,11 +147,6 @@ inline void NeoVSID::updateAlert(const std::string& callsign)
     if (controllerData.has_value()) {
         groundStatus = controllerData->groundStatus;
     }
-
-	bool isOnGround = aircraft->position.onGround;
-    if(!isOnGround) {
-        return;
-	}
 
     bool isReversing = false;
     int headingDiff = std::abs(aircraftTrackHeading - aircraftHeading);
@@ -161,14 +165,13 @@ inline void NeoVSID::updateAlert(const std::string& callsign)
     else if (aircraftSpeed > 0 && isReversing && groundStatus != ControllerData::GroundStatus::Push) {
         alert = "NO PUSH CLR";
     }
-    else if (aircraftSpeed > 30 && groundStatus < ControllerData::GroundStatus::Dep) {
+    else if (aircraftSpeed > 35 && groundStatus < ControllerData::GroundStatus::Dep) {
         alert = "NO TKOF CLR";
     }
     else if (aircraftSpeed > 5 && !isReversing && groundStatus < ControllerData::GroundStatus::Taxi) {
         alert = "NO TAXI CLR";
     }
 
-    tagContext.colour = Color::colorizeAlert();
     tagInterface_->UpdateTagValue(alertsId_, alert, tagContext);
 }
 
@@ -293,16 +296,10 @@ void NeoVSID::UpdateTagItems(std::string callsign) {
 	Pilot pilot = dataManager_->getPilotByCallsign(callsign);
     if (pilot.empty()) return;
 
-	LOG_DEBUG(Logger::LogLevel::Info, "Updating tag items for: " + callsign);
 
-	LOG_DEBUG(Logger::LogLevel::Info, "updating CFL for " + callsign);
 	updateCFL({ callsign, pilot, controllerDataAPI_, tagInterface_, cflId_});
-	LOG_DEBUG(Logger::LogLevel::Info, "updating RWY for " + callsign);
 	updateRWY({ callsign, pilot, controllerDataAPI_, tagInterface_, rwyId_});
-	LOG_DEBUG(Logger::LogLevel::Info, "updating SID for " + callsign);
 	updateSID({ callsign, pilot, controllerDataAPI_, tagInterface_, sidId_});
-	LOG_DEBUG(Logger::LogLevel::Info, "updating ALERT for " + callsign);
     updateAlert(callsign);
-	LOG_DEBUG(Logger::LogLevel::Info, "update completed for " + callsign);
 }
 }  // namespace vsid

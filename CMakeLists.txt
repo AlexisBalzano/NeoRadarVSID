@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake)
-project(NeoVSID VERSION "1.3.0")
+project(NeoVSID VERSION "1.3.2")
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -44,6 +44,7 @@ include_directories(
 
 # Find external dependencies
 find_package(nlohmann_json CONFIG REQUIRED)
+find_package(OpenSSL REQUIRED)
 
 # Source files
 # To set after starting development
@@ -60,7 +61,12 @@ add_library(${PROJECT_NAME} SHARED ${SOURCES}  "src/core/DataManager.cpp" "src/u
 # Link dependencies
 target_link_libraries(${PROJECT_NAME} PRIVATE 
     nlohmann_json::nlohmann_json
+    OpenSSL::SSL
+    OpenSSL::Crypto
 )
+
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/External/httplib)
+target_compile_definitions(${PROJECT_NAME} PRIVATE CPPHTTPLIB_OPENSSL_SUPPORT)
 
 # Set output directory and properties
 set_target_properties(${PROJECT_NAME} PROPERTIES

@@ -1,6 +1,7 @@
 #include "NeoVSID.h"
 #include <numeric>
 #include <chrono>
+#include <httplib.h>
 
 #include "Version.h"
 #include "core/CompileCommands.h"
@@ -33,8 +34,11 @@ void NeoVSID::Initialize(const PluginMetadata &metadata, CoreAPI *coreAPI, Clien
     tagInterface_ = lcoreAPI->tag().getInterface();
 	dataManager_ = std::make_unique<DataManager>(this);
 
-    DisplayMessage("Version " + std::string(PLUGIN_VERSION) + " loaded.", "Initialisation");
-    
+	std::pair<bool, std::string> updateAvailable = newVersionAvailable();
+	if (updateAvailable.first) {
+		DisplayMessage("A new version of NeoVSID is available: " + updateAvailable.second + " (current version: " + NEOVSID_VERSION + ")", "");
+	}
+
     callsignsScope.clear();
 	dataManager_->removeAllPilots();
 	dataManager_->populateActiveAirports();
@@ -54,6 +58,39 @@ void NeoVSID::Initialize(const PluginMetadata &metadata, CoreAPI *coreAPI, Clien
 
     this->m_stop = false;
     this->m_worker = std::thread(&NeoVSID::run, this);
+}
+
+std::pair<bool, std::string> vsid::NeoVSID::newVersionAvailable()
+{
+    httplib::SSLClient cli("api.github.com");
+    httplib::Headers headers = { {"User-Agent", "NEOVSIDversionChecker"} };
+    std::string apiEndpoint = "/repos/AlexisBalzano/NeoRadarVSID/releases/latest";
+
+    auto res = cli.Get(apiEndpoint.c_str(), headers);
+    if (res && res->status == 200) {
+        try
+        {
+            auto json = nlohmann::json::parse(res->body);
+            std::string latestVersion = json["tag_name"];
+            if (latestVersion != NEOVSID_VERSION) {
+                logger_->warning("A new version of NeoVSID is available: " + latestVersion + " (current version: " + NEOVSID_VERSION + ")");
+                return { true, latestVersion };
+            }
+            else {
+                logger_->log(Logger::LogLevel::Info, "NeoVSID is up to date.");
+                return { false, "" };
+            }
+        }
+        catch (const std::exception& e)
+        {
+            logger_->error("Failed to parse version information from GitHub: " + std::string(e.what()));
+            return { false, "" };
+        }
+    }
+    else {
+        logger_->error("Failed to check for NeoVSID updates. HTTP status: " + std::to_string(res ? res->status : 0));
+        return { false, "" };
+    }
 }
 
 void NeoVSID::Shutdown()
@@ -92,7 +129,6 @@ void NeoVSID::DisplayMessage(const std::string &message, const std::string &send
 
 void NeoVSID::runScopeUpdate() {
 	std::lock_guard<std::mutex> lock(callsignsMutex);
-	LOG_DEBUG(Logger::LogLevel::Info, "Running scope update.");
     UpdateTagItems();
 }
 
@@ -140,7 +176,6 @@ void vsid::NeoVSID::OnAircraftTemporaryAltitudeChanged(const ControllerData::Air
         if (std::find(callsignsScope.begin(), callsignsScope.end(), event->callsign) == callsignsScope.end())
             return;
     }
-	LOG_DEBUG(Logger::LogLevel::Info, "Temporary altitude changed for callsign: " + event->callsign);
 
 	std::optional<double> distanceFromOrigin = aircraftAPI_->getDistanceFromOrigin(event->callsign);
 	if (!distanceFromOrigin.has_value()) {
@@ -166,6 +201,16 @@ void vsid::NeoVSID::OnPositionUpdate(const Aircraft::PositionUpdateEvent* event)
             if (std::find(callsignsScope.begin(), callsignsScope.end(), aircraft.callsign) == callsignsScope.end())
                 continue;
         }
+
+        std::optional<double> distanceFromOrigin = aircraftAPI_->getDistanceFromOrigin(aircraft.callsign);
+        if (!distanceFromOrigin.has_value()) {
+            logger_->error("Failed to retrieve distance from origin for callsign: " + aircraft.callsign);
+            return;
+        }
+        if (distanceFromOrigin > MAX_DISTANCE) {
+            dataManager_->removePilot(aircraft.callsign);
+            return;
+        }
         
         updateAlert(aircraft.callsign);
 	}
@@ -183,7 +228,6 @@ void vsid::NeoVSID::OnFlightplanUpdated(const Flightplan::FlightplanUpdatedEvent
             return;
 	}
 
-	LOG_DEBUG(Logger::LogLevel::Info, "Flightplan updated for callsign: " + event->callsign);
 
     // Force recomputation of RWY, SID and CFL
     dataManager_->removePilot(event->callsign);
