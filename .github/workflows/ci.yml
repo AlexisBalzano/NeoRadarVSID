@@ -78,6 +78,9 @@ jobs:
           brew update
           brew install utf8proc
 
+      - name: vcpkg install
+        run: vcpkg install --allow-unsupported
+
       - name: Configure CMake (Windows and Linux)
         if: matrix.os != 'macos-latest'
         shell: bash
