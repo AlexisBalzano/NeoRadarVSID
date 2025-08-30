@@ -75,7 +75,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     PREFIX ""  # Remove "lib" prefix on Unix-like systems
 )
 
-target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/external/httplib)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/External/httplib)
 target_compile_definitions(${PROJECT_NAME} PRIVATE CPPHTTPLIB_OPENSSL_SUPPORT)
 
 # Add processor-specific output name for Apple platforms
