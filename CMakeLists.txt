@@ -75,6 +75,8 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     PREFIX ""  # Remove "lib" prefix on Unix-like systems
 )
 
+target_compile_definitions(${PROJECT_NAME} PRIVATE CPPHTTPLIB_OPENSSL_SUPPORT)
+
 # Add processor-specific output name for Apple platforms
 if(${CMAKE_HOST_APPLE})
     set_target_properties(${PROJECT_NAME} PROPERTIES

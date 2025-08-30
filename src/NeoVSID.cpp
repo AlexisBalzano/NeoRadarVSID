@@ -1,6 +1,8 @@
 #include "NeoVSID.h"
 #include <numeric>
 #include <chrono>
+#include <httplib.h>
+#define CPPHTTPLIB_OPENSSL_SUPPORT
 
 #include "Version.h"
 #include "core/CompileCommands.h"
@@ -33,6 +35,11 @@ void NeoVSID::Initialize(const PluginMetadata &metadata, CoreAPI *coreAPI, Clien
     tagInterface_ = lcoreAPI->tag().getInterface();
 	dataManager_ = std::make_unique<DataManager>(this);
 
+	std::pair<bool, std::string> versionCheck = newVersionAvailable();
+    if (versionCheck.first) {
+		DisplayMessage("New version available: " + versionCheck.second);
+    }
+
     callsignsScope.clear();
 	dataManager_->removeAllPilots();
 	dataManager_->populateActiveAirports();
@@ -52,6 +59,39 @@ void NeoVSID::Initialize(const PluginMetadata &metadata, CoreAPI *coreAPI, Clien
 
     this->m_stop = false;
     this->m_worker = std::thread(&NeoVSID::run, this);
+}
+
+std::pair<bool, std::string> vsid::NeoVSID::newVersionAvailable()
+{
+    httplib::SSLClient cli("api.github.com");
+    httplib::Headers headers = { {"User-Agent", "NEOVSIDversionChecker"} };
+    std::string apiEndpoint = "/repos/AlexisBalzano/NeoRadarVSID/releases/latest";
+
+    auto res = cli.Get(apiEndpoint.c_str(), headers);
+    if (res && res->status == 200) {
+        try
+        {
+            auto json = nlohmann::json::parse(res->body);
+            std::string latestVersion = json["tag_name"];
+            if (latestVersion != NEOVSID_VERSION) {
+		    	logger_->warning("A new version of NeoVSID is available: " + latestVersion + " (current version: " + NEOVSID_VERSION + ")");
+                return { true, latestVersion };
+            }
+            else {
+		    	logger_->log(Logger::LogLevel::Info, "NeoVSID is up to date.");
+                return { false, "" };
+            }
+        }
+        catch (const std::exception& e)
+        {
+            logger_->error("Failed to parse version information from GitHub: " + std::string(e.what()));
+            return { false, "" };
+        }
+    }
+    else {
+		logger_->error("Failed to check for NeoVSID updates. HTTP status: " + std::to_string(res ? res->status : 0));
+        return { false, "" };
+    }
 }
 
 void NeoVSID::Shutdown()
