@@ -730,11 +730,11 @@ bool DataManager::isRNAV(const std::string& aircraftType)
 
 int DataManager::getTransAltitude(const std::string& oaci)
 {
-	std::lock_guard<std::mutex> lock(dataMutex_);
 	if (!retrieveCorrectConfigJson(oaci)) {
 		loggerAPI_->log(Logger::LogLevel::Warning, "Failed to retrieve config when retrieving Trans Alt for: " + oaci);
 		return 5000;
 	}
+	std::lock_guard<std::mutex> lock(dataMutex_);
 	if (configJson_[oaci].contains("transAlt")) {
 		return configJson_[oaci]["transAlt"].get<int>();
 	}
