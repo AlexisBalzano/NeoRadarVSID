@@ -2,7 +2,6 @@
 #include <numeric>
 #include <chrono>
 #include <httplib.h>
-#define CPPHTTPLIB_OPENSSL_SUPPORT
 
 #include "Version.h"
 #include "core/CompileCommands.h"
