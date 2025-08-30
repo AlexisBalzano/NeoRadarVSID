@@ -63,7 +63,6 @@ void DataManager::clearData()
 	activeAirports.clear();
 	configJson_.clear();
 	configPath_.clear();
-	configsError.clear();
 	if (aircraftAPI_)
 		aircraftAPI_ = nullptr;
 	if (flightplanAPI_)
@@ -79,6 +78,7 @@ void DataManager::clearJson()
 	aircraftDataJson_.clear();
 	rules.clear();
 	areas.clear();
+	configsError.clear();
 }
 
 void DataManager::DisplayMessageFromDataManager(const std::string& message, const std::string& sender)
@@ -730,6 +730,7 @@ bool DataManager::isRNAV(const std::string& aircraftType)
 
 int DataManager::getTransAltitude(const std::string& oaci)
 {
+	std::lock_guard<std::mutex> lock(dataMutex_);
 	if (!retrieveCorrectConfigJson(oaci)) {
 		loggerAPI_->log(Logger::LogLevel::Warning, "Failed to retrieve config when retrieving Trans Alt for: " + oaci);
 		return 5000;
