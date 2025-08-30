@@ -1,5 +1,5 @@
 # NeoRadarVSID
-vSID adaptation for NeoRadar ATC Client <br>
+vSID adaptation for *NeoRadar* ATC Client <br>
 <br>
 <img width="565" height="154" alt="VSIDillustrationImage" src="https://github.com/user-attachments/assets/19cf296e-ca41-4fa3-a2b1-c3852d1df9a3" />
 
