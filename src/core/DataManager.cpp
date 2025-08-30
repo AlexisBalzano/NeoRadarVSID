@@ -31,6 +31,7 @@ DataManager::DataManager(vsid::NeoVSID* neoVSID)
 	configPath_ = getDllDirectory();
 	loadAircraftDataJson();
 	activeAirports.clear();
+	configsError.clear();
 }
 
 
@@ -62,6 +63,7 @@ void DataManager::clearData()
 	activeAirports.clear();
 	configJson_.clear();
 	configPath_.clear();
+	configsError.clear();
 	if (aircraftAPI_)
 		aircraftAPI_ = nullptr;
 	if (flightplanAPI_)
@@ -377,26 +379,48 @@ int DataManager::retrieveConfigJson(const std::string& oaci)
 
 	try {
 		config >> configJson_;
+		if (configJson_.contains("version")) {
+			if (!isCorrectJsonVersion(configJson_["version"].get<std::string>(), fileName)) {
+				configJson_.clear();
+				return -1;
+			}
+		}
+		else {
+			if (!configsError.contains(oaci)) {
+				configsError.insert(oaci);
+				DisplayMessageFromDataManager("Config version missing in JSON file: " + fileName, "DataManager");
+			}
+		}
 	}
 	catch (...) {
 		DisplayMessageFromDataManager("Error parsing JSON file: " + jsonPath.string(), "DataManager");
 		loggerAPI_->log(Logger::LogLevel::Error, "Error parsing JSON file: " + jsonPath.string());
 		return -1;
 	}
-
+	
 	return 0;
 }
 
 bool DataManager::retrieveCorrectConfigJson(const std::string& oaci)
 {
 	if (!configJson_.contains(oaci) || configJson_.empty()) {
-		if (retrieveConfigJson(oaci) == -1) {
-			DisplayMessageFromDataManager("Error retrieving config JSON for OACI: " + oaci, "DataManager");
-			loggerAPI_->log(Logger::LogLevel::Error, "Error retrieving config JSON for OACI: " + oaci);
-			return false;
-		}
+		if (retrieveConfigJson(oaci) == -1) return false;
 	}
 	return true;
+}
+
+bool DataManager::isCorrectJsonVersion(const std::string& config_version, const std::string& fileName)
+{
+	if (config_version == NEOVSID_VERSION) {
+		return true;
+	}
+	else {
+		if (configsError.contains(fileName)) return false; // Avoid spamming messages for the same file
+		configsError.insert(fileName);
+		DisplayMessageFromDataManager("Config version mismatch! Expected: " + std::string(NEOVSID_VERSION) + ", Found: " + config_version + ", please update your config files.", fileName);
+		loggerAPI_->log(Logger::LogLevel::Error, "Config version mismatch! Expected: " + std::string(NEOVSID_VERSION) + ", Found: " + config_version + fileName);
+	}
+	return false;
 }
 
 void DataManager::loadAircraftDataJson()
