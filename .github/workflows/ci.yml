@@ -85,7 +85,7 @@ jobs:
         if: matrix.os != 'macos-latest'
         shell: bash 
         run: |
-          cmake -G Ninja . -DPLUGIN_VERSION=${{ steps.compute_version.outputs.version }}
+          cmake -G "Ninja" -DCMAKE_BUILD_TYPE=${{ env.build_type }} -DPLUGIN_VERSION=${{ steps.compute_version.outputs.version }} .
 
       - name: Configure CMake (MacOS)
         if: matrix.os == 'macos-latest'
