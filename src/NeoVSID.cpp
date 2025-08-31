@@ -34,10 +34,12 @@ void NeoVSID::Initialize(const PluginMetadata &metadata, CoreAPI *coreAPI, Clien
     tagInterface_ = lcoreAPI->tag().getInterface();
 	dataManager_ = std::make_unique<DataManager>(this);
 
+#ifndef DEV
 	std::pair<bool, std::string> updateAvailable = newVersionAvailable();
 	if (updateAvailable.first) {
 		DisplayMessage("A new version of NeoVSID is available: " + updateAvailable.second + " (current version: " + NEOVSID_VERSION + ")", "");
 	}
+#endif // !DEV
 
     callsignsScope.clear();
 	dataManager_->removeAllPilots();
