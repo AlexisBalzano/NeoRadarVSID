@@ -31,7 +31,7 @@ struct TagActionEvent {
     std::string tagId;
     std::string callsign;
     int button;
-    std::string userInput;
+    std::optional<std::string> userInput;
     std::map<std::string, std::string> data;
 };
 
@@ -82,7 +82,7 @@ struct DropdownActionEvent {
     std::string componentId;
     std::string tagId;
     std::string callsign;
-    std::string userInput;
+    std::optional<std::string> userInput;
     std::map<std::string, std::string> data;
 };
 
