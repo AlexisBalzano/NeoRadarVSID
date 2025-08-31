@@ -64,7 +64,9 @@ void NeoVSID::OnTagAction(const PluginSDK::Tag::TagActionEvent *event)
         return;
     }
 
-    TagProcessing(event->callsign, event->actionId, event->userInput);
+    std::string input;
+	if (event->userInput) input = event->userInput.value();
+    TagProcessing(event->callsign, event->actionId, input);
 }
 
 void NeoVSID::OnTagDropdownAction(const PluginSDK::Tag::DropdownActionEvent *event)
