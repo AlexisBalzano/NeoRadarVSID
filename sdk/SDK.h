@@ -223,9 +223,8 @@ public:
 #endif
 
 extern "C" {
-inline PLUGIN_API int PLUGIN_SDK_VERSION_MAJOR_EXPORTED = PLUGIN_SDK_VERSION_MAJOR;
-inline PLUGIN_API int PLUGIN_SDK_VERSION_MINOR_EXPORTED = PLUGIN_SDK_VERSION_MINOR;
-inline PLUGIN_API int PLUGIN_SDK_VERSION_PATCH_EXPORTED = PLUGIN_SDK_VERSION_PATCH;
-
+PLUGIN_API inline int GetPluginSDKVersionMajor() { return PLUGIN_SDK_VERSION_MAJOR; }
+PLUGIN_API inline int GetPluginSDKVersionMinor() { return PLUGIN_SDK_VERSION_MINOR; }
+PLUGIN_API inline int GetPluginSDKVersionPatch() { return PLUGIN_SDK_VERSION_PATCH; }
 PLUGIN_API PluginSDK::BasePlugin* CreatePluginInstance();
 }
