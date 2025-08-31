@@ -5,8 +5,6 @@
 #include <mutex>
 #include <unordered_set>
 
-#include "SDK.h"
-
 struct Pilot {
 	std::string callsign;
 	std::string rwy;

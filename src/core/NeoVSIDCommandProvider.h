@@ -1,5 +1,4 @@
 #pragma once
-#include "SDK.h"
 #include "NeoVSID.h"
 
 using namespace PluginSDK;
