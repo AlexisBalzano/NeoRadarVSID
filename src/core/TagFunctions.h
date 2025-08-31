@@ -35,6 +35,7 @@ void NeoVSID::RegisterTagActions()
     dropdownComponent.id = "ReqNoReq";
     dropdownComponent.type = PluginSDK::Tag::DropdownComponentType::Button;
     dropdownComponent.text = "NoReq";
+    dropdownComponent.requiresInput = false;
     dropdownDef.components.push_back(dropdownComponent);
 
     dropdownComponent.id = "ReqClearance";

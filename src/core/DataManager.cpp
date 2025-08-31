@@ -31,6 +31,7 @@ DataManager::DataManager(vsid::NeoVSID* neoVSID)
 	configPath_ = getDllDirectory();
 	loadAircraftDataJson();
 	activeAirports.clear();
+	configsError.clear();
 }
 
 
@@ -77,6 +78,7 @@ void DataManager::clearJson()
 	aircraftDataJson_.clear();
 	rules.clear();
 	areas.clear();
+	configsError.clear();
 }
 
 void DataManager::DisplayMessageFromDataManager(const std::string& message, const std::string& sender)
@@ -377,26 +379,48 @@ int DataManager::retrieveConfigJson(const std::string& oaci)
 
 	try {
 		config >> configJson_;
+		if (configJson_.contains("version")) {
+			if (!isCorrectJsonVersion(configJson_["version"].get<std::string>(), fileName)) {
+				configJson_.clear();
+				return -1;
+			}
+		}
+		else {
+			if (!configsError.contains(oaci)) {
+				configsError.insert(oaci);
+				DisplayMessageFromDataManager("Config version missing in JSON file: " + fileName, "DataManager");
+			}
+		}
 	}
 	catch (...) {
 		DisplayMessageFromDataManager("Error parsing JSON file: " + jsonPath.string(), "DataManager");
 		loggerAPI_->log(Logger::LogLevel::Error, "Error parsing JSON file: " + jsonPath.string());
 		return -1;
 	}
-
+	
 	return 0;
 }
 
 bool DataManager::retrieveCorrectConfigJson(const std::string& oaci)
 {
 	if (!configJson_.contains(oaci) || configJson_.empty()) {
-		if (retrieveConfigJson(oaci) == -1) {
-			DisplayMessageFromDataManager("Error retrieving config JSON for OACI: " + oaci, "DataManager");
-			loggerAPI_->log(Logger::LogLevel::Error, "Error retrieving config JSON for OACI: " + oaci);
-			return false;
-		}
+		if (retrieveConfigJson(oaci) == -1) return false;
 	}
 	return true;
+}
+
+bool DataManager::isCorrectJsonVersion(const std::string& config_version, const std::string& fileName)
+{
+	if (config_version == NEOVSID_VERSION) {
+		return true;
+	}
+	else {
+		if (configsError.contains(fileName)) return false; // Avoid spamming messages for the same file
+		configsError.insert(fileName);
+		DisplayMessageFromDataManager("Config version mismatch! Expected: " + std::string(NEOVSID_VERSION) + ", Found: " + config_version + ", please update your config files.", fileName);
+		loggerAPI_->log(Logger::LogLevel::Error, "Config version mismatch! Expected: " + std::string(NEOVSID_VERSION) + ", Found: " + config_version + fileName);
+	}
+	return false;
 }
 
 void DataManager::loadAircraftDataJson()
@@ -541,7 +565,7 @@ std::vector<std::string> DataManager::getAllDepartureCallsigns() {
 		if (flightplan.route.depRunway != "") depRwy = flightplan.route.depRunway;
 
 		sidData vsidData = generateVSID(flightplan, depRwy);
-		pilots.push_back(Pilot{ flightplan.callsign, vsidData.rwy, vsidData.sid, vsidData.cfl});
+		pilots.push_back(Pilot{ flightplan.callsign, vsidData.rwy, vsidData.sid, flightplan.origin, vsidData.cfl});
 		LOG_DEBUG(Logger::LogLevel::Info, "Added pilot: " + flightplan.callsign + " with SID: " + vsidData.sid + " and CFL: " + std::to_string(vsidData.cfl));
 	}
 	return callsigns;
@@ -704,6 +728,19 @@ bool DataManager::isRNAV(const std::string& aircraftType)
 	return false;
 }
 
+int DataManager::getTransAltitude(const std::string& oaci)
+{
+	if (!retrieveCorrectConfigJson(oaci)) {
+		loggerAPI_->log(Logger::LogLevel::Warning, "Failed to retrieve config when retrieving Trans Alt for: " + oaci);
+		return 5000;
+	}
+	std::lock_guard<std::mutex> lock(dataMutex_);
+	if (configJson_[oaci].contains("transAlt")) {
+		return configJson_[oaci]["transAlt"].get<int>();
+	}
+	return 5000; // Fallback transition altitude
+}
+
 void DataManager::switchRuleState(const std::string& oaci, const std::string& ruleName)
 {
 	{
@@ -761,7 +798,7 @@ void DataManager::addPilot(const std::string& callsign)
 		depRwy = flightplan->route.depRunway;
 
 	sidData vsidData = generateVSID(flightplan.value(), depRwy);
-	pilots.push_back(Pilot{ flightplan->callsign, vsidData.rwy, vsidData.sid, vsidData.cfl });
+	pilots.push_back(Pilot{ flightplan->callsign, vsidData.rwy, vsidData.sid, flightplan->origin, vsidData.cfl });
 }
 
 bool DataManager::removePilot(const std::string& callsign)

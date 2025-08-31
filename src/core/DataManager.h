@@ -3,13 +3,13 @@
 #include <filesystem>
 #include <nlohmann/json.hpp>
 #include <mutex>
-
-#include "SDK.h"
+#include <unordered_set>
 
 struct Pilot {
 	std::string callsign;
 	std::string rwy;
 	std::string sid;
+	std::string oaci;
 	int cfl;
 
 	bool empty() const {
@@ -51,6 +51,7 @@ public:
 	void populateActiveAirports();
 	int retrieveConfigJson(const std::string& oaci);
 	bool retrieveCorrectConfigJson(const std::string& oaci);
+	bool isCorrectJsonVersion(const std::string& config_version, const std::string& fileName);
 	void loadAircraftDataJson();
 	void parseRules(const std::string& oaci);
 	void parseAreas(const std::string& oaci);
@@ -61,6 +62,7 @@ public:
 	Pilot getPilotByCallsign(std::string callsign);
 	std::vector<ruleData> getRules() const { return rules; }
 	std::vector<areaData> getAreas() const { return areas; }
+	int getTransAltitude(const std::string& oaci);
 
 	void switchRuleState(const std::string& oaci, const std::string& ruleName);
 	void switchAreaState(const std::string& oaci, const std::string& areaName);
@@ -96,6 +98,8 @@ private:
 	std::vector<Pilot> pilots;
 	std::vector<ruleData> rules;
 	std::vector<areaData> areas;
+
+	std::unordered_set<std::string> configsError;
 
 	std::mutex dataMutex_;
 
