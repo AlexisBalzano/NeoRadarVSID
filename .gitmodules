@@ -1,3 +1,6 @@
 [submodule "vcpkg"]
 	path = vcpkg
 	url = https://github.com/microsoft/vcpkg.git
+[submodule "External/NeoRadarSDK"]
+	path = External/NeoRadarSDK
+	url = https://github.com/neoradar-project/sdk-cpp.git

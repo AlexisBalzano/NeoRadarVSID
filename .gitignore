@@ -57,3 +57,5 @@ out/
 
 # debug information files
 *.dwo
+
+build

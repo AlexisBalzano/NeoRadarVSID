@@ -5,7 +5,6 @@ project(NeoVSID VERSION "1.3.3")
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Force g++14 as g++13 does not implement some C++20 features
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     set(CMAKE_CXX_COMPILER "g++-14")
 endif()
@@ -21,13 +20,11 @@ if(DEV)
     add_compile_definitions(DEV=1)
 endif()
 
-
 configure_file(
     ${CMAKE_SOURCE_DIR}/src/Version.h.in
     ${CMAKE_BINARY_DIR}/Version.h
 )
 
-# set DEBUG mode
 if (DEBUG)
     add_compile_definitions(
         DEBUG=1
@@ -35,31 +32,25 @@ if (DEBUG)
     message(STATUS "DEBUG mode enabled")
 endif()
 
-# Add SDK include directory
+add_subdirectory(External/NeoRadarSDK)
+
 include_directories(
     ${CMAKE_BINARY_DIR}
-    ${CMAKE_SOURCE_DIR}/sdk
     ${CMAKE_SOURCE_DIR}/src
 )
 
-# Find external dependencies
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(OpenSSL REQUIRED)
 
-# Source files
-# To set after starting development
 set(SOURCES
     src/NeoVSID.cpp
     src/main.cpp
 )
 
-# Define the plugin library
 add_library(${PROJECT_NAME} SHARED ${SOURCES}  "src/core/DataManager.cpp" "src/utils/Format.h" "src/config/Colors.h")
 
-#set_property(TARGET ${PROJECT_NAME}  PROPERTY CXX_STANDARD 20)
-
-# Link dependencies
 target_link_libraries(${PROJECT_NAME} PRIVATE 
+    NeoRadarSDK::NeoRadarSDK
     nlohmann_json::nlohmann_json
     OpenSSL::SSL
     OpenSSL::Crypto
@@ -68,24 +59,19 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/External/httplib)
 target_compile_definitions(${PROJECT_NAME} PRIVATE CPPHTTPLIB_OPENSSL_SUPPORT)
 
-# Set output directory and properties
 set_target_properties(${PROJECT_NAME} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
-    PREFIX ""  # Remove "lib" prefix on Unix-like systems
+    PREFIX ""
 )
 
-# Add processor-specific output name for Apple platforms
 if(${CMAKE_HOST_APPLE})
     set_target_properties(${PROJECT_NAME} PROPERTIES
         OUTPUT_NAME ${PROJECT_NAME}-${CMAKE_HOST_SYSTEM_PROCESSOR}
     )
 endif()
 
-# Collect all .json files in src/config/
 file(GLOB CONFIG_JSON_FILES "${CMAKE_SOURCE_DIR}/src/config/*.json")
-
-# Copy them to the build directory
 file(COPY ${CONFIG_JSON_FILES} DESTINATION ${CMAKE_BINARY_DIR})
 

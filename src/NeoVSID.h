@@ -3,7 +3,7 @@
 #include <thread>
 #include <vector>
 
-#include "SDK.h"
+#include <NeoRadarSDK/SDK.h>
 #include "core/NeoVSIDCommandProvider.h"
 #include "core/DataManager.h"
 
