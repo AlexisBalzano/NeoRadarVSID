@@ -50,7 +50,7 @@ jobs:
       - name: Checkout submodules
         shell: bash
         run: |
-          git submodule update --init --recursive vcpkg
+          git submodule update --init --recursive
 
       - name: Get commit short SHA
         uses: benjlevesque/short-sha@v3.0
