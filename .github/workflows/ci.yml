@@ -74,14 +74,23 @@ jobs:
           sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
           sudo apt-get update
           
-          # Try to install g++-14, fallback to g++-13 if not available
-          if ! sudo apt-get install -y g++-14; then
-            echo "g++-14 not available, installing g++-13 instead"
-            sudo apt-get install -y g++-13
-            echo "CXX=/usr/bin/g++-13" >> $GITHUB_ENV
-          else
-            echo "g++-14 installed successfully"
-            echo "CXX=/usr/bin/g++-14" >> $GITHUB_ENV
+          # Install g++-13 (more reliable)
+          sudo apt-get install -y g++-13
+          
+          # Use g++-13 as default
+          sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-13 100
+          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 100
+          
+          # Create symlink for g++-14 pointing to g++-13
+          sudo ln -sf /usr/bin/g++-13 /usr/bin/g++-14
+          
+          # Verify our setup
+          g++ --version
+          g++-14 --version
+          
+          # Update CMakeLists.txt in NeoRadarSDK to avoid the g++-14 check
+          if [ -f "External/NeoRadarSDK/CMakeLists.txt" ]; then
+            sed -i 's/set(CMAKE_CXX_COMPILER "g++-14")/# Using system compiler instead/' External/NeoRadarSDK/CMakeLists.txt
           fi
 
       - name: Setup cmake
