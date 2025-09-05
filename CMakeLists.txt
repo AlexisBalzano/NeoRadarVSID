@@ -1,14 +1,11 @@
 cmake_minimum_required(VERSION 3.14)
 set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake)
-project(NeoVSID VERSION "1.3.3")
+project(NeoVSID VERSION "1.3.5")
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Force g++14 as g++13 does not implement some C++20 features
-if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    set(CMAKE_CXX_COMPILER "g++-14")
-endif()
+
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
     add_compile_definitions(DIR_SEPARATOR="\\\\")
@@ -38,13 +35,14 @@ endif()
 # Add SDK include directory
 include_directories(
     ${CMAKE_BINARY_DIR}
-    ${CMAKE_SOURCE_DIR}/sdk
     ${CMAKE_SOURCE_DIR}/src
 )
 
 # Find external dependencies
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(OpenSSL REQUIRED)
+
+add_subdirectory(External/NeoRadarSDK)
 
 # Source files
 # To set after starting development
@@ -63,6 +61,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     nlohmann_json::nlohmann_json
     OpenSSL::SSL
     OpenSSL::Crypto
+    NeoRadarSDK::NeoRadarSDK
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/External/httplib)
