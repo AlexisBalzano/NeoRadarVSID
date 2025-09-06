@@ -303,30 +303,30 @@ void NeoVSID::UpdateTagItems(std::string callsign) {
 
 // TAG COLOR FUNCTIONS
 Color NeoVSID::colorizeCfl(const int& cfl, const int& vsidCfl) {
-    if (cfl == 0) return dataManager_->getColor(ColorName::WHITE);
-	if (cfl == vsidCfl) return dataManager_->getColor(ColorName::GREEN);
-	else return dataManager_->getColor(ColorName::ORANGE);
+    if (cfl == 0) return dataManager_->getColor(ColorName::UNCONFIRMED);
+	if (cfl == vsidCfl) return dataManager_->getColor(ColorName::CONFIRMED);
+	else return dataManager_->getColor(ColorName::DEVIATION);
 }
 
 Color NeoVSID::colorizeRwy(const std::string& rwy, const std::string& vsidRwy, const bool& isDepRwy) {
-    if (rwy == "") return dataManager_->getColor(ColorName::WHITE);
-    if (rwy == vsidRwy && isDepRwy) return dataManager_->getColor(ColorName::GREEN);
-    else return dataManager_->getColor(ColorName::ORANGE);
+    if (rwy == "") return dataManager_->getColor(ColorName::UNCONFIRMED);
+    if (rwy == vsidRwy && isDepRwy) return dataManager_->getColor(ColorName::CONFIRMED);
+    else return dataManager_->getColor(ColorName::DEVIATION);
 }
 
 Color NeoVSID::colorizeSid(const std::string& sid, const std::string& vsidSid) {
-    if (vsidSid == "CHECKFP" && sid == "") return dataManager_->getColor(ColorName::RED);
-    if (sid == "") return dataManager_->getColor(ColorName::WHITE);
-    if (sid == vsidSid) return dataManager_->getColor(ColorName::GREEN);
-    else return dataManager_->getColor(ColorName::ORANGE);
+    if (vsidSid == "CHECKFP" && sid == "") return dataManager_->getColor(ColorName::CHECKFP);
+    if (sid == "") return dataManager_->getColor(ColorName::UNCONFIRMED);
+    if (sid == vsidSid) return dataManager_->getColor(ColorName::CONFIRMED);
+    else return dataManager_->getColor(ColorName::DEVIATION);
 }
 
 Color NeoVSID::colorizeAlert() {
-    return dataManager_->getColor(ColorName::WHITE);
+    return dataManager_->getColor(ColorName::ALERTTEXT);
 }
 
 Color NeoVSID::colorizeRequest() {
-    return dataManager_->getColor(ColorName::RED);
+    return dataManager_->getColor(ColorName::REQUESTTEXT);
 }
 
 }  // namespace vsid

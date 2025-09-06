@@ -554,55 +554,94 @@ bool DataManager::parseSettings()
 		return false;
 	}
 
-	if (configJson_.contains("green") && configJson_["green"].is_array() && configJson_["green"].size() == 3) {
-		auto greenArray = configJson_["green"];
-		colors_[static_cast<size_t>(vsid::ColorName::GREEN)] = std::array<unsigned int, 3>{
-			greenArray[0].get<unsigned int>(),
-			greenArray[1].get<unsigned int>(),
-			greenArray[2].get<unsigned int>()
+	if (configJson_.contains("confirmed") && configJson_["confirmed"].is_array() && configJson_["confirmed"].size() == 3) {
+		auto confirmedArray = configJson_["confirmed"];
+		colors_[static_cast<size_t>(vsid::ColorName::CONFIRMED)] = std::array<unsigned int, 3>{
+			confirmedArray[0].get<unsigned int>(),
+			confirmedArray[1].get<unsigned int>(),
+			confirmedArray[2].get<unsigned int>()
 		};
 	}
 	else {
-		loggerAPI_->log(Logger::LogLevel::Error, "Colors section missing or malformed in config.json");
+		loggerAPI_->log(Logger::LogLevel::Error, "Confirmed Colors section missing or malformed in config.json");
 		return false;
 	}
 
-	if (configJson_.contains("white") && configJson_["white"].is_array() && configJson_["white"].size() == 3) {
-		auto whiteArray = configJson_["white"];
-		colors_[static_cast<size_t>(vsid::ColorName::WHITE)] = std::array<unsigned int, 3>{
-			whiteArray[0].get<unsigned int>(),
-			whiteArray[1].get<unsigned int>(),
-			whiteArray[2].get<unsigned int>()
+	if (configJson_.contains("unconfirmed") && configJson_["unconfirmed"].is_array() && configJson_["unconfirmed"].size() == 3) {
+		auto unconfirmedArray = configJson_["unconfirmed"];
+		colors_[static_cast<size_t>(vsid::ColorName::UNCONFIRMED)] = std::array<unsigned int, 3>{
+			unconfirmedArray[0].get<unsigned int>(),
+			unconfirmedArray[1].get<unsigned int>(),
+			unconfirmedArray[2].get<unsigned int>()
 		};
 	}
 	else {
-		loggerAPI_->log(Logger::LogLevel::Error, "Colors section missing or malformed in config.json");
+		loggerAPI_->log(Logger::LogLevel::Error, "Unconfirmed Colors section missing or malformed in config.json");
 		return false;
 	}
 
-	if (configJson_.contains("red") && configJson_["red"].is_array() && configJson_["red"].size() == 3) {
-		auto redArray = configJson_["red"];
-		colors_[static_cast<size_t>(vsid::ColorName::RED)] = std::array<unsigned int, 3>{
-			redArray[0].get<unsigned int>(),
-			redArray[1].get<unsigned int>(),
-			redArray[2].get<unsigned int>()
+	if (configJson_.contains("checkfp") && configJson_["checkfp"].is_array() && configJson_["checkfp"].size() == 3) {
+		auto checkfpArray = configJson_["checkfp"];
+		colors_[static_cast<size_t>(vsid::ColorName::CHECKFP)] = std::array<unsigned int, 3>{
+			checkfpArray[0].get<unsigned int>(),
+			checkfpArray[1].get<unsigned int>(),
+			checkfpArray[2].get<unsigned int>()
 		};
 	}
 	else {
-		loggerAPI_->log(Logger::LogLevel::Error, "Colors section missing or malformed in config.json");
+		loggerAPI_->log(Logger::LogLevel::Error, "Checkfp Colors section missing or malformed in config.json");
 		return false;
 	}
 
-	if (configJson_.contains("orange") && configJson_["orange"].is_array() && configJson_["orange"].size() == 3) {
-		auto orangeArray = configJson_["orange"];
-		colors_[static_cast<size_t>(vsid::ColorName::ORANGE)] = std::array<unsigned int, 3>{
-			orangeArray[0].get<unsigned int>(),
-			orangeArray[1].get<unsigned int>(),
-			orangeArray[2].get<unsigned int>()
+	if (configJson_.contains("deviation") && configJson_["deviation"].is_array() && configJson_["deviation"].size() == 3) {
+		auto deviationArray = configJson_["deviation"];
+		colors_[static_cast<size_t>(vsid::ColorName::DEVIATION)] = std::array<unsigned int, 3>{
+			deviationArray[0].get<unsigned int>(),
+			deviationArray[1].get<unsigned int>(),
+			deviationArray[2].get<unsigned int>()
 		};
 	}
 	else {
-		loggerAPI_->log(Logger::LogLevel::Error, "Colors section missing or malformed in config.json");
+		loggerAPI_->log(Logger::LogLevel::Error, "Deviation Colors section missing or malformed in config.json");
+		return false;
+	}
+
+	if (configJson_.contains("alerttext") && configJson_["alerttext"].is_array() && configJson_["alerttext"].size() == 3) {
+		auto alertTextArray = configJson_["alerttext"];
+		colors_[static_cast<size_t>(vsid::ColorName::ALERTTEXT)] = std::array<unsigned int, 3>{
+			alertTextArray[0].get<unsigned int>(),
+			alertTextArray[1].get<unsigned int>(),
+			alertTextArray[2].get<unsigned int>()
+		};
+	}
+	else {
+		loggerAPI_->log(Logger::LogLevel::Error, "Alert Text Colors section missing or malformed in config.json");
+		return false;
+	}
+
+	if (configJson_.contains("alertbackground") && configJson_["alertbackground"].is_array() && configJson_["alertbackground"].size() == 3) {
+		auto alertBackgroundArray = configJson_["alertbackground"];
+		colors_[static_cast<size_t>(vsid::ColorName::ALERTBACKGROUND)] = std::array<unsigned int, 3>{
+			alertBackgroundArray[0].get<unsigned int>(),
+			alertBackgroundArray[1].get<unsigned int>(),
+			alertBackgroundArray[2].get<unsigned int>()
+		};
+	}
+	else {
+		loggerAPI_->log(Logger::LogLevel::Error, "Alert Background Colors section missing or malformed in config.json");
+		return false;
+	}
+
+	if (configJson_.contains("requesttext") && configJson_["requesttext"].is_array() && configJson_["requesttext"].size() == 3) {
+		auto requestTextArray = configJson_["requesttext"];
+		colors_[static_cast<size_t>(vsid::ColorName::REQUESTTEXT)] = std::array<unsigned int, 3>{
+			requestTextArray[0].get<unsigned int>(),
+			requestTextArray[1].get<unsigned int>(),
+			requestTextArray[2].get<unsigned int>()
+		};
+	}
+	else {
+		loggerAPI_->log(Logger::LogLevel::Error, "Request Text Colors section missing or malformed in config.json");
 		return false;
 	}
 
@@ -612,10 +651,13 @@ bool DataManager::parseSettings()
 void DataManager::useDefaultColors()
 {
 	loggerAPI_->log(Logger::LogLevel::Warning, "Using default colors for NeoVSID");
-	colors_[static_cast<size_t>(vsid::ColorName::GREEN)] = green_;
-	colors_[static_cast<size_t>(vsid::ColorName::WHITE)] = white_;
-	colors_[static_cast<size_t>(vsid::ColorName::RED)] = red_;
-	colors_[static_cast<size_t>(vsid::ColorName::ORANGE)] = orange_;
+	colors_[static_cast<size_t>(vsid::ColorName::CONFIRMED)] = green_;
+	colors_[static_cast<size_t>(vsid::ColorName::UNCONFIRMED)] = white_;
+	colors_[static_cast<size_t>(vsid::ColorName::CHECKFP)] = red_;
+	colors_[static_cast<size_t>(vsid::ColorName::DEVIATION)] = orange_;
+	colors_[static_cast<size_t>(vsid::ColorName::ALERTTEXT)] = white_;
+	colors_[static_cast<size_t>(vsid::ColorName::ALERTBACKGROUND)] = alertBackground_;
+	colors_[static_cast<size_t>(vsid::ColorName::REQUESTTEXT)] = red_;
 }
 
 Pilot DataManager::getPilotByCallsign(std::string callsign)

@@ -111,7 +111,7 @@ private:
 	std::vector<Pilot> pilots;
 	std::vector<ruleData> rules;
 	std::vector<areaData> areas;
-	std::array<vsid::Color, 4> colors_;
+	std::array<vsid::Color, 7> colors_;
 	int updateInterval_;
 
 	std::unordered_set<std::string> configsError;
@@ -123,4 +123,5 @@ private:
 	vsid::Color white_ = std::array<unsigned int, 3>({ 255, 255, 255 });
 	vsid::Color red_ = std::array<unsigned int, 3>({ 240, 0, 0 });
 	vsid::Color orange_ = std::array<unsigned int, 3>({ 255, 153, 51 });
+	vsid::Color alertBackground_ = std::array<unsigned int, 3>({ 234, 171, 24 });
 };
