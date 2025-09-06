@@ -210,12 +210,13 @@ void vsid::NeoVSID::OnPositionUpdate(const Aircraft::PositionUpdateEvent* event)
             logger_->error("Failed to retrieve distance from origin for callsign: " + aircraft.callsign);
             return;
         }
+        
+        updateAlert(aircraft.callsign);
+
         if (distanceFromOrigin > dataManager_->getMaxAircraftDistance()) {
             dataManager_->removePilot(aircraft.callsign);
             return;
         }
-        
-        updateAlert(aircraft.callsign);
 	}
 }
 
