@@ -1,7 +1,7 @@
 #include <algorithm>
 #include <fstream>
 
-#include "../NeoVSID.h"
+#include "NeoVSID.h"
 #include "DataManager.h"
 
 #if defined(_WIN32)
@@ -30,6 +30,9 @@ DataManager::DataManager(vsid::NeoVSID* neoVSID)
 
 	configPath_ = getDllDirectory();
 	loadAircraftDataJson();
+	loadConfigJson();
+	bool success = parseColors();
+	if (!success) useDefaultColors();
 	activeAirports.clear();
 	configsError.clear();
 }
@@ -61,7 +64,7 @@ void DataManager::clearData()
 {
 	pilots.clear();
 	activeAirports.clear();
-	configJson_.clear();
+	airportConfigJson_.clear();
 	configPath_.clear();
 	if (aircraftAPI_)
 		aircraftAPI_ = nullptr;
@@ -74,8 +77,9 @@ void DataManager::clearData()
 void DataManager::clearJson()
 {
 	std::lock_guard<std::mutex> lock(dataMutex_);
-	configJson_.clear();
+	airportConfigJson_.clear();
 	aircraftDataJson_.clear();
+	configJson_.clear();
 	rules.clear();
 	areas.clear();
 	configsError.clear();
@@ -116,7 +120,7 @@ int DataManager::fetchCFL(const Flightplan::Flightplan& flightplan, const std::v
 {
 	std::string oaci = flightplan.origin;
 	// Check if configJSON is already the right one, if not, retrieve it
-	if (!retrieveCorrectConfigJson(oaci)) {
+	if (!retrieveCorrectAirportConfigJson(oaci)) {
 		loggerAPI_->log(Logger::LogLevel::Warning, "Failed to retrieve config when assigning CFL for: " + oaci);
 		return 0;
 	}
@@ -135,8 +139,8 @@ int DataManager::fetchCFL(const Flightplan::Flightplan& flightplan, const std::v
 	std::string letter = sid.substr(sid.length() - 1, 1);
 	nlohmann::ordered_json waypointSidData;
 
-	if (configJson_[oaci]["sids"].contains(waypoint)) {
-		waypointSidData = configJson_[oaci]["sids"][waypoint];
+	if (airportConfigJson_[oaci]["sids"].contains(waypoint)) {
+		waypointSidData = airportConfigJson_[oaci]["sids"][waypoint];
 	}
 	else {
 		loggerAPI_->log(Logger::LogLevel::Warning, "SID not found in config for: " + flightplan.callsign + " with SID: " + sid);
@@ -233,7 +237,7 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 
 
 	// Check if configJSON is already the right one, if not, retrieve it
-	if (!retrieveCorrectConfigJson(oaci)) {
+	if (!retrieveCorrectAirportConfigJson(oaci)) {
 		return { suggestedRwy, suggestedSid, fetchCFL(flightplan, activeRules, activeAreas, "", singleRwy)};
 	}
 
@@ -245,8 +249,8 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 	{
 		std::lock_guard<std::mutex> lock(dataMutex_);
 		// Extract waypoint only SID information
-		if (configJson_.contains(oaci) && configJson_[oaci]["sids"].contains(firstWaypoint)) {
-			waypointSidData = configJson_[oaci]["sids"][firstWaypoint];
+		if (airportConfigJson_.contains(oaci) && airportConfigJson_[oaci]["sids"].contains(firstWaypoint)) {
+			waypointSidData = airportConfigJson_[oaci]["sids"][firstWaypoint];
 		} else {
 			DisplayMessageFromDataManager("SID not found for waypoint: " + firstWaypoint + " for: " + flightplan.callsign + " (No SID matching firstWaypoint)", "SID Assigner");
 			loggerAPI_->log(Logger::LogLevel::Warning, "No SID matching firstWaypoint: " + firstWaypoint + " for: " + flightplan.callsign);
@@ -364,7 +368,7 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 	return { suggestedRwy, "CHECKFP", fetchCFL(flightplan, activeRules, activeAreas, "", singleRwy)};
 }
 	
-int DataManager::retrieveConfigJson(const std::string& oaci)
+int DataManager::retrieveAirportConfigJson(const std::string& oaci)
 {
 	std::lock_guard<std::mutex> lock(dataMutex_);
 	std::string fileName = oaci + ".json";
@@ -378,10 +382,10 @@ int DataManager::retrieveConfigJson(const std::string& oaci)
 	}
 
 	try {
-		config >> configJson_;
-		if (configJson_.contains("version")) {
-			if (!isCorrectJsonVersion(configJson_["version"].get<std::string>(), fileName)) {
-				configJson_.clear();
+		config >> airportConfigJson_;
+		if (airportConfigJson_.contains("version")) {
+			if (!isCorrectAirportJsonVersion(airportConfigJson_["version"].get<std::string>(), fileName)) {
+				airportConfigJson_.clear();
 				return -1;
 			}
 		}
@@ -401,15 +405,15 @@ int DataManager::retrieveConfigJson(const std::string& oaci)
 	return 0;
 }
 
-bool DataManager::retrieveCorrectConfigJson(const std::string& oaci)
+bool DataManager::retrieveCorrectAirportConfigJson(const std::string& oaci)
 {
-	if (!configJson_.contains(oaci) || configJson_.empty()) {
-		if (retrieveConfigJson(oaci) == -1) return false;
+	if (!airportConfigJson_.contains(oaci) || airportConfigJson_.empty()) {
+		if (retrieveAirportConfigJson(oaci) == -1) return false;
 	}
 	return true;
 }
 
-bool DataManager::isCorrectJsonVersion(const std::string& config_version, const std::string& fileName)
+bool DataManager::isCorrectAirportJsonVersion(const std::string& config_version, const std::string& fileName)
 {
 	if (config_version == NEOVSID_VERSION) {
 		return true;
@@ -443,19 +447,39 @@ void DataManager::loadAircraftDataJson()
 	}
 }
 
+void DataManager::loadConfigJson()
+{
+	std::lock_guard<std::mutex> lock(dataMutex_);
+	std::filesystem::path jsonPath = configPath_ / "NeoVSID" / "config.json";
+	std::ifstream configFile(jsonPath);
+	if (!configFile.is_open()) {
+		DisplayMessageFromDataManager("Could not open config data JSON file: " + jsonPath.string(), "DataManager");
+		loggerAPI_->log(Logger::LogLevel::Error, "Could not open config data JSON file: " + jsonPath.string());
+		return;
+	}
+	try {
+		configJson_ = nlohmann::json::parse(configFile);
+	}
+	catch (...) {
+		DisplayMessageFromDataManager("Error parsing config data JSON file: " + jsonPath.string(), "DataManager");
+		loggerAPI_->log(Logger::LogLevel::Error, "Error parsing config data JSON file: " + jsonPath.string());
+		return;
+	}
+}
+
 void DataManager::parseRules(const std::string& oaci)
 {
-	if (!retrieveCorrectConfigJson(oaci)) {
+	if (!retrieveCorrectAirportConfigJson(oaci)) {
 		return;
 	}
 
 	std::string oaciUpper = oaci;
 	std::transform(oaciUpper.begin(), oaciUpper.end(), oaciUpper.begin(), ::toupper);
 
-	if (configJson_[oaciUpper].contains("customRules")) {
+	if (airportConfigJson_[oaciUpper].contains("customRules")) {
 		LOG_DEBUG(Logger::LogLevel::Info, "Parsing Custom rules from config JSON for OACI: " + oaci);
-		auto iterator = configJson_[oaciUpper]["customRules"].begin();
-		while (iterator != configJson_[oaciUpper]["customRules"].end()) {
+		auto iterator = airportConfigJson_[oaciUpper]["customRules"].begin();
+		while (iterator != airportConfigJson_[oaciUpper]["customRules"].end()) {
 			std::string ruleName = iterator.key();
 			// Check if rule already exists in rules vector
 			bool alreadyExists = std::any_of(rules.begin(), rules.end(), [&](const ruleData& rule) {
@@ -474,17 +498,17 @@ void DataManager::parseRules(const std::string& oaci)
 
 void DataManager::parseAreas(const std::string& oaci)
 {
-	if (!retrieveCorrectConfigJson(oaci)) {
+	if (!retrieveCorrectAirportConfigJson(oaci)) {
 		return;
 	}
 
 	std::string oaciUpper = oaci;
 	std::transform(oaciUpper.begin(), oaciUpper.end(), oaciUpper.begin(), ::toupper);
 
-	if (configJson_[oaciUpper].contains("areas")) {
+	if (airportConfigJson_[oaciUpper].contains("areas")) {
 		LOG_DEBUG(Logger::LogLevel::Info, "Parsing Areas from config JSON for OACI: " + oaci);
-		auto areaIterator = configJson_[oaciUpper]["areas"].begin();
-		while (areaIterator != configJson_[oaciUpper]["areas"].end()) {
+		auto areaIterator = airportConfigJson_[oaciUpper]["areas"].begin();
+		while (areaIterator != airportConfigJson_[oaciUpper]["areas"].end()) {
 			std::string areaName = areaIterator.key();
 
 			// Check if area already exists in areas vector
@@ -513,6 +537,75 @@ void DataManager::parseAreas(const std::string& oaci)
 			++areaIterator;
 		}
 	}
+}
+
+bool DataManager::parseColors()
+{
+	std::lock_guard<std::mutex> lock(dataMutex_);
+	if (configJson_.contains("colors") && configJson_["colors"].is_object()) {
+		configJson_ = configJson_["colors"];
+	}
+	else {
+		return false;
+	}
+
+	if (configJson_.contains("green") && configJson_["green"].is_array() && configJson_["green"].size() == 3) {
+		auto greenArray = configJson_["green"];
+		colors_[static_cast<size_t>(vsid::ColorName::GREEN)] = std::array<unsigned int, 3>{
+			greenArray[0].get<unsigned int>(),
+			greenArray[1].get<unsigned int>(),
+			greenArray[2].get<unsigned int>()
+		};
+	}
+	else {
+		return false;
+	}
+
+	if (configJson_.contains("white") && configJson_["white"].is_array() && configJson_["white"].size() == 3) {
+		auto whiteArray = configJson_["white"];
+		colors_[static_cast<size_t>(vsid::ColorName::WHITE)] = std::array<unsigned int, 3>{
+			whiteArray[0].get<unsigned int>(),
+			whiteArray[1].get<unsigned int>(),
+			whiteArray[2].get<unsigned int>()
+		};
+	}
+	else {
+		return false;
+	}
+
+	if (configJson_.contains("red") && configJson_["red"].is_array() && configJson_["red"].size() == 3) {
+		auto redArray = configJson_["red"];
+		colors_[static_cast<size_t>(vsid::ColorName::RED)] = std::array<unsigned int, 3>{
+			redArray[0].get<unsigned int>(),
+			redArray[1].get<unsigned int>(),
+			redArray[2].get<unsigned int>()
+		};
+	}
+	else {
+		return false;
+	}
+
+	if (configJson_.contains("orange") && configJson_["orange"].is_array() && configJson_["orange"].size() == 3) {
+		auto orangeArray = configJson_["orange"];
+		colors_[static_cast<size_t>(vsid::ColorName::ORANGE)] = std::array<unsigned int, 3>{
+			orangeArray[0].get<unsigned int>(),
+			orangeArray[1].get<unsigned int>(),
+			orangeArray[2].get<unsigned int>()
+		};
+	}
+	else {
+		return false;
+	}
+
+	return true;
+}
+
+void DataManager::useDefaultColors()
+{
+	colors_[static_cast<size_t>(vsid::ColorName::GREEN)] = green_;
+	colors_[static_cast<size_t>(vsid::ColorName::WHITE)] = white_;
+	colors_[static_cast<size_t>(vsid::ColorName::RED)] = red_;
+	colors_[static_cast<size_t>(vsid::ColorName::ORANGE)] = orange_;
 }
 
 Pilot DataManager::getPilotByCallsign(std::string callsign)
@@ -730,15 +823,25 @@ bool DataManager::isRNAV(const std::string& aircraftType)
 
 int DataManager::getTransAltitude(const std::string& oaci)
 {
-	if (!retrieveCorrectConfigJson(oaci)) {
+	if (!retrieveCorrectAirportConfigJson(oaci)) {
 		loggerAPI_->log(Logger::LogLevel::Warning, "Failed to retrieve config when retrieving Trans Alt for: " + oaci);
 		return 5000;
 	}
 	std::lock_guard<std::mutex> lock(dataMutex_);
-	if (configJson_[oaci].contains("transAlt")) {
-		return configJson_[oaci]["transAlt"].get<int>();
+	if (airportConfigJson_[oaci].contains("transAlt")) {
+		return airportConfigJson_[oaci]["transAlt"].get<int>();
 	}
 	return 5000; // Fallback transition altitude
+}
+
+vsid::Color DataManager::getColor(const vsid::ColorName& colorName)
+{
+	std::lock_guard<std::mutex> lock(dataMutex_);
+    size_t idx = static_cast<size_t>(colorName);
+    if (idx < colors_.size()) {
+        return colors_[idx];
+    }
+	return white_; // Default to white if out of bounds
 }
 
 void DataManager::switchRuleState(const std::string& oaci, const std::string& ruleName)

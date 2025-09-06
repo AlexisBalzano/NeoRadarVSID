@@ -7,6 +7,8 @@
 #include "core/CompileCommands.h"
 #include "core/TagFunctions.h"
 #include "core/TagItems.h"
+#include "core/DataManager.h"
+#include "core/NeoVSIDCommandProvider.h"
 
 #ifdef DEV
 #define LOG_DEBUG(loglevel, message) logger_->log(loglevel, message)
@@ -97,18 +99,16 @@ std::pair<bool, std::string> vsid::NeoVSID::newVersionAvailable()
 
 void NeoVSID::Shutdown()
 {
-    if (initialized_)
-    {
-        initialized_ = false;
-        LOG_DEBUG(Logger::LogLevel::Info, "NeoVSID shutdown complete");
-    }
+    this->m_stop = true;
+    if (m_worker.joinable()) this->m_worker.join();
+
+    initialized_ = false;
 
 	if (dataManager_) dataManager_.reset();
 
-    this->m_stop = true;
-    this->m_worker.join();
-
     this->unegisterCommand();
+
+    LOG_DEBUG(Logger::LogLevel::Info, "NeoVSID shutdown complete");
 }
 
 void vsid::NeoVSID::Reset()

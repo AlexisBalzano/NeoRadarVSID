@@ -6,15 +6,17 @@
 #include "NeoRadarSDK/SDK.h"
 #include "core/NeoVSIDCommandProvider.h"
 #include "core/DataManager.h"
+#include "utils/Color.h"
 
-constexpr const char* NEOVSID_VERSION = "v1.3.5";
+constexpr const char* NEOVSID_VERSION = "v1.3.6";
 constexpr double MAX_DISTANCE = 4.; //Max distance from origin airport for auto assigning SID/CFL/RWY
 constexpr int ALERT_MAX_ALTITUDE = 5000; // Max altitude to show ground alerts
 
 using namespace PluginSDK;
 
-namespace vsid {
+class DataManager;
 
+namespace vsid {
     struct tagUpdateParam
     {
         std::string callsign;
@@ -127,6 +129,11 @@ namespace vsid {
         void UpdateTagItems();
         void UpdateTagItems(std::string Callsign);
         void updateCFL(tagUpdateParam param);
+        Color colorizeCfl(const int& cfl, const int& vsidCfl);
+        Color colorizeRwy(const std::string& rwy, const std::string& vsidRwy, const bool& isDepRwy);
+        Color colorizeSid(const std::string& sid, const std::string& vsidSid);
+        Color colorizeAlert();
+        Color colorizeRequest();
         void updateRWY(tagUpdateParam param);
         void updateSID(tagUpdateParam param);
         void updateAlert(const std::string& callsign);

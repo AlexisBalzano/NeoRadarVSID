@@ -370,6 +370,12 @@ Chat::CommandResult NeoVSIDCommandProvider::Execute( const std::string &commandI
         neoVSID_->GetDataManager()->removeAllPilots();
 		neoVSID_->GetDataManager()->clearJson();
 		neoVSID_->GetDataManager()->loadAircraftDataJson();
+		neoVSID_->GetDataManager()->loadConfigJson();
+        bool success = neoVSID_->GetDataManager()->parseColors();
+        if (!success) {
+            neoVSID_->GetDataManager()->useDefaultColors();
+            neoVSID_->DisplayMessage("Failed to parse colors from config.json, using default colors.", "NeoVSID");
+		}
         neoVSID_->GetDataManager()->populateActiveAirports();
         neoVSID_->Reset();
         return { true, std::nullopt };
