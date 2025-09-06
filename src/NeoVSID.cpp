@@ -198,25 +198,10 @@ void vsid::NeoVSID::OnPositionUpdate(const Aircraft::PositionUpdateEvent* event)
     for (const auto& aircraft : event->aircrafts) {
         if (aircraft.callsign.empty())
             continue;
-        {
-			std::lock_guard<std::mutex> lock(callsignsMutex);
-            // Do not update tags if the callsign is not in the scope
-            if (std::find(callsignsScope.begin(), callsignsScope.end(), aircraft.callsign) == callsignsScope.end())
-                continue;
-        }
-
-        std::optional<double> distanceFromOrigin = aircraftAPI_->getDistanceFromOrigin(aircraft.callsign);
-        if (!distanceFromOrigin.has_value()) {
-            logger_->error("Failed to retrieve distance from origin for callsign: " + aircraft.callsign);
-            return;
-        }
         
-        updateAlert(aircraft.callsign);
-
-        if (distanceFromOrigin > dataManager_->getMaxAircraftDistance()) {
-            dataManager_->removePilot(aircraft.callsign);
-            return;
-        }
+		std::optional<Flightplan::Flightplan> flightplan = flightplanAPI_->getByCallsign(aircraft.callsign);
+        if (flightplan.has_value() && dataManager_->isDepartureAirport(flightplan->origin))
+            updateAlert(aircraft.callsign);
 	}
 }
 
@@ -232,7 +217,6 @@ void vsid::NeoVSID::OnFlightplanUpdated(const Flightplan::FlightplanUpdatedEvent
             return;
 	}
 
-
     // Force recomputation of RWY, SID and CFL
     dataManager_->removePilot(event->callsign);
 	
@@ -244,7 +228,7 @@ void vsid::NeoVSID::OnFlightplanUpdated(const Flightplan::FlightplanUpdatedEvent
     if (distanceFromOrigin > dataManager_->getMaxAircraftDistance())
 		return;
 
-	UpdateTagItems(event->callsign); //Might be the cause of the crash when changing runway config
+	UpdateTagItems(event->callsign);
 }
 
 
