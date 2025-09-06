@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake)
-project(NeoVSID VERSION "1.3.5")
+project(NeoVSID VERSION "1.3.6")
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -52,7 +52,7 @@ set(SOURCES
 )
 
 # Define the plugin library
-add_library(${PROJECT_NAME} SHARED ${SOURCES}  "src/core/DataManager.cpp" "src/utils/Format.h" "src/config/Colors.h")
+add_library(${PROJECT_NAME} SHARED ${SOURCES}  "src/core/DataManager.cpp" "src/utils/Format.h"  "src/utils/Color.h")
 
 #set_property(TARGET ${PROJECT_NAME}  PROPERTY CXX_STANDARD 20)
 
