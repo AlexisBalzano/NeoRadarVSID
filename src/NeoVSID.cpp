@@ -135,7 +135,8 @@ void NeoVSID::runScopeUpdate() {
 }
 
 void NeoVSID::OnTimer(int Counter) {
-    if (Counter % 5 == 0 && autoModeState) this->runScopeUpdate();
+	int timer = dataManager_->getUpdateInterval();
+    if (Counter % timer == 0 && autoModeState) this->runScopeUpdate();
 }
 
 void vsid::NeoVSID::OnControllerDataUpdated(const ControllerData::ControllerDataUpdatedEvent* event)

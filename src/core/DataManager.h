@@ -7,6 +7,11 @@
 
 #include "./utils/Color.h"
 
+namespace vsid
+{
+	constexpr int DEFAULT_UPDATE_INTERVAL = 5; // seconds
+}
+
 struct Pilot {
 	std::string callsign;
 	std::string rwy;
@@ -58,7 +63,7 @@ public:
 	void loadConfigJson();
 	void parseRules(const std::string& oaci);
 	void parseAreas(const std::string& oaci);
-	bool parseColors();
+	bool parseSettings();
 	void useDefaultColors();
 
 	std::vector<std::string> getActiveAirports() const { return activeAirports; }
@@ -69,6 +74,7 @@ public:
 	std::vector<areaData> getAreas() const { return areas; }
 	int getTransAltitude(const std::string& oaci);
 	vsid::Color getColor(const vsid::ColorName& colorName);
+	int getUpdateInterval() const { return updateInterval_; }
 
 	void switchRuleState(const std::string& oaci, const std::string& ruleName);
 	void switchAreaState(const std::string& oaci, const std::string& areaName);
@@ -106,6 +112,7 @@ private:
 	std::vector<ruleData> rules;
 	std::vector<areaData> areas;
 	std::array<vsid::Color, 4> colors_;
+	int updateInterval_;
 
 	std::unordered_set<std::string> configsError;
 

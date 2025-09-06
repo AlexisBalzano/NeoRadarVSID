@@ -31,7 +31,7 @@ DataManager::DataManager(vsid::NeoVSID* neoVSID)
 	configPath_ = getDllDirectory();
 	loadAircraftDataJson();
 	loadConfigJson();
-	bool success = parseColors();
+	bool success = parseSettings();
 	if (!success) useDefaultColors();
 	activeAirports.clear();
 	configsError.clear();
@@ -539,13 +539,18 @@ void DataManager::parseAreas(const std::string& oaci)
 	}
 }
 
-bool DataManager::parseColors()
+bool DataManager::parseSettings()
 {
 	std::lock_guard<std::mutex> lock(dataMutex_);
+
+	updateInterval_ = configJson_.contains("update_interval") ? configJson_["update_interval"].get<int>() : vsid::DEFAULT_UPDATE_INTERVAL;
+	LOG_DEBUG(Logger::LogLevel::Info, "Update interval set to: " + std::to_string(updateInterval_));
+
 	if (configJson_.contains("colors") && configJson_["colors"].is_object()) {
 		configJson_ = configJson_["colors"];
 	}
 	else {
+		loggerAPI_->log(Logger::LogLevel::Error, "Colors section missing or malformed in config.json");
 		return false;
 	}
 
@@ -558,6 +563,7 @@ bool DataManager::parseColors()
 		};
 	}
 	else {
+		loggerAPI_->log(Logger::LogLevel::Error, "Colors section missing or malformed in config.json");
 		return false;
 	}
 
@@ -570,6 +576,7 @@ bool DataManager::parseColors()
 		};
 	}
 	else {
+		loggerAPI_->log(Logger::LogLevel::Error, "Colors section missing or malformed in config.json");
 		return false;
 	}
 
@@ -582,6 +589,7 @@ bool DataManager::parseColors()
 		};
 	}
 	else {
+		loggerAPI_->log(Logger::LogLevel::Error, "Colors section missing or malformed in config.json");
 		return false;
 	}
 
@@ -594,6 +602,7 @@ bool DataManager::parseColors()
 		};
 	}
 	else {
+		loggerAPI_->log(Logger::LogLevel::Error, "Colors section missing or malformed in config.json");
 		return false;
 	}
 
@@ -602,6 +611,7 @@ bool DataManager::parseColors()
 
 void DataManager::useDefaultColors()
 {
+	loggerAPI_->log(Logger::LogLevel::Warning, "Using default colors for NeoVSID");
 	colors_[static_cast<size_t>(vsid::ColorName::GREEN)] = green_;
 	colors_[static_cast<size_t>(vsid::ColorName::WHITE)] = white_;
 	colors_[static_cast<size_t>(vsid::ColorName::RED)] = red_;

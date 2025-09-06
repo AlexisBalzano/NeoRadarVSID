@@ -371,7 +371,7 @@ Chat::CommandResult NeoVSIDCommandProvider::Execute( const std::string &commandI
 		neoVSID_->GetDataManager()->clearJson();
 		neoVSID_->GetDataManager()->loadAircraftDataJson();
 		neoVSID_->GetDataManager()->loadConfigJson();
-        bool success = neoVSID_->GetDataManager()->parseColors();
+        bool success = neoVSID_->GetDataManager()->parseSettings();
         if (!success) {
             neoVSID_->GetDataManager()->useDefaultColors();
             neoVSID_->DisplayMessage("Failed to parse colors from config.json, using default colors.", "NeoVSID");
