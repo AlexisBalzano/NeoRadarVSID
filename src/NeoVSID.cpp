@@ -185,7 +185,7 @@ void vsid::NeoVSID::OnAircraftTemporaryAltitudeChanged(const ControllerData::Air
 		logger_->error("Failed to retrieve distance from origin for callsign: " + event->callsign);
 		return;
 	}
-    if (distanceFromOrigin > MAX_DISTANCE) {
+    if (distanceFromOrigin > dataManager_->getMaxAircraftDistance()) {
 		dataManager_->removePilot(event->callsign);
         return;
     }
@@ -210,7 +210,7 @@ void vsid::NeoVSID::OnPositionUpdate(const Aircraft::PositionUpdateEvent* event)
             logger_->error("Failed to retrieve distance from origin for callsign: " + aircraft.callsign);
             return;
         }
-        if (distanceFromOrigin > MAX_DISTANCE) {
+        if (distanceFromOrigin > dataManager_->getMaxAircraftDistance()) {
             dataManager_->removePilot(aircraft.callsign);
             return;
         }
@@ -240,7 +240,7 @@ void vsid::NeoVSID::OnFlightplanUpdated(const Flightplan::FlightplanUpdatedEvent
 		logger_->error("Failed to retrieve distance from origin for callsign: " + event->callsign);
 		return;
 	}
-    if (distanceFromOrigin > MAX_DISTANCE)
+    if (distanceFromOrigin > dataManager_->getMaxAircraftDistance())
 		return;
 
 	UpdateTagItems(event->callsign); //Might be the cause of the crash when changing runway config

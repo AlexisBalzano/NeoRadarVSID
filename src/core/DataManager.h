@@ -9,7 +9,10 @@
 
 namespace vsid
 {
+	// Default settings values
 	constexpr int DEFAULT_UPDATE_INTERVAL = 5; // seconds
+	constexpr int ALERT_MAX_ALTITUDE = 5000; // Max altitude to show ground alerts
+	constexpr double MAX_DISTANCE = 4.; //Max distance from origin airport for auto assigning SID/CFL/RWY
 }
 
 struct Pilot {
@@ -75,6 +78,8 @@ public:
 	int getTransAltitude(const std::string& oaci);
 	vsid::Color getColor(const vsid::ColorName& colorName);
 	int getUpdateInterval() const { return updateInterval_; }
+	int getAlertMaxAltitude() const { return alertMaxAltitude_; }
+	double getMaxAircraftDistance() const { return maxAircraftDistance_; }
 
 	void switchRuleState(const std::string& oaci, const std::string& ruleName);
 	void switchAreaState(const std::string& oaci, const std::string& areaName);
@@ -113,6 +118,8 @@ private:
 	std::vector<areaData> areas;
 	std::array<vsid::Color, 7> colors_;
 	int updateInterval_;
+	int alertMaxAltitude_;
+	double maxAircraftDistance_;
 
 	std::unordered_set<std::string> configsError;
 

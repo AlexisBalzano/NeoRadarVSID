@@ -133,7 +133,7 @@ inline void NeoVSID::updateAlert(const std::string& callsign)
     int aircraftTrackHeading = aircraft->position.trackHeading;
     int aircraftAlitude = aircraft->position.altitude;
 
-	if (aircraftAlitude > ALERT_MAX_ALTITUDE) {
+	if (aircraftAlitude > dataManager_->getAlertMaxAltitude()) {
         tagInterface_->UpdateTagValue(alertsId_, alert, tagContext);
 		return;
 	}

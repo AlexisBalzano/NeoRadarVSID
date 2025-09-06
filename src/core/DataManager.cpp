@@ -543,107 +543,93 @@ bool DataManager::parseSettings()
 {
 	std::lock_guard<std::mutex> lock(dataMutex_);
 
-	updateInterval_ = configJson_.contains("update_interval") ? configJson_["update_interval"].get<int>() : vsid::DEFAULT_UPDATE_INTERVAL;
-	LOG_DEBUG(Logger::LogLevel::Info, "Update interval set to: " + std::to_string(updateInterval_));
+	auto readInt = [&](const char* key, int defVal) -> int {
+		if (configJson_.contains(key)) {
+			const auto& v = configJson_[key];
+			if (v.is_number_integer()) {
+				int x = v.get<int>();
+				return x;
+			}
+			if (v.is_number_float()) {
+				int x = static_cast<int>(v.get<double>());
+				return x;
+			}
+		}
+		loggerAPI_->log(Logger::LogLevel::Warning, std::string(key) + " missing or not an integer in config.json, using default");
+		DisplayMessageFromDataManager(std::string(key) + " missing or not an integer in config.json, using default", "DataManager");
+		return defVal;
+		};
 
-	if (configJson_.contains("colors") && configJson_["colors"].is_object()) {
-		configJson_ = configJson_["colors"];
+	auto readDouble = [&](const char* key, double defVal) -> double {
+		if (configJson_.contains(key)) {
+			const auto& v = configJson_[key];
+			if (v.is_number()) {
+				return v.get<double>();
+			}
+		}
+		loggerAPI_->log(Logger::LogLevel::Warning, std::string(key) + " missing or not a number in config.json, using default");
+		DisplayMessageFromDataManager(std::string(key) + " missing or not a number in config.json, using default", "DataManager");
+		return defVal;
+		};
+
+	updateInterval_ = readInt("update_interval", vsid::DEFAULT_UPDATE_INTERVAL);
+	if (updateInterval_ <= 0) {
+		loggerAPI_->log(Logger::LogLevel::Warning, "update_interval <= 0, using default");
+		DisplayMessageFromDataManager("update_interval <= 0, using default", "DataManager");
+		updateInterval_ = vsid::DEFAULT_UPDATE_INTERVAL;
 	}
-	else {
+
+	alertMaxAltitude_ = readInt("alert_max_alt", vsid::ALERT_MAX_ALTITUDE);
+	if (alertMaxAltitude_ <= 0) {
+		loggerAPI_->log(Logger::LogLevel::Warning, "alert_max_alt <= 0, using default");
+		DisplayMessageFromDataManager("alert_max_alt <= 0, using default", "DataManager");
+		alertMaxAltitude_ = vsid::ALERT_MAX_ALTITUDE;
+	}
+
+	maxAircraftDistance_ = readDouble("max_distance", vsid::MAX_DISTANCE);
+	if (maxAircraftDistance_ < 0) {
+		loggerAPI_->log(Logger::LogLevel::Warning, "max_distance < 0, using default");
+		DisplayMessageFromDataManager("max_distance < 0, using default", "DataManager");
+		maxAircraftDistance_ = vsid::MAX_DISTANCE;
+	}
+
+	const auto it = configJson_.find("colors");
+	if (it == configJson_.end() || !it->is_object()) {
 		loggerAPI_->log(Logger::LogLevel::Error, "Colors section missing or malformed in config.json");
+		DisplayMessageFromDataManager("Colors section missing or malformed in config.json", "DataManager");
 		return false;
 	}
+	const nlohmann::json& colorsJson = *it;
 
-	if (configJson_.contains("confirmed") && configJson_["confirmed"].is_array() && configJson_["confirmed"].size() == 3) {
-		auto confirmedArray = configJson_["confirmed"];
-		colors_[static_cast<size_t>(vsid::ColorName::CONFIRMED)] = std::array<unsigned int, 3>{
-			confirmedArray[0].get<unsigned int>(),
-			confirmedArray[1].get<unsigned int>(),
-			confirmedArray[2].get<unsigned int>()
+	auto clamp255 = [](int v) -> unsigned int {
+		if (v < 0) return 0u;
+		if (v > 255) return 255u;
+		return static_cast<unsigned int>(v);
 		};
-	}
-	else {
-		loggerAPI_->log(Logger::LogLevel::Error, "Confirmed Colors section missing or malformed in config.json");
-		return false;
-	}
 
-	if (configJson_.contains("unconfirmed") && configJson_["unconfirmed"].is_array() && configJson_["unconfirmed"].size() == 3) {
-		auto unconfirmedArray = configJson_["unconfirmed"];
-		colors_[static_cast<size_t>(vsid::ColorName::UNCONFIRMED)] = std::array<unsigned int, 3>{
-			unconfirmedArray[0].get<unsigned int>(),
-			unconfirmedArray[1].get<unsigned int>(),
-			unconfirmedArray[2].get<unsigned int>()
+	auto parseColor = [&](const char* key, const vsid::Color& fallback, const char* logName) -> vsid::Color {
+		const auto cIt = colorsJson.find(key);
+		if (cIt != colorsJson.end() && cIt->is_array() && cIt->size() == 3) {
+			const auto& arr = *cIt;
+			if (arr[0].is_number() && arr[1].is_number() && arr[2].is_number()) {
+				int r = arr[0].get<int>();
+				int g = arr[1].get<int>();
+				int b = arr[2].get<int>();
+				return std::array<unsigned int, 3>{ clamp255(r), clamp255(g), clamp255(b) };
+			}
+		}
+		loggerAPI_->log(Logger::LogLevel::Error, std::string(logName) + " Colors section missing or malformed in config.json");
+		DisplayMessageFromDataManager(std::string(logName) + " Colors section missing or malformed in config.json, using default", "DataManager");
+		return fallback;
 		};
-	}
-	else {
-		loggerAPI_->log(Logger::LogLevel::Error, "Unconfirmed Colors section missing or malformed in config.json");
-		return false;
-	}
 
-	if (configJson_.contains("checkfp") && configJson_["checkfp"].is_array() && configJson_["checkfp"].size() == 3) {
-		auto checkfpArray = configJson_["checkfp"];
-		colors_[static_cast<size_t>(vsid::ColorName::CHECKFP)] = std::array<unsigned int, 3>{
-			checkfpArray[0].get<unsigned int>(),
-			checkfpArray[1].get<unsigned int>(),
-			checkfpArray[2].get<unsigned int>()
-		};
-	}
-	else {
-		loggerAPI_->log(Logger::LogLevel::Error, "Checkfp Colors section missing or malformed in config.json");
-		return false;
-	}
-
-	if (configJson_.contains("deviation") && configJson_["deviation"].is_array() && configJson_["deviation"].size() == 3) {
-		auto deviationArray = configJson_["deviation"];
-		colors_[static_cast<size_t>(vsid::ColorName::DEVIATION)] = std::array<unsigned int, 3>{
-			deviationArray[0].get<unsigned int>(),
-			deviationArray[1].get<unsigned int>(),
-			deviationArray[2].get<unsigned int>()
-		};
-	}
-	else {
-		loggerAPI_->log(Logger::LogLevel::Error, "Deviation Colors section missing or malformed in config.json");
-		return false;
-	}
-
-	if (configJson_.contains("alerttext") && configJson_["alerttext"].is_array() && configJson_["alerttext"].size() == 3) {
-		auto alertTextArray = configJson_["alerttext"];
-		colors_[static_cast<size_t>(vsid::ColorName::ALERTTEXT)] = std::array<unsigned int, 3>{
-			alertTextArray[0].get<unsigned int>(),
-			alertTextArray[1].get<unsigned int>(),
-			alertTextArray[2].get<unsigned int>()
-		};
-	}
-	else {
-		loggerAPI_->log(Logger::LogLevel::Error, "Alert Text Colors section missing or malformed in config.json");
-		return false;
-	}
-
-	if (configJson_.contains("alertbackground") && configJson_["alertbackground"].is_array() && configJson_["alertbackground"].size() == 3) {
-		auto alertBackgroundArray = configJson_["alertbackground"];
-		colors_[static_cast<size_t>(vsid::ColorName::ALERTBACKGROUND)] = std::array<unsigned int, 3>{
-			alertBackgroundArray[0].get<unsigned int>(),
-			alertBackgroundArray[1].get<unsigned int>(),
-			alertBackgroundArray[2].get<unsigned int>()
-		};
-	}
-	else {
-		loggerAPI_->log(Logger::LogLevel::Error, "Alert Background Colors section missing or malformed in config.json");
-		return false;
-	}
-
-	if (configJson_.contains("requesttext") && configJson_["requesttext"].is_array() && configJson_["requesttext"].size() == 3) {
-		auto requestTextArray = configJson_["requesttext"];
-		colors_[static_cast<size_t>(vsid::ColorName::REQUESTTEXT)] = std::array<unsigned int, 3>{
-			requestTextArray[0].get<unsigned int>(),
-			requestTextArray[1].get<unsigned int>(),
-			requestTextArray[2].get<unsigned int>()
-		};
-	}
-	else {
-		loggerAPI_->log(Logger::LogLevel::Error, "Request Text Colors section missing or malformed in config.json");
-		return false;
-	}
+	colors_[static_cast<size_t>(vsid::ColorName::CONFIRMED)] = parseColor("confirmed", green_, "Confirmed");
+	colors_[static_cast<size_t>(vsid::ColorName::UNCONFIRMED)] = parseColor("unconfirmed", white_, "Unconfirmed");
+	colors_[static_cast<size_t>(vsid::ColorName::CHECKFP)] = parseColor("checkfp", red_, "Checkfp");
+	colors_[static_cast<size_t>(vsid::ColorName::DEVIATION)] = parseColor("deviation", orange_, "Deviation");
+	colors_[static_cast<size_t>(vsid::ColorName::ALERTTEXT)] = parseColor("alerttext", white_, "Alert Text");
+	colors_[static_cast<size_t>(vsid::ColorName::ALERTBACKGROUND)] = parseColor("alertbackground", alertBackground_, "Alert Background");
+	colors_[static_cast<size_t>(vsid::ColorName::REQUESTTEXT)] = parseColor("requesttext", red_, "Request Text");
 
 	return true;
 }
@@ -693,7 +679,7 @@ std::vector<std::string> DataManager::getAllDepartureCallsigns() {
 			loggerAPI_->log(Logger::LogLevel::Error, "Failed to retrieve distance from origin for callsign: " + flightplan.callsign);
 			continue;
 		}
-		if (distanceFromOrigin > MAX_DISTANCE)
+		if (distanceFromOrigin > getMaxAircraftDistance())
 			continue;
 
 		std::optional<PluginSDK::ControllerData::ControllerDataModel> controllerData = controllerDataAPI_->getByCallsign(flightplan.callsign);

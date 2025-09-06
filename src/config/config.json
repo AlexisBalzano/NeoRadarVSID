@@ -1,5 +1,7 @@
 {
   "update_interval": 5,
+  "alert_max_alt": 5000,
+  "max_distance":  4.0,
   "colors": {
     "confirmed": [ 127, 252, 73 ],
     "unconfirmed": [ 215, 215, 215 ],

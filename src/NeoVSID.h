@@ -9,8 +9,6 @@
 #include "utils/Color.h"
 
 constexpr const char* NEOVSID_VERSION = "v1.3.6";
-constexpr double MAX_DISTANCE = 4.; //Max distance from origin airport for auto assigning SID/CFL/RWY
-constexpr int ALERT_MAX_ALTITUDE = 5000; // Max altitude to show ground alerts
 
 using namespace PluginSDK;
 
