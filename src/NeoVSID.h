@@ -6,15 +6,15 @@
 #include "NeoRadarSDK/SDK.h"
 #include "core/NeoVSIDCommandProvider.h"
 #include "core/DataManager.h"
+#include "utils/Color.h"
 
-constexpr const char* NEOVSID_VERSION = "v1.3.5";
-constexpr double MAX_DISTANCE = 4.; //Max distance from origin airport for auto assigning SID/CFL/RWY
-constexpr int ALERT_MAX_ALTITUDE = 5000; // Max altitude to show ground alerts
+constexpr const char* NEOVSID_VERSION = "v1.3.6";
 
 using namespace PluginSDK;
 
-namespace vsid {
+class DataManager;
 
+namespace vsid {
     struct tagUpdateParam
     {
         std::string callsign;
@@ -56,8 +56,8 @@ namespace vsid {
 
         // Command handling
         void TagProcessing(const std::string& callsign, const std::string& actionId, const std::string& userInput = "");
-        bool getAutoModeState() const { return autoModeState; }
-        void switchAutoModeState() { autoModeState = !autoModeState; }
+        bool getToggleModeState() const { return toggleModeState; }
+        void switchToggleModeState() { toggleModeState = !toggleModeState; }
 
 		// API Accessors
         PluginSDK::Logger::LoggerAPI* GetLogger() const { return logger_; }
@@ -79,7 +79,7 @@ namespace vsid {
         // Command IDs
         std::string helpCommandId_;
         std::string versionCommandId_;
-        std::string autoModeCommandId_;
+        std::string toggleCommandId_;
         std::string airportsCommandId_;
         std::string pilotsCommandId_;
 		std::string areasCommandId_;
@@ -89,14 +89,16 @@ namespace vsid {
         std::string positionCommandId_;
         std::string areaCommandId_;
         std::string ruleCommandId_;
-
+        std::string updateIntervalCommandId_;
+        std::string alertMaxAltCommandId_;
+        std::string maxDistCommandId_;
 
     private:
         // Plugin state
         std::vector<std::string> callsignsScope;
 		std::mutex callsignsMutex;
         bool initialized_ = false;
-		bool autoModeState = true; // auto update every 5 seconds (should be true when standard ops)
+		bool toggleModeState = true; // auto update every 5 seconds (should be true when standard ops)
         std::thread m_worker;
         bool m_stop;
         std::vector<std::string> requestingClearance;
@@ -127,6 +129,11 @@ namespace vsid {
         void UpdateTagItems();
         void UpdateTagItems(std::string Callsign);
         void updateCFL(tagUpdateParam param);
+        Color colorizeCfl(const int& cfl, const int& vsidCfl);
+        Color colorizeRwy(const std::string& rwy, const std::string& vsidRwy, const bool& isDepRwy);
+        Color colorizeSid(const std::string& sid, const std::string& vsidSid);
+        Color colorizeAlert();
+        Color colorizeRequest();
         void updateRWY(tagUpdateParam param);
         void updateSID(tagUpdateParam param);
         void updateAlert(const std::string& callsign);

@@ -3,7 +3,6 @@
 #include <format>
 #include <string>
 
-#include "TagItemsColor.h"
 #include "NeoVSID.h"
 #include "../utils/Format.h"
 
@@ -13,7 +12,6 @@
 #define LOG_DEBUG(loglevel, message) void(0)
 #endif
 
-using namespace vsid::tagitems;
 
 namespace vsid {
 void NeoVSID::RegisterTagItems()
@@ -68,7 +66,7 @@ void NeoVSID::updateCFL(tagUpdateParam param) {
     }
 
 	cfl_string = formatCFL(cfl_string, dataManager_->getTransAltitude(param.pilot.oaci));
-    tagContext.colour = Color::colorizeCfl(cfl, vsidCfl);
+    tagContext.colour = colorizeCfl(cfl, vsidCfl);
 
     param.tagInterface_->UpdateTagValue(param.tagId_, cfl_string, tagContext);
 }
@@ -95,7 +93,7 @@ void NeoVSID::updateRWY(tagUpdateParam param) {
         }
     }
 
-    tagContext.colour = Color::colorizeRwy(rwy, vsidRwy, isDepRwy);
+    tagContext.colour = colorizeRwy(rwy, vsidRwy, isDepRwy);
     if (rwy == "") rwy = vsidRwy;
     tagInterface_->UpdateTagValue(param.tagId_, rwy, tagContext);
 }
@@ -111,7 +109,7 @@ void NeoVSID::updateSID(tagUpdateParam param) {
         sid = fp->route.sid;
     }
 
-    tagContext.colour = Color::colorizeSid(sid, vsidSid);
+    tagContext.colour = colorizeSid(sid, vsidSid);
     if (sid == "") sid = vsidSid;
     tagInterface_->UpdateTagValue(param.tagId_, sid, tagContext);
 }
@@ -120,7 +118,7 @@ inline void NeoVSID::updateAlert(const std::string& callsign)
 {
     Tag::TagContext tagContext;
     tagContext.callsign = callsign;
-    tagContext.colour = Color::colorizeAlert();
+    tagContext.colour = colorizeAlert();
 
     std::string alert = "";
 
@@ -135,7 +133,7 @@ inline void NeoVSID::updateAlert(const std::string& callsign)
     int aircraftTrackHeading = aircraft->position.trackHeading;
     int aircraftAlitude = aircraft->position.altitude;
 
-	if (aircraftAlitude > ALERT_MAX_ALTITUDE) {
+	if (aircraftAlitude > dataManager_->getAlertMaxAltitude()) {
         tagInterface_->UpdateTagValue(alertsId_, alert, tagContext);
 		return;
 	}
@@ -155,21 +153,27 @@ inline void NeoVSID::updateAlert(const std::string& callsign)
     }
 
     bool isStopped = aircraft->position.stopped;
+	bool onGround = aircraft->position.onGround;
 
     if (groundStatus == ControllerData::GroundStatus::Dep && aircraftTransponder == Aircraft::TransponderMode::Standby) {
         alert = "XPDR STDBY";
+		tagContext.backgroundColour = dataManager_->getColor(vsid::ColorName::XPDRSTDBY);
     }
-    else if (isStopped && groundStatus == ControllerData::GroundStatus::Dep) {
+    else if (isStopped && onGround && groundStatus == ControllerData::GroundStatus::Dep) {
         alert = "STAT RPA";
+        tagContext.backgroundColour = dataManager_->getColor(vsid::ColorName::STATRPA);
     }
     else if (aircraftSpeed > 0 && isReversing && groundStatus != ControllerData::GroundStatus::Push) {
         alert = "NO PUSH CLR";
+        tagContext.backgroundColour = dataManager_->getColor(vsid::ColorName::NOPUSH);
     }
     else if (aircraftSpeed > 35 && groundStatus < ControllerData::GroundStatus::Dep) {
         alert = "NO TKOF CLR";
+        tagContext.backgroundColour = dataManager_->getColor(vsid::ColorName::NOTKOFF);
     }
     else if (aircraftSpeed > 5 && !isReversing && groundStatus < ControllerData::GroundStatus::Taxi) {
         alert = "NO TAXI CLR";
+		tagContext.backgroundColour = dataManager_->getColor(vsid::ColorName::NOTAXI);
     }
 
     tagInterface_->UpdateTagValue(alertsId_, alert, tagContext);
@@ -179,7 +183,7 @@ inline void NeoVSID::updateRequest(const std::string& callsign, const std::strin
 {
     Tag::TagContext tagContext;
     tagContext.callsign = callsign;
-    tagContext.colour = Color::colorizeRequest();
+    tagContext.colour = colorizeRequest();
 
     std::string text = "";
     
@@ -260,7 +264,7 @@ inline void NeoVSID::updateAllRequests()
     for (const auto& callsign : callsigns) {
         Tag::TagContext tagContext;
         tagContext.callsign = callsign;
-        tagContext.colour = Color::colorizeRequest();
+        tagContext.colour = colorizeRequest();
         std::pair<std::string, size_t> data = getRequestAndIndex(callsign);
         std::string previousRequest = data.first;
         size_t index = data.second;
@@ -297,9 +301,38 @@ void NeoVSID::UpdateTagItems(std::string callsign) {
     if (pilot.empty()) return;
 
 
-	updateCFL({ callsign, pilot, controllerDataAPI_, tagInterface_, cflId_});
-	updateRWY({ callsign, pilot, controllerDataAPI_, tagInterface_, rwyId_});
-	updateSID({ callsign, pilot, controllerDataAPI_, tagInterface_, sidId_});
+	updateCFL({ callsign, pilot, controllerDataAPI_, tagInterface_, cflId_ });
+	updateRWY({ callsign, pilot, controllerDataAPI_, tagInterface_, rwyId_ });
+	updateSID({ callsign, pilot, controllerDataAPI_, tagInterface_, sidId_ });
     updateAlert(callsign);
 }
+
+// TAG COLOR FUNCTIONS
+Color NeoVSID::colorizeCfl(const int& cfl, const int& vsidCfl) {
+    if (cfl == 0) return dataManager_->getColor(ColorName::UNCONFIRMED);
+	if (cfl == vsidCfl) return dataManager_->getColor(ColorName::CONFIRMED);
+	else return dataManager_->getColor(ColorName::DEVIATION);
+}
+
+Color NeoVSID::colorizeRwy(const std::string& rwy, const std::string& vsidRwy, const bool& isDepRwy) {
+    if (rwy == "") return dataManager_->getColor(ColorName::UNCONFIRMED);
+    if (rwy == vsidRwy && isDepRwy) return dataManager_->getColor(ColorName::CONFIRMED);
+    else return dataManager_->getColor(ColorName::DEVIATION);
+}
+
+Color NeoVSID::colorizeSid(const std::string& sid, const std::string& vsidSid) {
+    if (vsidSid == "CHECKFP" && sid == "") return dataManager_->getColor(ColorName::CHECKFP);
+    if (sid == "") return dataManager_->getColor(ColorName::UNCONFIRMED);
+    if (sid == vsidSid) return dataManager_->getColor(ColorName::CONFIRMED);
+    else return dataManager_->getColor(ColorName::DEVIATION);
+}
+
+Color NeoVSID::colorizeAlert() {
+    return dataManager_->getColor(ColorName::ALERTTEXT);
+}
+
+Color NeoVSID::colorizeRequest() {
+    return dataManager_->getColor(ColorName::REQUESTTEXT);
+}
+
 }  // namespace vsid

@@ -26,12 +26,12 @@ void NeoVSID::RegisterCommand() {
 
         helpCommandId_ = chatAPI_->registerCommand(definition.name, definition, CommandProvider_);
 
-        definition.name = "vsid auto";
-        definition.description = "toggle automode state";
+        definition.name = "vsid toggle";
+        definition.description = "toggle vsid uptades";
         definition.lastParameterHasSpaces = false;
         definition.parameters.clear();
 
-        autoModeCommandId_ = chatAPI_->registerCommand(definition.name, definition, CommandProvider_);
+        toggleCommandId_ = chatAPI_->registerCommand(definition.name, definition, CommandProvider_);
 
         definition.name = "vsid airports";
         definition.description = "return active airport list";
@@ -114,6 +114,45 @@ void NeoVSID::RegisterCommand() {
         definition.lastParameterHasSpaces = false;
 
         areaCommandId_ = chatAPI_->registerCommand(definition.name, definition, CommandProvider_);
+        
+		definition.parameters.clear();
+        definition.name = "vsid update";
+        definition.description = "set update rate";
+        definition.lastParameterHasSpaces = false;
+        parameter.name = "seconds";
+        parameter.type = Chat::ParameterType::Number;
+		parameter.required = true;
+		parameter.minLength = 1;
+		parameter.maxLength = 2;
+		definition.parameters.push_back(parameter);
+
+        updateIntervalCommandId_ = chatAPI_->registerCommand(definition.name, definition, CommandProvider_);
+		
+        definition.parameters.clear();
+        definition.name = "vsid altitude";
+        definition.description = "set alert max altitude";
+        definition.lastParameterHasSpaces = false;
+        parameter.name = "feet";
+        parameter.type = Chat::ParameterType::Number;
+		parameter.required = true;
+		parameter.minLength = 4;
+		parameter.maxLength = 5;
+		definition.parameters.push_back(parameter);
+
+        alertMaxAltCommandId_ = chatAPI_->registerCommand(definition.name, definition, CommandProvider_);
+        
+        definition.parameters.clear();
+        definition.name = "vsid distance";
+        definition.description = "set max distance";
+        definition.lastParameterHasSpaces = false;
+        parameter.name = "nm";
+        parameter.type = Chat::ParameterType::Number;
+		parameter.required = true;
+		parameter.minLength = 1;
+		parameter.maxLength = 2;
+		definition.parameters.push_back(parameter);
+
+        maxDistCommandId_ = chatAPI_->registerCommand(definition.name, definition, CommandProvider_);
     }
     catch (const std::exception& ex)
     {
@@ -127,7 +166,7 @@ inline void NeoVSID::unegisterCommand()
     {
         chatAPI_->unregisterCommand(versionCommandId_);
         chatAPI_->unregisterCommand(helpCommandId_);
-        chatAPI_->unregisterCommand(autoModeCommandId_);
+        chatAPI_->unregisterCommand(toggleCommandId_);
         chatAPI_->unregisterCommand(airportsCommandId_);
         chatAPI_->unregisterCommand(pilotsCommandId_);
         chatAPI_->unregisterCommand(areasCommandId_);
@@ -137,6 +176,9 @@ inline void NeoVSID::unegisterCommand()
         chatAPI_->unregisterCommand(positionCommandId_);
         chatAPI_->unregisterCommand(ruleCommandId_);
         chatAPI_->unregisterCommand(areaCommandId_);
+        chatAPI_->unregisterCommand(updateIntervalCommandId_);
+        chatAPI_->unregisterCommand(alertMaxAltCommandId_);
+        chatAPI_->unregisterCommand(maxDistCommandId_);
         CommandProvider_.reset();
 	}
 }
@@ -151,22 +193,34 @@ Chat::CommandResult NeoVSIDCommandProvider::Execute( const std::string &commandI
 	}
     else if (commandId == neoVSID_->helpCommandId_)
     {
-        neoVSID_->DisplayMessage(".vsid version");
-        neoVSID_->DisplayMessage(".vsid auto");
-        neoVSID_->DisplayMessage(".vsid airports");
-        neoVSID_->DisplayMessage(".vsid pilots");
-        neoVSID_->DisplayMessage(".vsid rules");
-        neoVSID_->DisplayMessage(".vsid areas");
-        neoVSID_->DisplayMessage(".vsid reset");
-        neoVSID_->DisplayMessage(".vsid remove <CALLSIGN>");
-        neoVSID_->DisplayMessage(".vsid position <CALLSIGN> <AREANAME>");
-        neoVSID_->DisplayMessage(".vsid rule <OACI> <RULENAME>");
-        neoVSID_->DisplayMessage(".vsid area <OACI> <AREANAME>");
+        for (const char* line : {
+            "List of available commands:",
+            ".vsid version",
+            ".vsid toggle",
+            ".vsid airports",
+            ".vsid pilots",
+            ".vsid rules",
+            ".vsid areas",
+            ".vsid reset",
+            ".vsid remove <CALLSIGN>",
+            ".vsid position <CALLSIGN> <AREANAME>",
+            ".vsid rule <OACI> <RULENAME>",
+            ".vsid area <OACI> <AREANAME>",
+			".vsid update <seconds>",
+			".vsid altitude <feet>",
+			".vsid distance <nm>",
+            })
+        {
+            neoVSID_->DisplayMessage(line);
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+
+        return { true, std::nullopt };
     }
-    else if (commandId == neoVSID_->autoModeCommandId_)
+    else if (commandId == neoVSID_->toggleCommandId_)
     {
-        neoVSID_->switchAutoModeState();
-        std::string message = "Automode set to " + (neoVSID_->getAutoModeState() ? std::string("True") : std::string("False"));
+        neoVSID_->switchToggleModeState();
+        std::string message = "Updates are now " + (neoVSID_->getToggleModeState() ? std::string("unpaused") : std::string("paused"));
         neoVSID_->DisplayMessage(message);
 		neoVSID_->OnTimer(0); // Trigger an immediate update
 		return { true, std::nullopt };
@@ -364,12 +418,72 @@ Chat::CommandResult NeoVSIDCommandProvider::Execute( const std::string &commandI
 
         return { true, std::nullopt };
 	}
+    else if (commandId == neoVSID_->updateIntervalCommandId_)
+    {
+        if (args.empty() || args[0].empty()) {
+            std::string error = "Seconds parameter is required. Use .vsid update <seconds>";
+            neoVSID_->DisplayMessage(error);
+            return { true, std::nullopt };
+        }
+        else if (std::stoi(args[0]) < 1) {
+            std::string error = "Seconds parameter must be at least 1. Use .vsid update <seconds>";
+            neoVSID_->DisplayMessage(error);
+            return { true, std::nullopt };
+        }
+        else {
+			neoVSID_->GetDataManager()->setUpdateInterval(std::stoi(args[0]));
+			std::string message = "Update interval set to " + args[0] + " seconds.";
+			neoVSID_->DisplayMessage(message);
+        }
+    }
+    else if (commandId == neoVSID_->alertMaxAltCommandId_)
+    {
+        if (args.empty() || args[0].empty()) {
+            std::string error = "Feet parameter is required. Use .vsid altitude <feet>";
+            neoVSID_->DisplayMessage(error);
+            return { true, std::nullopt };
+        }
+        else if (std::stoi(args[0]) < 1000) {
+            std::string error = "Feet parameter must be at least 1000. Use .vsid altitude <feet>";
+            neoVSID_->DisplayMessage(error);
+            return { true, std::nullopt };
+        }
+		else {
+			neoVSID_->GetDataManager()->setAlertMaxAltitude(std::stoi(args[0]));
+			std::string message = "Alert max altitude set to " + args[0] + " feet.";
+            neoVSID_->DisplayMessage(message);
+        }
+    }
+    else if (commandId == neoVSID_->maxDistCommandId_)
+    {
+        if (args.empty() || args[0].empty()) {
+            std::string error = "NM parameter is required. Use .vsid distance <nm>";
+            neoVSID_->DisplayMessage(error);
+            return { true, std::nullopt };
+        }
+        else if (std::stoi(args[0]) < 1) {
+            std::string error = "NM parameter must be at least 1. Use .vsid distance <nm>";
+            neoVSID_->DisplayMessage(error);
+            return { true, std::nullopt };
+        }
+		else {
+			neoVSID_->GetDataManager()->setMaxAircraftDistance(std::stod(args[0]));
+            std::string message = "Max distance set to " + args[0] + " nm.";
+            neoVSID_->DisplayMessage(message);
+        }
+	}
     else if (commandId == neoVSID_->resetCommandId_)
     {
         neoVSID_->DisplayMessage("NeoVSID resetted.");
         neoVSID_->GetDataManager()->removeAllPilots();
 		neoVSID_->GetDataManager()->clearJson();
 		neoVSID_->GetDataManager()->loadAircraftDataJson();
+		neoVSID_->GetDataManager()->loadConfigJson();
+        bool success = neoVSID_->GetDataManager()->parseSettings();
+        if (!success) {
+            neoVSID_->GetDataManager()->useDefaultColors();
+            neoVSID_->DisplayMessage("Failed to parse colors from config.json, using default colors.", "NeoVSID");
+		}
         neoVSID_->GetDataManager()->populateActiveAirports();
         neoVSID_->Reset();
         return { true, std::nullopt };

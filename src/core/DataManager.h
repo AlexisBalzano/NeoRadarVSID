@@ -5,6 +5,16 @@
 #include <mutex>
 #include <unordered_set>
 
+#include "./utils/Color.h"
+
+namespace vsid
+{
+	// Default settings values
+	constexpr int DEFAULT_UPDATE_INTERVAL = 5; // seconds
+	constexpr int ALERT_MAX_ALTITUDE = 5000; // Max altitude to show ground alerts
+	constexpr double MAX_DISTANCE = 4.; //Max distance from origin airport for auto assigning SID/CFL/RWY
+}
+
 struct Pilot {
 	std::string callsign;
 	std::string rwy;
@@ -49,12 +59,18 @@ public:
 	static std::filesystem::path getDllDirectory();
 	void DisplayMessageFromDataManager(const std::string& message, const std::string& sender = "");
 	void populateActiveAirports();
-	int retrieveConfigJson(const std::string& oaci);
-	bool retrieveCorrectConfigJson(const std::string& oaci);
-	bool isCorrectJsonVersion(const std::string& config_version, const std::string& fileName);
+	int retrieveAirportConfigJson(const std::string& oaci);
+	bool retrieveCorrectAirportConfigJson(const std::string& oaci);
+	bool isCorrectAirportJsonVersion(const std::string& config_version, const std::string& fileName);
 	void loadAircraftDataJson();
+	void loadConfigJson();
 	void parseRules(const std::string& oaci);
 	void parseAreas(const std::string& oaci);
+	bool parseSettings();
+	void useDefaultColors();
+	void setUpdateInterval(const int& interval) { updateInterval_ = interval; }
+	void setAlertMaxAltitude(const int& alt) { alertMaxAltitude_ = alt; }
+	void setMaxAircraftDistance(const double& dist) { maxAircraftDistance_ = dist; }
 
 	std::vector<std::string> getActiveAirports() const { return activeAirports; }
 	std::vector<std::string> getAllDepartureCallsigns();
@@ -63,6 +79,10 @@ public:
 	std::vector<ruleData> getRules() const { return rules; }
 	std::vector<areaData> getAreas() const { return areas; }
 	int getTransAltitude(const std::string& oaci);
+	vsid::Color getColor(const vsid::ColorName& colorName);
+	int getUpdateInterval() const { return updateInterval_; }
+	int getAlertMaxAltitude() const { return alertMaxAltitude_; }
+	double getMaxAircraftDistance() const { return maxAircraftDistance_; }
 
 	void switchRuleState(const std::string& oaci, const std::string& ruleName);
 	void switchAreaState(const std::string& oaci, const std::string& areaName);
@@ -92,15 +112,27 @@ private:
 	PluginSDK::Logger::LoggerAPI* loggerAPI_ = nullptr;
 
 	std::filesystem::path configPath_;
-	nlohmann::ordered_json configJson_;
+	nlohmann::ordered_json airportConfigJson_;
 	nlohmann::json aircraftDataJson_;
+	nlohmann::json configJson_;
 	std::vector<std::string> activeAirports;
 	std::vector<Pilot> pilots;
 	std::vector<ruleData> rules;
 	std::vector<areaData> areas;
+	std::array<vsid::Color, 11> colors_;
+	int updateInterval_;
+	int alertMaxAltitude_;
+	double maxAircraftDistance_;
 
 	std::unordered_set<std::string> configsError;
 
 	std::mutex dataMutex_;
 
+	// Default Colors
+	vsid::Color green_ = std::array<unsigned int, 3>{ 127, 252, 73 };
+	vsid::Color white_ = std::array<unsigned int, 3>({ 255, 255, 255 });
+	vsid::Color red_ = std::array<unsigned int, 3>({ 240, 0, 0 });
+	vsid::Color orange_ = std::array<unsigned int, 3>({ 255, 153, 51 });
+	vsid::Color alertBackground_ = std::array<unsigned int, 3>({ 234, 171, 24 });
+	vsid::Color strongAlertBackground_ = std::array<unsigned int, 3>({ 88, 8, 9 });
 };
