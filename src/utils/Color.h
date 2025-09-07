@@ -10,7 +10,11 @@ namespace vsid {
         CHECKFP,
         DEVIATION,
         ALERTTEXT,
-        ALERTBACKGROUND,
-        REQUESTTEXT
+        REQUESTTEXT,
+		XPDRSTDBY,
+		STATRPA,
+		NOPUSH,
+		NOTKOFF,
+		NOTAXI
     };
 }

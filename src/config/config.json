@@ -7,8 +7,12 @@
     "unconfirmed": [ 215, 215, 215 ],
     "checkfp": [ 240, 0, 0 ],
     "deviation": [ 255, 153, 51 ],
+    "requesttext": [ 240, 0, 55 ],
     "alerttext": [ 255, 255, 255 ],
-    "alertbackground": [ 234, 171, 24 ],
-    "requesttext": [ 240, 0, 55 ]
+    "xpdrstdby": [ 88, 8, 9 ],
+    "nopush": [ 234, 171, 24 ],
+    "notkoff": [ 88, 8, 9 ],
+    "notaxi": [ 234, 171, 24 ],
+    "statrpa": [ 88, 8, 9 ]
   }
 }

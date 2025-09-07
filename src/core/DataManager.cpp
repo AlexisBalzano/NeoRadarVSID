@@ -628,7 +628,11 @@ bool DataManager::parseSettings()
 	colors_[static_cast<size_t>(vsid::ColorName::CHECKFP)] = parseColor("checkfp", red_, "Checkfp");
 	colors_[static_cast<size_t>(vsid::ColorName::DEVIATION)] = parseColor("deviation", orange_, "Deviation");
 	colors_[static_cast<size_t>(vsid::ColorName::ALERTTEXT)] = parseColor("alerttext", white_, "Alert Text");
-	colors_[static_cast<size_t>(vsid::ColorName::ALERTBACKGROUND)] = parseColor("alertbackground", alertBackground_, "Alert Background");
+	colors_[static_cast<size_t>(vsid::ColorName::XPDRSTDBY)] = parseColor("xpdrstdby", strongAlertBackground_, "XPDR Standby");
+	colors_[static_cast<size_t>(vsid::ColorName::STATRPA)] = parseColor("statrpa", strongAlertBackground_, "Stat RPA");
+	colors_[static_cast<size_t>(vsid::ColorName::NOPUSH)] = parseColor("nopush", alertBackground_, "No Pushback");
+	colors_[static_cast<size_t>(vsid::ColorName::NOTKOFF)] = parseColor("notkoff", strongAlertBackground_, "No Takeoff");
+	colors_[static_cast<size_t>(vsid::ColorName::NOTAXI)] = parseColor("notaxi", alertBackground_, "No Taxi");
 	colors_[static_cast<size_t>(vsid::ColorName::REQUESTTEXT)] = parseColor("requesttext", red_, "Request Text");
 
 	return true;
@@ -642,7 +646,11 @@ void DataManager::useDefaultColors()
 	colors_[static_cast<size_t>(vsid::ColorName::CHECKFP)] = red_;
 	colors_[static_cast<size_t>(vsid::ColorName::DEVIATION)] = orange_;
 	colors_[static_cast<size_t>(vsid::ColorName::ALERTTEXT)] = white_;
-	colors_[static_cast<size_t>(vsid::ColorName::ALERTBACKGROUND)] = alertBackground_;
+	colors_[static_cast<size_t>(vsid::ColorName::NOPUSH)] = alertBackground_;
+	colors_[static_cast<size_t>(vsid::ColorName::NOTKOFF)] = strongAlertBackground_;
+	colors_[static_cast<size_t>(vsid::ColorName::NOTAXI)] = alertBackground_;
+	colors_[static_cast<size_t>(vsid::ColorName::XPDRSTDBY)] = strongAlertBackground_;
+	colors_[static_cast<size_t>(vsid::ColorName::STATRPA)] = strongAlertBackground_;
 	colors_[static_cast<size_t>(vsid::ColorName::REQUESTTEXT)] = red_;
 }
 

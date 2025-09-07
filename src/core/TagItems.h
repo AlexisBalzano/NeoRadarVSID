@@ -157,18 +157,23 @@ inline void NeoVSID::updateAlert(const std::string& callsign)
 
     if (groundStatus == ControllerData::GroundStatus::Dep && aircraftTransponder == Aircraft::TransponderMode::Standby) {
         alert = "XPDR STDBY";
+		tagContext.backgroundColour = dataManager_->getColor(vsid::ColorName::XPDRSTDBY);
     }
     else if (isStopped && onGround && groundStatus == ControllerData::GroundStatus::Dep) {
         alert = "STAT RPA";
+        tagContext.backgroundColour = dataManager_->getColor(vsid::ColorName::STATRPA);
     }
     else if (aircraftSpeed > 0 && isReversing && groundStatus != ControllerData::GroundStatus::Push) {
         alert = "NO PUSH CLR";
+        tagContext.backgroundColour = dataManager_->getColor(vsid::ColorName::NOPUSH);
     }
     else if (aircraftSpeed > 35 && groundStatus < ControllerData::GroundStatus::Dep) {
         alert = "NO TKOF CLR";
+        tagContext.backgroundColour = dataManager_->getColor(vsid::ColorName::NOTKOFF);
     }
     else if (aircraftSpeed > 5 && !isReversing && groundStatus < ControllerData::GroundStatus::Taxi) {
         alert = "NO TAXI CLR";
+		tagContext.backgroundColour = dataManager_->getColor(vsid::ColorName::NOTAXI);
     }
 
     tagInterface_->UpdateTagValue(alertsId_, alert, tagContext);

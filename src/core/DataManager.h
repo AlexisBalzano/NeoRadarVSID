@@ -119,7 +119,7 @@ private:
 	std::vector<Pilot> pilots;
 	std::vector<ruleData> rules;
 	std::vector<areaData> areas;
-	std::array<vsid::Color, 7> colors_;
+	std::array<vsid::Color, 11> colors_;
 	int updateInterval_;
 	int alertMaxAltitude_;
 	double maxAircraftDistance_;
@@ -134,4 +134,5 @@ private:
 	vsid::Color red_ = std::array<unsigned int, 3>({ 240, 0, 0 });
 	vsid::Color orange_ = std::array<unsigned int, 3>({ 255, 153, 51 });
 	vsid::Color alertBackground_ = std::array<unsigned int, 3>({ 234, 171, 24 });
+	vsid::Color strongAlertBackground_ = std::array<unsigned int, 3>({ 88, 8, 9 });
 };
