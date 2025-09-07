@@ -114,6 +114,45 @@ void NeoVSID::RegisterCommand() {
         definition.lastParameterHasSpaces = false;
 
         areaCommandId_ = chatAPI_->registerCommand(definition.name, definition, CommandProvider_);
+        
+		definition.parameters.clear();
+        definition.name = "vsid update";
+        definition.description = "set update rate";
+        definition.lastParameterHasSpaces = false;
+        parameter.name = "seconds";
+        parameter.type = Chat::ParameterType::Number;
+		parameter.required = true;
+		parameter.minLength = 1;
+		parameter.maxLength = 2;
+		definition.parameters.push_back(parameter);
+
+        updateIntervalCommandId_ = chatAPI_->registerCommand(definition.name, definition, CommandProvider_);
+		
+        definition.parameters.clear();
+        definition.name = "vsid altitude";
+        definition.description = "set alert max altitude";
+        definition.lastParameterHasSpaces = false;
+        parameter.name = "feet";
+        parameter.type = Chat::ParameterType::Number;
+		parameter.required = true;
+		parameter.minLength = 4;
+		parameter.maxLength = 5;
+		definition.parameters.push_back(parameter);
+
+        alertMaxAltCommandId_ = chatAPI_->registerCommand(definition.name, definition, CommandProvider_);
+        
+        definition.parameters.clear();
+        definition.name = "vsid distance";
+        definition.description = "set max distance";
+        definition.lastParameterHasSpaces = false;
+        parameter.name = "nm";
+        parameter.type = Chat::ParameterType::Number;
+		parameter.required = true;
+		parameter.minLength = 1;
+		parameter.maxLength = 2;
+		definition.parameters.push_back(parameter);
+
+        maxDistCommandId_ = chatAPI_->registerCommand(definition.name, definition, CommandProvider_);
     }
     catch (const std::exception& ex)
     {
@@ -137,6 +176,9 @@ inline void NeoVSID::unegisterCommand()
         chatAPI_->unregisterCommand(positionCommandId_);
         chatAPI_->unregisterCommand(ruleCommandId_);
         chatAPI_->unregisterCommand(areaCommandId_);
+        chatAPI_->unregisterCommand(updateIntervalCommandId_);
+        chatAPI_->unregisterCommand(alertMaxAltCommandId_);
+        chatAPI_->unregisterCommand(maxDistCommandId_);
         CommandProvider_.reset();
 	}
 }
@@ -163,7 +205,10 @@ Chat::CommandResult NeoVSIDCommandProvider::Execute( const std::string &commandI
             ".vsid remove <CALLSIGN>",
             ".vsid position <CALLSIGN> <AREANAME>",
             ".vsid rule <OACI> <RULENAME>",
-            ".vsid area <OACI> <AREANAME>"
+            ".vsid area <OACI> <AREANAME>",
+			".vsid update <seconds>",
+			".vsid altitude <feet>",
+			".vsid distance <nm>",
             })
         {
             neoVSID_->DisplayMessage(line);
@@ -372,6 +417,60 @@ Chat::CommandResult NeoVSIDCommandProvider::Execute( const std::string &commandI
 		neoVSID_->DisplayMessage(message);
 
         return { true, std::nullopt };
+	}
+    else if (commandId == neoVSID_->updateIntervalCommandId_)
+    {
+        if (args.empty() || args[0].empty()) {
+            std::string error = "Seconds parameter is required. Use .vsid update <seconds>";
+            neoVSID_->DisplayMessage(error);
+            return { true, std::nullopt };
+        }
+        else if (std::stoi(args[0]) < 1) {
+            std::string error = "Seconds parameter must be at least 1. Use .vsid update <seconds>";
+            neoVSID_->DisplayMessage(error);
+            return { true, std::nullopt };
+        }
+        else {
+			neoVSID_->GetDataManager()->setUpdateInterval(std::stoi(args[0]));
+			std::string message = "Update interval set to " + args[0] + " seconds.";
+			neoVSID_->DisplayMessage(message);
+        }
+    }
+    else if (commandId == neoVSID_->alertMaxAltCommandId_)
+    {
+        if (args.empty() || args[0].empty()) {
+            std::string error = "Feet parameter is required. Use .vsid altitude <feet>";
+            neoVSID_->DisplayMessage(error);
+            return { true, std::nullopt };
+        }
+        else if (std::stoi(args[0]) < 1000) {
+            std::string error = "Feet parameter must be at least 1000. Use .vsid altitude <feet>";
+            neoVSID_->DisplayMessage(error);
+            return { true, std::nullopt };
+        }
+		else {
+			neoVSID_->GetDataManager()->setAlertMaxAltitude(std::stoi(args[0]));
+			std::string message = "Alert max altitude set to " + args[0] + " feet.";
+            neoVSID_->DisplayMessage(message);
+        }
+    }
+    else if (commandId == neoVSID_->maxDistCommandId_)
+    {
+        if (args.empty() || args[0].empty()) {
+            std::string error = "NM parameter is required. Use .vsid distance <nm>";
+            neoVSID_->DisplayMessage(error);
+            return { true, std::nullopt };
+        }
+        else if (std::stoi(args[0]) < 1) {
+            std::string error = "NM parameter must be at least 1. Use .vsid distance <nm>";
+            neoVSID_->DisplayMessage(error);
+            return { true, std::nullopt };
+        }
+		else {
+			neoVSID_->GetDataManager()->setMaxAircraftDistance(std::stod(args[0]));
+            std::string message = "Max distance set to " + args[0] + " nm.";
+            neoVSID_->DisplayMessage(message);
+        }
 	}
     else if (commandId == neoVSID_->resetCommandId_)
     {

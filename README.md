@@ -91,5 +91,8 @@ They will turn green when confirmed.<br>
 - `.vsid areas` : display all currently loaded areas and their active state.<br>
 - `.vsid rule <OACI> <RULENAME>` : toggle rule for the given OACI and rule name.<br>
 - `.vsid area <OACI> <AREANAME>` : toggle area for the given OACI and area name.<br>
+- `.vsid update <SECONDS>` : change the automatic update interval (default is 5 seconds, minimum is 1 seconds).<br>
+- `.vsid distance <NM>` : change the maximum distance to airport for a pilot to be considered (default is 4 NM, minimum is 1 NM).<br>
+- `.vsid altitude <FEET>` : change the maximum altitude to display Alert for a pilot (default is 5000 feet, minimum is 1000 feet).<br>
 - `.vsid position <CALLSIGN> <AREANAME>` (*debug command*) : to check pilot position and if in area.<br>
 - `.vsid remove <CALLSIGN>` (*debug command*) : remove pilot from the plugin (it will be readded on next plugin update if required criterias are met, used to remove stuck aircraft).<br>

@@ -89,7 +89,9 @@ namespace vsid {
         std::string positionCommandId_;
         std::string areaCommandId_;
         std::string ruleCommandId_;
-
+        std::string updateIntervalCommandId_;
+        std::string alertMaxAltCommandId_;
+        std::string maxDistCommandId_;
 
     private:
         // Plugin state

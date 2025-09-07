@@ -68,6 +68,9 @@ public:
 	void parseAreas(const std::string& oaci);
 	bool parseSettings();
 	void useDefaultColors();
+	void setUpdateInterval(const int& interval) { updateInterval_ = interval; }
+	void setAlertMaxAltitude(const int& alt) { alertMaxAltitude_ = alt; }
+	void setMaxAircraftDistance(const double& dist) { maxAircraftDistance_ = dist; }
 
 	std::vector<std::string> getActiveAirports() const { return activeAirports; }
 	std::vector<std::string> getAllDepartureCallsigns();
