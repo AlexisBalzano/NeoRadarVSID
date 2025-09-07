@@ -151,17 +151,26 @@ Chat::CommandResult NeoVSIDCommandProvider::Execute( const std::string &commandI
 	}
     else if (commandId == neoVSID_->helpCommandId_)
     {
-        neoVSID_->DisplayMessage(".vsid version");
-        neoVSID_->DisplayMessage(".vsid auto");
-        neoVSID_->DisplayMessage(".vsid airports");
-        neoVSID_->DisplayMessage(".vsid pilots");
-        neoVSID_->DisplayMessage(".vsid rules");
-        neoVSID_->DisplayMessage(".vsid areas");
-        neoVSID_->DisplayMessage(".vsid reset");
-        neoVSID_->DisplayMessage(".vsid remove <CALLSIGN>");
-        neoVSID_->DisplayMessage(".vsid position <CALLSIGN> <AREANAME>");
-        neoVSID_->DisplayMessage(".vsid rule <OACI> <RULENAME>");
-        neoVSID_->DisplayMessage(".vsid area <OACI> <AREANAME>");
+        for (const char* line : {
+            "List of available commands:",
+            ".vsid version",
+            ".vsid auto",
+            ".vsid airports",
+            ".vsid pilots",
+            ".vsid rules",
+            ".vsid areas",
+            ".vsid reset",
+            ".vsid remove <CALLSIGN>",
+            ".vsid position <CALLSIGN> <AREANAME>",
+            ".vsid rule <OACI> <RULENAME>",
+            ".vsid area <OACI> <AREANAME>"
+            })
+        {
+            neoVSID_->DisplayMessage(line);
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+
+        return { true, std::nullopt };
     }
     else if (commandId == neoVSID_->autoModeCommandId_)
     {
