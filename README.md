@@ -85,7 +85,7 @@ They will turn green when confirmed.<br>
 - `.vsid version` : display the current version of the plugin.<br>
 - `.vsid reset` : reset all plugin configurations.<br>
 - `.vsid airports` : display all currently active airports <br>
-- `.vsid auto` : toggle tag update every 5 seconds.<br>
+- `.vsid toggle` : toggle tag update every 5 seconds.<br>
 - `.vsid pilots` : display all currently active pilots.<br>
 - `.vsid rules` : display all currently loaded rules and their active state.<br>
 - `.vsid areas` : display all currently loaded areas and their active state.<br>

@@ -56,8 +56,8 @@ namespace vsid {
 
         // Command handling
         void TagProcessing(const std::string& callsign, const std::string& actionId, const std::string& userInput = "");
-        bool getAutoModeState() const { return autoModeState; }
-        void switchAutoModeState() { autoModeState = !autoModeState; }
+        bool getToggleModeState() const { return toggleModeState; }
+        void switchToggleModeState() { toggleModeState = !toggleModeState; }
 
 		// API Accessors
         PluginSDK::Logger::LoggerAPI* GetLogger() const { return logger_; }
@@ -79,7 +79,7 @@ namespace vsid {
         // Command IDs
         std::string helpCommandId_;
         std::string versionCommandId_;
-        std::string autoModeCommandId_;
+        std::string toggleCommandId_;
         std::string airportsCommandId_;
         std::string pilotsCommandId_;
 		std::string areasCommandId_;
@@ -98,7 +98,7 @@ namespace vsid {
         std::vector<std::string> callsignsScope;
 		std::mutex callsignsMutex;
         bool initialized_ = false;
-		bool autoModeState = true; // auto update every 5 seconds (should be true when standard ops)
+		bool toggleModeState = true; // auto update every 5 seconds (should be true when standard ops)
         std::thread m_worker;
         bool m_stop;
         std::vector<std::string> requestingClearance;

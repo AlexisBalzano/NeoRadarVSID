@@ -26,12 +26,12 @@ void NeoVSID::RegisterCommand() {
 
         helpCommandId_ = chatAPI_->registerCommand(definition.name, definition, CommandProvider_);
 
-        definition.name = "vsid auto";
-        definition.description = "toggle automode state";
+        definition.name = "vsid toggle";
+        definition.description = "toggle vsid uptades";
         definition.lastParameterHasSpaces = false;
         definition.parameters.clear();
 
-        autoModeCommandId_ = chatAPI_->registerCommand(definition.name, definition, CommandProvider_);
+        toggleCommandId_ = chatAPI_->registerCommand(definition.name, definition, CommandProvider_);
 
         definition.name = "vsid airports";
         definition.description = "return active airport list";
@@ -166,7 +166,7 @@ inline void NeoVSID::unegisterCommand()
     {
         chatAPI_->unregisterCommand(versionCommandId_);
         chatAPI_->unregisterCommand(helpCommandId_);
-        chatAPI_->unregisterCommand(autoModeCommandId_);
+        chatAPI_->unregisterCommand(toggleCommandId_);
         chatAPI_->unregisterCommand(airportsCommandId_);
         chatAPI_->unregisterCommand(pilotsCommandId_);
         chatAPI_->unregisterCommand(areasCommandId_);
@@ -196,7 +196,7 @@ Chat::CommandResult NeoVSIDCommandProvider::Execute( const std::string &commandI
         for (const char* line : {
             "List of available commands:",
             ".vsid version",
-            ".vsid auto",
+            ".vsid toggle",
             ".vsid airports",
             ".vsid pilots",
             ".vsid rules",
@@ -217,10 +217,10 @@ Chat::CommandResult NeoVSIDCommandProvider::Execute( const std::string &commandI
 
         return { true, std::nullopt };
     }
-    else if (commandId == neoVSID_->autoModeCommandId_)
+    else if (commandId == neoVSID_->toggleCommandId_)
     {
-        neoVSID_->switchAutoModeState();
-        std::string message = "Automode set to " + (neoVSID_->getAutoModeState() ? std::string("True") : std::string("False"));
+        neoVSID_->switchToggleModeState();
+        std::string message = "Updates are now " + (neoVSID_->getToggleModeState() ? std::string("unpaused") : std::string("paused"));
         neoVSID_->DisplayMessage(message);
 		neoVSID_->OnTimer(0); // Trigger an immediate update
 		return { true, std::nullopt };

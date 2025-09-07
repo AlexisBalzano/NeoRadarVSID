@@ -113,7 +113,7 @@ void NeoVSID::Shutdown()
 
 void vsid::NeoVSID::Reset()
 {
-    autoModeState = true;
+    toggleModeState = true;
 	requestingClearance.clear();
 	requestingPush.clear();
 	requestingTaxi.clear();
@@ -136,7 +136,7 @@ void NeoVSID::runScopeUpdate() {
 
 void NeoVSID::OnTimer(int Counter) {
 	int timer = dataManager_->getUpdateInterval();
-    if (Counter % timer == 0 && autoModeState) this->runScopeUpdate();
+    if (Counter % timer == 0 && toggleModeState) this->runScopeUpdate();
 }
 
 void vsid::NeoVSID::OnControllerDataUpdated(const ControllerData::ControllerDataUpdatedEvent* event)
