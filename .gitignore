@@ -1,6 +1,9 @@
 # Prerequisites
 *.d
 
+release
+!release/<PROJECT_NAME>/** 
+
 key.txt
 key.txt.pub
 todo.txt
