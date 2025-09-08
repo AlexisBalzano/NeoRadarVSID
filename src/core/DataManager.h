@@ -56,7 +56,7 @@ public:
 	void clearData();
 	void clearJson();
 
-	static std::filesystem::path getDllDirectory();
+	std::filesystem::path getDllDirectory();
 	void DisplayMessageFromDataManager(const std::string& message, const std::string& sender = "");
 	void populateActiveAirports();
 	int retrieveAirportConfigJson(const std::string& oaci);

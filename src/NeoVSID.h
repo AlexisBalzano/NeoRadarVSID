@@ -38,6 +38,7 @@ namespace vsid {
         void Shutdown() override;
         void Reset();
         PluginMetadata GetMetadata() const override;
+		ClientInformation GetClientInformation() const { return clientInfo_; }
 
         // Radar commands
         void DisplayMessage(const std::string& message, const std::string& sender = "");

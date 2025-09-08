@@ -4,15 +4,6 @@
 #include "NeoVSID.h"
 #include "DataManager.h"
 
-#if defined(_WIN32)
-#include <Windows.h>
-#include <shlobj.h>
-#include <knownfolders.h>
-#elif defined(__APPLE__) || defined(__linux__)
-#include <dlfcn.h>
-#include <cstdlib>
-#endif
-
 #ifdef DEV
 #define LOG_DEBUG(loglevel, message) loggerAPI_->log(loglevel, message)
 #else
@@ -40,24 +31,9 @@ DataManager::DataManager(vsid::NeoVSID* neoVSID)
 
 std::filesystem::path DataManager::getDllDirectory()
 {
-#if defined(_WIN32)
-	PWSTR path = nullptr;
-	HRESULT hr = SHGetKnownFolderPath(FOLDERID_Documents, 0, NULL, &path);
-	std::filesystem::path documentsPath;
-	if (SUCCEEDED(hr)) {
-		documentsPath = path;
-		CoTaskMemFree(path);
-	}
-	return documentsPath / "NeoRadar/plugins";
-#elif defined(__APPLE__) || defined(__linux__)
-	const char* homeDir = std::getenv("HOME");
-	if (homeDir) {
-		return std::filesystem::path(homeDir) / "Documents" / "NeoRadar/plugins";
-	}
-	return std::filesystem::path(); // Return empty path if HOME is not set
-#else
-	return std::filesystem::path(); // Return an empty path for unsupported platforms
-#endif
+	std::filesystem::path documents = neoVSID_->GetClientInformation().documentsPath;
+	std::filesystem::path configDir = documents / "plugins" / "NeoVSID";
+	return configDir;
 }
 
 void DataManager::clearData()
@@ -372,7 +348,7 @@ int DataManager::retrieveAirportConfigJson(const std::string& oaci)
 {
 	std::lock_guard<std::mutex> lock(dataMutex_);
 	std::string fileName = oaci + ".json";
-	std::filesystem::path jsonPath = configPath_ / "NeoVSID" / fileName;
+	std::filesystem::path jsonPath = configPath_ / fileName;
 
 	std::ifstream config(jsonPath);
 	if (!config.is_open()) {
@@ -430,7 +406,7 @@ bool DataManager::isCorrectAirportJsonVersion(const std::string& config_version,
 void DataManager::loadAircraftDataJson()
 {
 	std::lock_guard<std::mutex> lock(dataMutex_);
-	std::filesystem::path jsonPath = configPath_ / "NeoVSID" / "AircraftData.json";
+	std::filesystem::path jsonPath = configPath_ / "AircraftData.json";
 	std::ifstream aircraftDataFile(jsonPath);
 	if (!aircraftDataFile.is_open()) {
 		DisplayMessageFromDataManager("Could not open aircraft data JSON file: " + jsonPath.string(), "DataManager");
@@ -450,7 +426,7 @@ void DataManager::loadAircraftDataJson()
 void DataManager::loadConfigJson()
 {
 	std::lock_guard<std::mutex> lock(dataMutex_);
-	std::filesystem::path jsonPath = configPath_ / "NeoVSID" / "config.json";
+	std::filesystem::path jsonPath = configPath_ / "config.json";
 	std::ifstream configFile(jsonPath);
 	if (!configFile.is_open()) {
 		DisplayMessageFromDataManager("Could not open config data JSON file: " + jsonPath.string(), "DataManager");
