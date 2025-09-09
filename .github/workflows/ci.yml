@@ -147,8 +147,8 @@ jobs:
       - name: Prepare config files for packaging
         run: |
           mkdir -p plugins/NeoVSID
-          cp config.json plugins/NeoVSID/
-          cp AircraftData.json plugins/NeoVSID/
+          cp src/config/config.json plugins/NeoVSID/
+          cp src/config/AircraftData.json plugins/NeoVSID/
 
       - name: List downloaded files
         run: ls -R all_builds
