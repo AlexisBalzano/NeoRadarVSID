@@ -173,17 +173,15 @@ jobs:
         shell: bash
         run: |
           for f in all_builds/NeoVSID/*; do
-            case "$f" in
-              *.dll)
-                mv "$f" "all_builds/NeoVSID/windows-${{ matrix.architecture }}.dll"
-                ;;
-              *.so)
-                mv "$f" "all_builds/NeoVSID/linux-${{ matrix.architecture }}.so"
-                ;;
-              *.dylib)
-                mv "$f" "all_builds/NeoVSID/mac-${{ matrix.architecture }}.dylib"
-                ;;
-            esac
+            # Extract platform and architecture from the filename if present
+            # Example: all_builds/NeoVSID/NeoVSID-mac-x86_64.dylib
+            base=$(basename "$f")
+            if [[ "$base" =~ NeoVSID-([a-z]+)-([a-zA-Z0-9_]+)\.(dll|so|dylib) ]]; then
+              platform="${BASH_REMATCH[1]}"
+              arch="${BASH_REMATCH[2]}"
+              ext="${BASH_REMATCH[3]}"
+              mv "$f" "all_builds/NeoVSID/${platform}-${arch}.${ext}"
+            fi
           done
 
       - name: Package .nrplugin
