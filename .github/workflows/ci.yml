@@ -176,14 +176,22 @@ jobs:
         shell: bash
         run: |
           for f in all_builds/NeoVSID/*; do
-            # Extract platform and architecture from the filename if present
-            # Example: all_builds/NeoVSID/NeoVSID-mac-x86_64.dylib
+            ext="${f##*.}"
             base=$(basename "$f")
-            if [[ "$base" =~ NeoVSID-([a-z]+)-([a-zA-Z0-9_]+)\.(dll|so|dylib) ]]; then
-              platform="${BASH_REMATCH[1]}"
-              arch="${BASH_REMATCH[2]}"
-              ext="${BASH_REMATCH[3]}"
-              mv "$f" "all_builds/NeoVSID/${platform}-${arch}.${ext}"
+            # Detect platform and arch from the filename or from the file extension
+            if [[ "$base" == *"dylib" ]]; then
+              # macOS
+              if [[ "$base" == *"arm64"* ]]; then
+                mv "$f" "all_builds/NeoVSID/macos-arm64.dylib"
+              else
+                mv "$f" "all_builds/NeoVSID/macos-x64.dylib"
+              fi
+            elif [[ "$base" == *"so" ]]; then
+              # Linux
+              mv "$f" "all_builds/NeoVSID/linux-x64.so"
+            elif [[ "$base" == *"dll" ]]; then
+              # Windows
+              mv "$f" "all_builds/NeoVSID/windows-x64.dll"
             fi
           done
 
