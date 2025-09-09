@@ -87,6 +87,3 @@ file(GLOB CONFIG_JSON_FILES "${CMAKE_SOURCE_DIR}/src/config/*.json")
 
 # Copy them to the build directory
 file(COPY ${CONFIG_JSON_FILES} DESTINATION ${CMAKE_BINARY_DIR})
-
-#compile into .nrplugin extension
-setup_complete_plugin_packaging(${PROJECT_NAME})

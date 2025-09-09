@@ -134,3 +134,64 @@ jobs:
             lib/NeoVSID*
             bin/NeoVSID*
             bin/${{ env.build_type }}/NeoVSID*
+
+  package:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: all_builds
+
+      - name: Prepare config files for packaging
+        run: |
+          mkdir -p plugins/NeoVSID
+          cp config.json plugins/NeoVSID/
+          cp AircraftData.json plugins/NeoVSID/
+
+      - name: List downloaded files
+        run: ls -R all_builds
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22'
+
+      - name: Install NeoRadar CLI
+        run: yarn global add https://github.com/neoradar-project/cli.git
+
+      - name: Organize plugin binaries for packaging
+        run: |
+          mkdir -p all_builds/NeoVSID
+          find all_builds -type f -name 'NeoVSID*' -exec cp {} all_builds/NeoVSID/ \;
+
+      - name: List files after organizing
+        run: ls -R all_builds
+
+      - name: Rename binaries by platform and architecture
+        shell: bash
+        run: |
+          for f in all_builds/NeoVSID/*; do
+            case "$f" in
+              *.dll)
+                mv "$f" "all_builds/NeoVSID/windows-${{ matrix.architecture }}.dll"
+                ;;
+              *.so)
+                mv "$f" "all_builds/NeoVSID/linux-${{ matrix.architecture }}.so"
+                ;;
+              *.dylib)
+                mv "$f" "all_builds/NeoVSID/mac-${{ matrix.architecture }}.dylib"
+                ;;
+            esac
+          done
+
+      - name: Package .nrplugin
+        run: |
+          echo y | neoradar-cli create-plugin-archives ./all_builds
+
+      - name: Upload final .nrplugin
+        uses: actions/upload-artifact@v4
+        with:
+          name: plugins
+          path: plugins
