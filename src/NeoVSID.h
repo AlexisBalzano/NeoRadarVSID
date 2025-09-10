@@ -75,6 +75,9 @@ namespace vsid {
         void runScopeUpdate();
         void run();
         std::pair<std::string, size_t> getRequestAndIndex(const std::string& callsign);
+        bool updateTagValueIfChanged(const std::string& callsign, const std::string& tagId, const std::string& value, Tag::TagContext& context);
+        void ClearTagCache(const std::string& callsign);
+        void ClearAllTagCache();
 
     public:
         // Command IDs
@@ -102,9 +105,18 @@ namespace vsid {
 		bool toggleModeState = true; // auto update every 5 seconds (should be true when standard ops)
         std::thread m_worker;
         bool m_stop;
+        std::mutex requestsMutex;
         std::vector<std::string> requestingClearance;
         std::vector<std::string> requestingPush;
         std::vector<std::string> requestingTaxi;
+
+        struct TagRenderState {
+            std::string value;
+            Color colour;
+            Color background;
+        };
+        std::unordered_map<std::string, std::unordered_map<std::string, TagRenderState>> tagCache_;
+        std::mutex tagCacheMutex_;
 
         // APIs
         PluginMetadata metadata_;

@@ -113,11 +113,14 @@ void NeoVSID::Shutdown()
 
 void vsid::NeoVSID::Reset()
 {
+	std::lock_guard<std::mutex> lock(callsignsMutex);
+	std::lock_guard<std::mutex> requestsLock(requestsMutex);
     toggleModeState = true;
 	requestingClearance.clear();
 	requestingPush.clear();
 	requestingTaxi.clear();
 	callsignsScope.clear();
+	ClearAllTagCache();
 }
 
 void NeoVSID::DisplayMessage(const std::string &message, const std::string &sender) {
@@ -270,6 +273,36 @@ std::pair<std::string, size_t> vsid::NeoVSID::getRequestAndIndex(const std::stri
         }
     }
 	return { "", 0 };
+}
+
+bool NeoVSID::updateTagValueIfChanged(const std::string& callsign, const std::string& tagId, const std::string& value, Tag::TagContext& context)
+{
+    std::lock_guard<std::mutex> lock(tagCacheMutex_);
+    auto& perCallsign = tagCache_[callsign];
+    auto it = perCallsign.find(tagId);
+    bool changed = false;
+    if (it == perCallsign.end()
+        || it->second.value != value
+        || it->second.colour != context.colour
+        || it->second.background != context.backgroundColour)
+    {
+        changed = true;
+        tagInterface_->UpdateTagValue(tagId, value, context);
+        perCallsign[tagId] = { value, context.colour, context.backgroundColour };
+    }
+    return changed;
+}
+
+void NeoVSID::ClearTagCache(const std::string& callsign)
+{
+    std::lock_guard<std::mutex> lock(tagCacheMutex_);
+    tagCache_.erase(callsign);
+}
+
+void NeoVSID::ClearAllTagCache()
+{
+    std::lock_guard<std::mutex> lock(tagCacheMutex_);
+    tagCache_.clear();
 }
 
 PluginSDK::PluginMetadata NeoVSID::GetMetadata() const
