@@ -89,8 +89,8 @@ They will turn green when confirmed.<br>
 - `.vsid pilots` : display all currently active pilots.<br>
 - `.vsid rules` : display all currently loaded rules and their active state.<br>
 - `.vsid areas` : display all currently loaded areas and their active state.<br>
-- `.vsid rule <OACI> <RULENAME>` : toggle rule for the given OACI and rule name.<br>
-- `.vsid area <OACI> <AREANAME>` : toggle area for the given OACI and area name.<br>
+- `.vsid rule <ICAO> <RULENAME>` : toggle rule for the given ICAO and rule name.<br>
+- `.vsid area <ICAO> <AREANAME>` : toggle area for the given ICAO and area name.<br>
 - `.vsid update <SECONDS>` : change the automatic update interval (default is 5 seconds, minimum is 1 seconds).<br>
 - `.vsid distance <NM>` : change the maximum distance to airport for a pilot to be considered (default is 4 NM, minimum is 1 NM).<br>
 - `.vsid altitude <FEET>` : change the maximum altitude to display Alert for a pilot (default is 5000 feet, minimum is 1000 feet).<br>
