@@ -275,8 +275,31 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 			continue;
 		}
 
+		std::vector<std::string> customDepRwy;
+		std::vector<std::string> assignableDepRwy = depRwys;
+
+		// Check if customAssign.json exists and if the SID is assigned there
+		if (customAssignExists()) {
+			std::lock_guard<std::mutex> lock(dataMutex_);
+			if (customAssignJson_.contains(oaci) && customAssignJson_[oaci].contains(firstWaypoint) && customAssignJson_[oaci][firstWaypoint].contains("RWY")) {
+				customDepRwy = customAssignJson_[oaci][firstWaypoint]["RWY"].get<std::vector<std::string>>();
+				if (!customDepRwy.empty()) {
+					assignableDepRwy.clear();
+					for (const auto& rwy : depRwys) {
+						if (std::find(customDepRwy.begin(), customDepRwy.end(), rwy) != customDepRwy.end()) {
+							assignableDepRwy.push_back(rwy);
+						}
+					}
+					if (assignableDepRwy.empty()) {
+						LOG_DEBUG(Logger::LogLevel::Info, "No matching runway in customAssign.json for flightplan: " + flightplan.callsign + ", using all available runways");
+						assignableDepRwy = depRwys; // Fallback to all available runways if none match
+					}
+				}
+			}
+		}
+		
 		bool rwyMatches = false;
-		for (const auto& rwy : depRwys) {
+		for (const auto& rwy : assignableDepRwy) {
 			if (sidRwy.find(rwy) != std::string::npos) {
 				rwyMatches = true;
 				break;
@@ -285,6 +308,14 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 		if (!rwyMatches) {
 			++sidIterator;
 			continue;
+		}
+
+		std::string depRwy;
+		for (const auto& rwy : assignableDepRwy) {
+			if (sidRwy.find(rwy) != std::string::npos) {
+				depRwy = rwy;
+				break;
+			}
 		}
 
 		auto variantIterator = waypointSidData[sidLetter].begin();
@@ -327,17 +358,7 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 				}
 			}
 
-			// Check if customAssign.json exists and if the SID is assigned there
-			// customAssign.json find icao -> waypoint -> runways
-			// assignableDepRwy = runways contained in depRwys
-
-			std::string depRwy;
-			for (const auto& rwy : depRwys) {
-				if (sidRwy.find(rwy) != std::string::npos) {
-					depRwy = rwy;
-					break;
-				}
-			}
+			
 
 			if (waypointSidData[sidLetter][variant].contains("engineType")) {
 				if (!isMatchingEngineRestrictions(waypointSidData[sidLetter][variant], flightplan.acType)) {
@@ -465,9 +486,11 @@ void DataManager::loadCustomAssignJson()
 	std::filesystem::path jsonPath = configPath_ / "customAssign.json";
 	std::ifstream customAssign(jsonPath);
 	if (!customAssign.is_open()) {
-		DisplayMessageFromDataManager("No Custom Assign config found: " + jsonPath.string(), "DataManager");
-		loggerAPI_->log(Logger::LogLevel::Info, "No Custom Assign rules found.");
 		return;
+	}
+	else {
+		DisplayMessageFromDataManager("Custom Assign rules found.", "");
+		loggerAPI_->log(Logger::LogLevel::Info, "Custom Assign rules found.");
 	}
 	try {
 		customAssignJson_ = nlohmann::json::parse(customAssign);
