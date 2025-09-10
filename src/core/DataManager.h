@@ -56,7 +56,7 @@ public:
 	void clearData();
 	void clearJson();
 
-	static std::filesystem::path getDllDirectory();
+	std::filesystem::path getDllDirectory();
 	void DisplayMessageFromDataManager(const std::string& message, const std::string& sender = "");
 	void populateActiveAirports();
 	int retrieveAirportConfigJson(const std::string& oaci);
@@ -64,6 +64,7 @@ public:
 	bool isCorrectAirportJsonVersion(const std::string& config_version, const std::string& fileName);
 	void loadAircraftDataJson();
 	void loadConfigJson();
+	void loadCustomAssignJson();
 	void parseRules(const std::string& oaci);
 	void parseAreas(const std::string& oaci);
 	bool parseSettings();
@@ -98,6 +99,7 @@ public:
 	bool isMatchingAreas(const nlohmann::ordered_json waypointSidData, const std::vector<std::string> activeAreas, const std::string& letter, const std::string& variant, const Flightplan::Flightplan fp);
 	bool isMatchingEngineRestrictions(const nlohmann::ordered_json sidData, const std::string& aircraftType);
 	bool isRNAV(const std::string& aircraftType);
+	bool customAssignExists() const;
 
 	int fetchCFL(const Flightplan::Flightplan& flightplan, const std::vector<std::string> activeRules, const std::vector<std::string> activeAreas, const std::string& vsid, bool singleRwy);
 	sidData generateVSID(const Flightplan::Flightplan& flightplan, const std::string& depRwy);
@@ -114,6 +116,7 @@ private:
 	std::filesystem::path configPath_;
 	nlohmann::ordered_json airportConfigJson_;
 	nlohmann::json aircraftDataJson_;
+	nlohmann::json customAssignJson_;
 	nlohmann::json configJson_;
 	std::vector<std::string> activeAirports;
 	std::vector<Pilot> pilots;

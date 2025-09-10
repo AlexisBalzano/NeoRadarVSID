@@ -479,6 +479,7 @@ Chat::CommandResult NeoVSIDCommandProvider::Execute( const std::string &commandI
 		neoVSID_->GetDataManager()->clearJson();
 		neoVSID_->GetDataManager()->loadAircraftDataJson();
 		neoVSID_->GetDataManager()->loadConfigJson();
+		neoVSID_->GetDataManager()->loadCustomAssignJson();
         bool success = neoVSID_->GetDataManager()->parseSettings();
         if (!success) {
             neoVSID_->GetDataManager()->useDefaultColors();
