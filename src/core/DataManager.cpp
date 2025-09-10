@@ -22,6 +22,7 @@ DataManager::DataManager(vsid::NeoVSID* neoVSID)
 	configPath_ = getDllDirectory();
 	loadAircraftDataJson();
 	loadConfigJson();
+	loadCustomAssignJson();
 	bool success = parseSettings();
 	if (!success) useDefaultColors();
 	activeAirports.clear();
@@ -55,6 +56,7 @@ void DataManager::clearJson()
 	std::lock_guard<std::mutex> lock(dataMutex_);
 	airportConfigJson_.clear();
 	aircraftDataJson_.clear();
+	customAssignJson_.clear();
 	configJson_.clear();
 	rules.clear();
 	areas.clear();
@@ -126,6 +128,16 @@ int DataManager::fetchCFL(const Flightplan::Flightplan& flightplan, const std::v
 	if (!waypointSidData.contains(letter)) {
 		LOG_DEBUG(Logger::LogLevel::Info, "SID letter not found in waypoint SID data for: " + flightplan.callsign + " when trying to fetch CFL");
 		return 0;
+	}
+	
+	// Check if customAssign.json exists and if the SID is assigned there
+	if (customAssignExists()) {
+		std::lock_guard<std::mutex> lock(dataMutex_);
+		if (customAssignJson_.contains(oaci) && customAssignJson_[oaci].contains(waypoint) && customAssignJson_[oaci][waypoint].contains("CFL")) {
+			int customCFL = customAssignJson_[oaci][waypoint]["CFL"].get<int>();
+			LOG_DEBUG(Logger::LogLevel::Info, "Custom CFL found for flightplan: " + flightplan.callsign + " with CFL: " + std::to_string(customCFL));
+			return customCFL;
+		}
 	}
 
 	bool ruleActive = !activeRules.empty();
@@ -315,6 +327,10 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 				}
 			}
 
+			// Check if customAssign.json exists and if the SID is assigned there
+			// customAssign.json find icao -> waypoint -> runways
+			// assignableDepRwy = runways contained in depRwys
+
 			std::string depRwy;
 			for (const auto& rwy : depRwys) {
 				if (sidRwy.find(rwy) != std::string::npos) {
@@ -439,6 +455,27 @@ void DataManager::loadConfigJson()
 	catch (...) {
 		DisplayMessageFromDataManager("Error parsing config data JSON file: " + jsonPath.string(), "DataManager");
 		loggerAPI_->log(Logger::LogLevel::Error, "Error parsing config data JSON file: " + jsonPath.string());
+		return;
+	}
+}
+
+void DataManager::loadCustomAssignJson()
+{
+	std::lock_guard<std::mutex> lock(dataMutex_);
+	std::filesystem::path jsonPath = configPath_ / "customAssign.json";
+	std::ifstream customAssign(jsonPath);
+	if (!customAssign.is_open()) {
+		DisplayMessageFromDataManager("No Custom Assign config found: " + jsonPath.string(), "DataManager");
+		loggerAPI_->log(Logger::LogLevel::Info, "No Custom Assign rules found.");
+		return;
+	}
+	try {
+		customAssignJson_ = nlohmann::json::parse(customAssign);
+	}
+	catch (...) {
+		DisplayMessageFromDataManager("Error parsing Custom Assign data JSON file: " + jsonPath.string(), "DataManager");
+		loggerAPI_->log(Logger::LogLevel::Error, "Error parsing Custom Assign data JSON file: " + jsonPath.string());
+		customAssign.clear();
 		return;
 	}
 }
@@ -841,6 +878,13 @@ bool DataManager::isRNAV(const std::string& aircraftType)
 		}
 	}
 	return false;
+}
+
+bool DataManager::customAssignExists() const
+{
+	if (customAssignJson_.empty())
+		return false;
+	return true;
 }
 
 int DataManager::getTransAltitude(const std::string& oaci)
