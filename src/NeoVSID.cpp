@@ -167,6 +167,7 @@ void NeoVSID::OnAirportConfigurationsUpdated(const Airport::AirportConfiguration
 	std::lock_guard<std::mutex> lock(callsignsMutex);
     //Force recomputation of all RWY, SID & CFL
     dataManager_->removeAllPilots();
+    ClearAllTagCache();
     dataManager_->populateActiveAirports();
 	LOG_DEBUG(Logger::LogLevel::Info, "Airport configurations updated.");
 }
@@ -190,6 +191,7 @@ void vsid::NeoVSID::OnAircraftTemporaryAltitudeChanged(const ControllerData::Air
 	}
     if (distanceFromOrigin > dataManager_->getMaxAircraftDistance()) {
 		dataManager_->removePilot(event->callsign);
+		ClearTagCache(event->callsign);
         return;
     }
 
@@ -240,6 +242,7 @@ void vsid::NeoVSID::OnFlightplanRemoved(const Flightplan::FlightplanRemovedEvent
     if (!event || event->callsign.empty())
         return;
     dataManager_->removePilot(event->callsign);
+	ClearTagCache(event->callsign);
 }
 
 void NeoVSID::run() {

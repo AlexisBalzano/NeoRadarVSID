@@ -8,7 +8,7 @@
 #include "core/DataManager.h"
 #include "utils/Color.h"
 
-constexpr const char* NEOVSID_VERSION = "v1.3.7";
+constexpr const char* NEOVSID_VERSION = "v1.3.8";
 
 using namespace PluginSDK;
 
