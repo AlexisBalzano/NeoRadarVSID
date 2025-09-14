@@ -122,6 +122,7 @@ inline void NeoVSID::updateAlert(const std::string& callsign)
 
     if (aircraftAltitude > dataManager_->getAlertMaxAltitude()) {
         updateTagValueIfChanged(callsign, alertsId_, alert, tagContext);
+		ClearTagCache(callsign);
         return;
     }
 
