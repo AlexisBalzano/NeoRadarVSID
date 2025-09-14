@@ -73,7 +73,7 @@
     },
     "A19N": {
         "engineType": "J",
-        "rnav": false
+        "rnav": true
     },
     "A20": {
         "engineType": "P",
