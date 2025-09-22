@@ -62,6 +62,7 @@ void DataManager::clearJson()
 	rules.clear();
 	areas.clear();
 	configsError_.clear();
+	configsDownloaded_.clear();
 }
 
 void DataManager::DisplayMessageFromDataManager(const std::string& message, const std::string& sender)
