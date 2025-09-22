@@ -72,6 +72,7 @@ public:
 	void setUpdateInterval(const int& interval) { updateInterval_ = interval; }
 	void setAlertMaxAltitude(const int& alt) { alertMaxAltitude_ = alt; }
 	void setMaxAircraftDistance(const double& dist) { maxAircraftDistance_ = dist; }
+	bool saveDownloadedAirportConfig(const nlohmann::ordered_json& json, std::string icao);
 
 	std::vector<std::string> getActiveAirports() const { return activeAirports; }
 	std::vector<std::string> getAllDepartureCallsigns();
@@ -84,6 +85,7 @@ public:
 	int getUpdateInterval() const { return updateInterval_; }
 	int getAlertMaxAltitude() const { return alertMaxAltitude_; }
 	double getMaxAircraftDistance() const { return maxAircraftDistance_; }
+	std::string getConfigUrl() const { return configUrl_; }
 
 	void switchRuleState(const std::string& oaci, const std::string& ruleName);
 	void switchAreaState(const std::string& oaci, const std::string& areaName);
@@ -126,8 +128,10 @@ private:
 	int updateInterval_;
 	int alertMaxAltitude_;
 	double maxAircraftDistance_;
+	std::string configUrl_;
 
-	std::unordered_set<std::string> configsError;
+	std::unordered_set<std::string> configsError_;
+	std::unordered_set<std::string> configsDownloaded_;
 
 	std::mutex dataMutex_;
 
