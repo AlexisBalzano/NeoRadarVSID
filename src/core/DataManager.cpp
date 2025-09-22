@@ -307,21 +307,18 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 			}
 			
 			if (!rwyMatches) {
-				LOG_DEBUG(Logger::LogLevel::Info, "Runway does not match for SID letter: " + sidLetter + " variant: " + variant + " for flightplan: " + flightplan.callsign + ", checking next SID");
 				++variantIterator;
 				continue;
 			}
 
 			if (ruleActive) {
 				if (!isMatchingRules(waypointSidData, activeRules, sidLetter, variant)) {
-					LOG_DEBUG(Logger::LogLevel::Info, "Rules do not match for SID letter: " + sidLetter + " variant: " + variant + " for flightplan: " + flightplan.callsign + ", checking next variant");
 					++variantIterator;
 					continue;
 				}
 			}
 			else {
 				if (waypointSidData[sidLetter][variant].contains("customRule")) {
-					LOG_DEBUG(Logger::LogLevel::Info, "Custom rule present but no active rules for SID letter: " + sidLetter + " variant: " + variant + " for flightplan: " + flightplan.callsign + ", checking next variant");
 					++variantIterator;
 					continue; // Skip this variant if it has a custom rule but no active rules
 				}
@@ -330,14 +327,12 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 			if (!singleRwy) { // if single runway, we don't check for areas
 				if (areaActive) {
 					if (!isMatchingAreas(waypointSidData, activeAreas, sidLetter, variant, flightplan)) {
-						LOG_DEBUG(Logger::LogLevel::Info, "Areas do not match for SID letter: " + sidLetter + " variant: " + variant + " for flightplan: " + flightplan.callsign + ", checking next variant");
 						++variantIterator;
 						continue; // Skip this variant if it doesn't match active areas
 					}
 				}
 				else {
 					if (waypointSidData[sidLetter][variant].contains("area")) {
-						LOG_DEBUG(Logger::LogLevel::Info, "Area present but no active areas for SID letter: " + sidLetter + " variant: " + variant + " for flightplan: " + flightplan.callsign + ", checking next variant");
 						++variantIterator;
 						continue;
 					}
@@ -346,7 +341,6 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 
 			if (waypointSidData[sidLetter][variant].contains("equip") && waypointSidData[sidLetter][variant]["equip"].contains("RNAV")) {
 				if (!isRNAV(flightplan.acType)) {
-					LOG_DEBUG(Logger::LogLevel::Info, "RNAV required but aircraft does not support it for SID letter: " + sidLetter + " variant: " + variant + " for flightplan: " + flightplan.callsign + ", checking next variant");
 					++variantIterator;
 					continue; // Skip this variant if RNAV is required but aircraft does not support it
 				}
@@ -356,7 +350,6 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 
 			if (waypointSidData[sidLetter][variant].contains("engineType")) {
 				if (!isMatchingEngineRestrictions(waypointSidData[sidLetter][variant], flightplan.acType)) {
-					LOG_DEBUG(Logger::LogLevel::Info, "Engine type does not match for SID letter: " + sidLetter + " variant: " + variant + " for flightplan: " + flightplan.callsign + ", checking next variant");
 					++variantIterator;
 					continue; // Skip this variant if it doesn't match engine type
 				}
