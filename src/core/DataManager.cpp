@@ -26,7 +26,9 @@ DataManager::DataManager(vsid::NeoVSID* neoVSID)
 	bool success = parseSettings();
 	if (!success) useDefaultColors();
 	activeAirports.clear();
-	configsError.clear();
+	configsError_.clear();
+	configsError_.clear();
+	configsDownloaded_.clear();
 }
 
 
@@ -43,6 +45,7 @@ void DataManager::clearData()
 	activeAirports.clear();
 	airportConfigJson_.clear();
 	configPath_.clear();
+	configUrl_.clear();
 	if (aircraftAPI_)
 		aircraftAPI_ = nullptr;
 	if (flightplanAPI_)
@@ -60,7 +63,8 @@ void DataManager::clearJson()
 	configJson_.clear();
 	rules.clear();
 	areas.clear();
-	configsError.clear();
+	configsError_.clear();
+	configsDownloaded_.clear();
 }
 
 void DataManager::DisplayMessageFromDataManager(const std::string& message, const std::string& sender)
@@ -182,7 +186,6 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 	std::string oaci = flightplan.origin;
 	std::vector<std::string> activeRules;
 	std::vector<std::string> activeAreas;
-	std::vector<std::string> aircraftAreas;
 
 	auto airportConfig = airportAPI_->getConfigurationByIcao(oaci);
 	if (!airportConfig) {
@@ -208,6 +211,8 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 		}
 	}
 
+	LOG_DEBUG(Logger::LogLevel::Info, "Generating VSID for flightplan: " + flightplan.callsign + " from: " + oaci + " with suggestedDepRwy: " + depRwy);
+
 	std::string suggestedRwy = flightplan.route.suggestedDepRunway;
 	if (flightplan.flightRule == "V" || flightplan.route.rawRoute.empty() || flightplan.route.waypoints.empty()) {
 		loggerAPI_->log(Logger::LogLevel::Warning, "Flightplan has no route or is VFR: " + flightplan.callsign);
@@ -230,8 +235,6 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 	}
 
 	std::transform(oaci.begin(), oaci.end(), oaci.begin(), ::toupper); //Convert to uppercase
-	
-	LOG_DEBUG(Logger::LogLevel::Info, "Generating SID for flightplan: " + flightplan.callsign + ", first waypoint: " + firstWaypoint + ", depRwy: " + depRwy);
 	
 	nlohmann::ordered_json waypointSidData;
 	{
@@ -258,23 +261,9 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 	double aircraftLon = aircraft->position.longitude;
 	std::vector<std::string> areaNames;
 
-	// Get aircraft areas based on its position
-	for (const auto& areaName : activeAreas) {
-		std::lock_guard<std::mutex> lock(dataMutex_);
-		if (isInArea(aircraftLat, aircraftLon, oaci, areaName)) {
-			aircraftAreas.push_back(areaName);
-		}
-	}
-
 	auto sidIterator = waypointSidData.begin();
 	while (sidIterator != waypointSidData.end()) {
 		std::string sidLetter = sidIterator.key();
-		std::string sidRwy = waypointSidData[sidLetter]["1"]["rwy"].get<std::string>();
-		if (!waypointSidData[sidLetter]["1"].contains("customRule") && ruleActive) {
-			++sidIterator;
-			continue;
-		}
-
 		std::vector<std::string> customDepRwy;
 		std::vector<std::string> assignableDepRwy = depRwys;
 
@@ -298,33 +287,32 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 			}
 		}
 		
-		bool rwyMatches = false;
-		for (const auto& rwy : assignableDepRwy) {
-			if (sidRwy.find(rwy) != std::string::npos) {
-				rwyMatches = true;
-				break;
-			}
-		}
-		if (!rwyMatches) {
-			++sidIterator;
-			continue;
-		}
 
-		std::string depRwy;
-		for (const auto& rwy : assignableDepRwy) {
-			if (sidRwy.find(rwy) != std::string::npos) {
-				depRwy = rwy;
-				break;
-			}
-		}
 
 		auto variantIterator = waypointSidData[sidLetter].begin();
 		while (variantIterator != waypointSidData[sidLetter].end())
 		{
 			std::string variant = variantIterator.key();
+			
+			std::string sidRwy = waypointSidData[sidLetter][variant]["rwy"].get<std::string>();
+			bool rwyMatches = false;
+			std::string depRwy;
+
+			for (const auto& rwy : assignableDepRwy) {
+				if (sidRwy.find(rwy) != std::string::npos) {
+					rwyMatches = true;
+					depRwy = rwy;
+					break;
+				}
+			}
+			
+			if (!rwyMatches) {
+				++variantIterator;
+				continue;
+			}
 
 			if (ruleActive) {
-				if (!isMatchingRules(waypointSidData, activeAreas, sidLetter, variant)) {
+				if (!isMatchingRules(waypointSidData, activeRules, sidLetter, variant)) {
 					++variantIterator;
 					continue;
 				}
@@ -338,7 +326,7 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 			
 			if (!singleRwy) { // if single runway, we don't check for areas
 				if (areaActive) {
-					if (!isMatchingAreas(waypointSidData, aircraftAreas, sidLetter, variant, flightplan)) {
+					if (!isMatchingAreas(waypointSidData, activeAreas, sidLetter, variant, flightplan)) {
 						++variantIterator;
 						continue; // Skip this variant if it doesn't match active areas
 					}
@@ -383,40 +371,126 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 	
 int DataManager::retrieveAirportConfigJson(const std::string& oaci)
 {
-	std::lock_guard<std::mutex> lock(dataMutex_);
-	std::string fileName = oaci + ".json";
-	std::filesystem::path jsonPath = configPath_ / fileName;
+	std::string icaoLower = oaci;
+	std::transform(icaoLower.begin(), icaoLower.end(), icaoLower.begin(), ::tolower);
+	const std::string fileName = icaoLower + ".json";
+	const std::filesystem::path jsonPath = configPath_ / fileName;
 
-	std::ifstream config(jsonPath);
-	if (!config.is_open()) {
-		DisplayMessageFromDataManager("Could not open JSON file: " + jsonPath.string(), "DataManager");
-		loggerAPI_->log(Logger::LogLevel::Error, "Could not open JSON file: " + jsonPath.string());
-		return -1;
+	nlohmann::ordered_json tempJson;
+	bool alreadyDownloaded = false;
+
+	{
+		std::lock_guard<std::mutex> lock(dataMutex_);
+		if (configsDownloaded_.contains(icaoLower)) alreadyDownloaded = true;
 	}
 
-	try {
-		config >> airportConfigJson_;
-		if (airportConfigJson_.contains("version")) {
-			if (!isCorrectAirportJsonVersion(airportConfigJson_["version"].get<std::string>(), fileName)) {
+	for (int attempt = 0; attempt < 2; ++attempt)
+	{
+		std::ifstream config(jsonPath);
+		if (!config.is_open())
+		{
+			if (!alreadyDownloaded)
+			{
 				airportConfigJson_.clear();
-				return -1;
+				bool downloadOk = neoVSID_->downloadAirportConfig(oaci);
+				if (!downloadOk) return -1;
+				alreadyDownloaded = true;
+				continue;
 			}
-		}
-		else {
-			if (!configsError.contains(oaci)) {
-				configsError.insert(oaci);
-				DisplayMessageFromDataManager("Config version missing in JSON file: " + fileName, "DataManager");
+			bool firstErrorForFile;
+			{
+				std::lock_guard<std::mutex> lock(dataMutex_);
+				firstErrorForFile = !configsError_.contains(icaoLower);
+				configsError_.insert(icaoLower);
 			}
+			if (firstErrorForFile)
+			{
+				DisplayMessageFromDataManager("Could not open JSON file: " + jsonPath.string(), "DataManager");
+				loggerAPI_->log(Logger::LogLevel::Error, "Could not open JSON file: " + jsonPath.string());
+			}
+
+			return -1;
 		}
+
+		try {
+			config >> tempJson;
+		}
+		catch (...) {
+			DisplayMessageFromDataManager("Error parsing JSON file: " + jsonPath.string(), "DataManager");
+			loggerAPI_->log(Logger::LogLevel::Error, "Error parsing JSON file: " + jsonPath.string());
+			return -1;
+		}
+
+		if (!tempJson.contains("version"))
+		{
+			if (!alreadyDownloaded)
+			{
+				airportConfigJson_.clear();
+				bool downloadOk = neoVSID_->downloadAirportConfig(oaci);
+				if (!downloadOk) return -1;
+				alreadyDownloaded = true;
+				std::this_thread::sleep_for(std::chrono::milliseconds(300));
+				continue;
+			}
+			{
+				std::lock_guard<std::mutex> lock(dataMutex_);
+				if (!configsError_.contains(icaoLower))
+					configsError_.insert(icaoLower);
+				else return -1;
+			}
+			DisplayMessageFromDataManager("Config version missing in JSON file: " + fileName, "DataManager");
+			loggerAPI_->log(Logger::LogLevel::Error, "Config version missing in JSON file: " + fileName);
+			return -1;
+		}
+
+		const std::string versionRead = tempJson["version"].get<std::string>();
+		std::string version = neoVSID_->getConfigVersion();
+		if (!version.empty() && versionRead != version)
+		{
+			bool firstErrorForFile;
+			{
+				std::lock_guard<std::mutex> lock(dataMutex_);
+				firstErrorForFile = !configsError_.contains(icaoLower);
+				configsError_.insert(icaoLower);
+			}
+
+			if (firstErrorForFile)
+			{
+				DisplayMessageFromDataManager("Config version mismatch! Expected: " + version + ", Found: " + versionRead + " (" + fileName + ")", "DataManager");
+				loggerAPI_->log(Logger::LogLevel::Error, "Config version mismatch! Expected: " + version + ", Found: " + versionRead + " " + fileName);
+			}
+
+			if (!alreadyDownloaded)
+			{
+				airportConfigJson_.clear();
+				bool downloadOk = neoVSID_->downloadAirportConfig(oaci);
+				if (!downloadOk)
+				{
+					loggerAPI_->log(Logger::LogLevel::Warning, "Download attempt after version mismatch failed: " + fileName);
+					return -1;
+				}
+				alreadyDownloaded = true;
+				std::this_thread::sleep_for(std::chrono::milliseconds(300));
+				continue;
+			}
+			return -1;
+		}
+		break;
 	}
-	catch (...) {
-		DisplayMessageFromDataManager("Error parsing JSON file: " + jsonPath.string(), "DataManager");
-		loggerAPI_->log(Logger::LogLevel::Error, "Error parsing JSON file: " + jsonPath.string());
-		return -1;
+
+	{
+		std::lock_guard<std::mutex> lock(dataMutex_);
+		if (configsError_.contains(icaoLower)) {
+			configsError_.erase(icaoLower);
+			DisplayMessageFromDataManager("Successfully redownloaded config for: " + icaoLower, "DataManager");
+			loggerAPI_->log(Logger::LogLevel::Info, "Successfully redownloaded config for: " + icaoLower);
+		}
+		airportConfigJson_ = tempJson;
+		configsDownloaded_.insert(icaoLower);
 	}
-	
 	return 0;
 }
+
 
 bool DataManager::retrieveCorrectAirportConfigJson(const std::string& oaci)
 {
@@ -424,20 +498,6 @@ bool DataManager::retrieveCorrectAirportConfigJson(const std::string& oaci)
 		if (retrieveAirportConfigJson(oaci) == -1) return false;
 	}
 	return true;
-}
-
-bool DataManager::isCorrectAirportJsonVersion(const std::string& config_version, const std::string& fileName)
-{
-	if (config_version == NEOVSID_VERSION) {
-		return true;
-	}
-	else {
-		if (configsError.contains(fileName)) return false; // Avoid spamming messages for the same file
-		configsError.insert(fileName);
-		DisplayMessageFromDataManager("Config version mismatch! Expected: " + std::string(NEOVSID_VERSION) + ", Found: " + config_version + ", please update your config files.", fileName);
-		loggerAPI_->log(Logger::LogLevel::Error, "Config version mismatch! Expected: " + std::string(NEOVSID_VERSION) + ", Found: " + config_version + fileName);
-	}
-	return false;
 }
 
 void DataManager::loadAircraftDataJson()
@@ -579,6 +639,7 @@ bool DataManager::parseSettings()
 {
 	std::lock_guard<std::mutex> lock(dataMutex_);
 
+	// HELPERs
 	auto readInt = [&](const char* key, int defVal) -> int {
 		if (configJson_.contains(key)) {
 			const auto& v = configJson_[key];
@@ -607,6 +668,10 @@ bool DataManager::parseSettings()
 		DisplayMessageFromDataManager(std::string(key) + " missing or not a number in config.json, using default", "DataManager");
 		return defVal;
 		};
+
+	if (configJson_.contains("config_github_url") && configJson_["config_github_url"].is_string()) {
+		configUrl_ = configJson_["config_github_url"].get<std::string>();
+	}
 
 	updateInterval_ = readInt("update_interval", vsid::DEFAULT_UPDATE_INTERVAL);
 	if (updateInterval_ <= 0) {
@@ -703,6 +768,32 @@ Pilot DataManager::getPilotByCallsign(std::string callsign)
 	return Pilot{};
 }
 
+bool DataManager::saveDownloadedAirportConfig(const nlohmann::ordered_json& json, std::string icao)
+{
+	std::lock_guard<std::mutex> lock(dataMutex_);
+	std::transform(icao.begin(), icao.end(), icao.begin(), ::tolower);
+	std::string fileName = icao + ".json";
+	std::filesystem::path jsonPath = configPath_ / fileName;
+	std::ofstream configFile(jsonPath);
+	if (!configFile.is_open()) {
+		loggerAPI_->log(Logger::LogLevel::Error, "Could not open file to save downloaded config: " + jsonPath.string());
+		return false;
+	}
+	try {
+		configFile << std::setw(4) << json << std::endl;
+		configsDownloaded_.insert(icao);
+	}
+	catch (...) {
+		loggerAPI_->log(Logger::LogLevel::Error, "Error writing to file: " + jsonPath.string());
+		return false;
+	}
+
+	// Always update in-memory representation with the freshly downloaded JSON.
+	airportConfigJson_ = json;
+
+	return true;
+}
+
 std::vector<std::string> DataManager::getAllDepartureCallsigns() {
 	std::vector<PluginSDK::Flightplan::Flightplan> flightplans = flightplanAPI_->getAll();
 	std::vector<std::string> callsigns;
@@ -741,7 +832,7 @@ std::vector<std::string> DataManager::getAllDepartureCallsigns() {
 
 		sidData vsidData = generateVSID(flightplan, depRwy);
 		pilots.push_back(Pilot{ flightplan.callsign, vsidData.rwy, vsidData.sid, flightplan.origin, vsidData.cfl});
-		LOG_DEBUG(Logger::LogLevel::Info, "Added pilot: " + flightplan.callsign + " with SID: " + vsidData.sid + " and CFL: " + std::to_string(vsidData.cfl));
+		LOG_DEBUG(Logger::LogLevel::Info, "Added pilot: " + flightplan.callsign + " with SID: " + vsidData.sid + " from RWY: " + vsidData.rwy + " and CFL: " + std::to_string(vsidData.cfl));
 	}
 	return callsigns;
 }

@@ -46,6 +46,7 @@ void NeoVSID::Initialize(const PluginMetadata &metadata, CoreAPI *coreAPI, Clien
     callsignsScope.clear();
 	dataManager_->removeAllPilots();
 	dataManager_->populateActiveAirports();
+    configVersion = getLatestConfigVersion();
 
     try
     {
@@ -121,6 +122,7 @@ void vsid::NeoVSID::Reset()
 	requestingTaxi.clear();
 	callsignsScope.clear();
 	ClearAllTagCache();
+	configVersion = getLatestConfigVersion();
 }
 
 void NeoVSID::DisplayMessage(const std::string &message, const std::string &sender) {
@@ -155,8 +157,8 @@ void vsid::NeoVSID::OnControllerDataUpdated(const ControllerData::ControllerData
     else {
         std::string request = getRequestAndIndex(event->callsign).first;
         if ((request == "clearance" && controllerDataBlock->clearanceIssued)
-            || (request == "push" && controllerDataBlock->groundStatus == ControllerData::GroundStatus::Push)
-            || (request == "taxi" && controllerDataBlock->groundStatus == ControllerData::GroundStatus::Taxi)) {
+            || (request == "push" && controllerDataBlock->groundStatus >= ControllerData::GroundStatus::Push)
+            || (request == "taxi" && controllerDataBlock->groundStatus >= ControllerData::GroundStatus::Taxi)) {
             updateRequest(event->callsign, "ReqNoReq");
         }
 
@@ -246,7 +248,7 @@ void vsid::NeoVSID::OnFlightplanRemoved(const Flightplan::FlightplanRemovedEvent
 }
 
 void NeoVSID::run() {
-    int counter = 1;
+	int counter = 1;
     while (true) {
         counter += 1;
         std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -306,6 +308,92 @@ void NeoVSID::ClearAllTagCache()
 {
     std::lock_guard<std::mutex> lock(tagCacheMutex_);
     tagCache_.clear();
+}
+
+bool vsid::NeoVSID::downloadAirportConfig(std::string icao)
+{
+	std::transform(icao.begin(), icao.end(), icao.begin(), ::tolower);
+
+    httplib::SSLClient cli("raw.githubusercontent.com");
+    cli.set_follow_location(true);
+    cli.set_connection_timeout(5, 0);
+    cli.set_read_timeout(5, 0);
+
+    httplib::Headers headers = { {"User-Agent", "NEOVSIDconfigDownloader"}, {"Accept", "application/json"} };
+    std::string repoUrl = dataManager_->getConfigUrl(); // OWNER/REPO/BRANCH
+    
+    if (repoUrl.empty()) {
+        logger_->error("Configuration URL is not set.");
+        return false;
+	}
+
+    std::string apiEndpoint = "/" + repoUrl + "/NeoVSID/" + icao + ".json";
+    
+	bool success = false;
+
+    if (auto res = cli.Get(apiEndpoint.c_str(), headers); res && res->status == 200) {
+        try {
+            nlohmann::ordered_json json = nlohmann::ordered_json::parse(res->body);
+            success = dataManager_->saveDownloadedAirportConfig(json, icao);
+        }
+        catch (const std::exception& e) {
+            logger_->error(std::string("Failed to parse airport configuration from GitHub: ") + e.what());
+        }
+    }
+    else {
+        int status = res ? res->status : 0;
+        std::string extra;
+        if (res && (status == 301 || status == 302 || status == 307 || status == 308)) {
+            auto it = res->headers.find("Location");
+            if (it != res->headers.end()) {
+                extra = " Redirect Location: " + it->second;
+            }
+        }
+        logger_->error("Failed to download airport configuration. HTTP status: " + std::to_string(status) + extra);
+    }
+
+	return success;
+}
+
+std::string vsid::NeoVSID::getLatestConfigVersion()
+{
+    httplib::SSLClient cli("raw.githubusercontent.com");
+    cli.set_follow_location(true);
+    cli.set_connection_timeout(5, 0);
+    cli.set_read_timeout(5, 0);
+
+    httplib::Headers headers = { {"User-Agent", "NEOVSIDconfigDownloader"}};
+    std::string repoUrl = dataManager_->getConfigUrl(); // OWNER/REPO/BRANCH
+
+    if (repoUrl.empty()) {
+        logger_->error("Configuration URL is not set.");
+        return "";
+    }
+
+    std::string apiEndpoint = "/" + repoUrl + "/version.json";
+
+    if (auto res = cli.Get(apiEndpoint.c_str(), headers); res && res->status == 200) {
+        try {
+            nlohmann::ordered_json json = nlohmann::ordered_json::parse(res->body);
+            return json["version"].get<std::string>();
+        }
+        catch (const std::exception& e) {
+            logger_->error(std::string("Failed to parse version information from GitHub: ") + e.what());
+            return "";
+        }
+    }
+    else {
+        int status = res ? res->status : 0;
+        std::string extra;
+        if (res && (status == 301 || status == 302 || status == 307 || status == 308)) {
+            auto it = res->headers.find("Location");
+            if (it != res->headers.end()) {
+                extra = " Redirect Location: " + it->second;
+            }
+        }
+        logger_->error("Failed to check for latest configuration version. HTTP status: " + std::to_string(status) + extra);
+        return "";
+	}
 }
 
 PluginSDK::PluginMetadata NeoVSID::GetMetadata() const
