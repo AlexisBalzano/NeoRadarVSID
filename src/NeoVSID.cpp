@@ -308,6 +308,51 @@ void NeoVSID::ClearAllTagCache()
     tagCache_.clear();
 }
 
+bool vsid::NeoVSID::downloadAirportConfig(std::string icao)
+{
+	std::transform(icao.begin(), icao.end(), icao.begin(), ::tolower);
+
+    httplib::SSLClient cli("raw.githubusercontent.com");
+    cli.set_follow_location(true);
+    cli.set_connection_timeout(5, 0);
+    cli.set_read_timeout(5, 0);
+
+    httplib::Headers headers = { {"User-Agent", "NEOVSIDconfigDownloader"}, {"Accept", "application/json"} };
+    std::string repoUrl = dataManager_->getConfigUrl(); // OWNER/REPO/BRANCH
+    
+    if (repoUrl.empty()) {
+        logger_->error("Configuration URL is not set.");
+        return false;
+	}
+
+    std::string apiEndpoint = "/" + repoUrl + "/NeoVSID/" + icao + ".json";
+    
+	bool success = false;
+
+    if (auto res = cli.Get(apiEndpoint.c_str(), headers); res && res->status == 200) {
+        try {
+            nlohmann::ordered_json json = nlohmann::ordered_json::parse(res->body);
+            success = dataManager_->saveDownloadedAirportConfig(json, icao);
+        }
+        catch (const std::exception& e) {
+            logger_->error(std::string("Failed to parse airport configuration from GitHub: ") + e.what());
+        }
+    }
+    else {
+        int status = res ? res->status : 0;
+        std::string extra;
+        if (res && (status == 301 || status == 302 || status == 307 || status == 308)) {
+            auto it = res->headers.find("Location");
+            if (it != res->headers.end()) {
+                extra = " Redirect Location: " + it->second;
+            }
+        }
+        logger_->error("Failed to download airport configuration. HTTP status: " + std::to_string(status) + extra);
+    }
+
+	return success;
+}
+
 PluginSDK::PluginMetadata NeoVSID::GetMetadata() const
 {
     return {"NeoVSID", PLUGIN_VERSION, "French VACC"};

@@ -35,6 +35,7 @@ namespace vsid {
 		// Plugin lifecycle methods
         void Initialize(const PluginMetadata& metadata, CoreAPI* coreAPI, ClientInformation info) override;
         std::pair<bool, std::string> newVersionAvailable();
+        bool downloadAirportConfig(std::string icao);
         void Shutdown() override;
         void Reset();
         PluginMetadata GetMetadata() const override;
