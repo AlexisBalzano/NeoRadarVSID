@@ -36,6 +36,7 @@ namespace vsid {
         void Initialize(const PluginMetadata& metadata, CoreAPI* coreAPI, ClientInformation info) override;
         std::pair<bool, std::string> newVersionAvailable();
         bool downloadAirportConfig(std::string icao);
+		std::string getLatestConfigVersion();
         void Shutdown() override;
         void Reset();
         PluginMetadata GetMetadata() const override;
@@ -71,6 +72,9 @@ namespace vsid {
         PluginSDK::ControllerData::ControllerDataAPI* GetControllerDataAPI() const { return controllerDataAPI_; }
 		Tag::TagInterface* GetTagInterface() const { return tagInterface_; }
         DataManager* GetDataManager() const { return dataManager_.get(); }
+
+        // Getters
+		std::string getConfigVersion() const { return configVersion; }
 
     private:
         void runScopeUpdate();
@@ -110,6 +114,7 @@ namespace vsid {
         std::vector<std::string> requestingClearance;
         std::vector<std::string> requestingPush;
         std::vector<std::string> requestingTaxi;
+		std::string configVersion = "";
 
         struct TagRenderState {
             std::string value;

@@ -455,7 +455,9 @@ int DataManager::retrieveAirportConfigJson(const std::string& oaci)
 		}
 
 		const std::string versionRead = tempJson["version"].get<std::string>();
-		if (versionRead != NEOVSID_VERSION)
+		std::string version = neoVSID_->getConfigVersion();
+		LOG_DEBUG(Logger::LogLevel::Info, "Retrieved config version: " + versionRead + " for " + oaci + ", expected version: " + version);
+		if (!version.empty() && versionRead != version)
 		{
 			bool firstErrorForFile;
 			{
@@ -467,8 +469,8 @@ int DataManager::retrieveAirportConfigJson(const std::string& oaci)
 			if (firstErrorForFile)
 			{
 				DisplayMessageFromDataManager(
-					"Config version mismatch! Expected: " + std::string(NEOVSID_VERSION) + ", Found: " + versionRead + " (" + fileName + ")", "DataManager");
-				loggerAPI_->log(Logger::LogLevel::Error, "Config version mismatch! Expected: " + std::string(NEOVSID_VERSION) + ", Found: " + versionRead + " " + fileName);
+					"Config version mismatch! Expected: " + version + ", Found: " + versionRead + " (" + fileName + ")", "DataManager");
+				loggerAPI_->log(Logger::LogLevel::Error, "Config version mismatch! Expected: " + version + ", Found: " + versionRead + " " + fileName);
 			}
 
 			if (!alreadyDownloaded)
@@ -502,20 +504,6 @@ bool DataManager::retrieveCorrectAirportConfigJson(const std::string& oaci)
 		if (retrieveAirportConfigJson(oaci) == -1) return false;
 	}
 	return true;
-}
-
-bool DataManager::isCorrectAirportJsonVersion(const std::string& config_version, const std::string& fileName)
-{
-	if (config_version == NEOVSID_VERSION) {
-		return true;
-	}
-	else {
-		if (configsError_.contains(fileName)) return false; // Avoid spamming messages for the same file
-		configsError_.insert(fileName);
-		DisplayMessageFromDataManager("Config version mismatch! Expected: " + std::string(NEOVSID_VERSION) + ", Found: " + config_version + ", please update your config files.", fileName);
-		loggerAPI_->log(Logger::LogLevel::Error, "Config version mismatch! Expected: " + std::string(NEOVSID_VERSION) + ", Found: " + config_version + fileName);
-		return false;
-	}
 }
 
 void DataManager::loadAircraftDataJson()
