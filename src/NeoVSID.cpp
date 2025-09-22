@@ -246,7 +246,7 @@ void vsid::NeoVSID::OnFlightplanRemoved(const Flightplan::FlightplanRemovedEvent
 }
 
 void NeoVSID::run() {
-    int counter = 1;
+	int counter = 1;
     while (true) {
         counter += 1;
         std::this_thread::sleep_for(std::chrono::seconds(1));
