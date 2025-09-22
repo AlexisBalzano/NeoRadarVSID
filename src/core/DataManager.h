@@ -61,7 +61,6 @@ public:
 	void populateActiveAirports();
 	int retrieveAirportConfigJson(const std::string& oaci);
 	bool retrieveCorrectAirportConfigJson(const std::string& oaci);
-	bool isCorrectAirportJsonVersion(const std::string& config_version, const std::string& fileName);
 	void loadAircraftDataJson();
 	void loadConfigJson();
 	void loadCustomAssignJson();

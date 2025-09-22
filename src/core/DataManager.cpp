@@ -27,6 +27,8 @@ DataManager::DataManager(vsid::NeoVSID* neoVSID)
 	if (!success) useDefaultColors();
 	activeAirports.clear();
 	configsError_.clear();
+	configsError_.clear();
+	configsDownloaded_.clear();
 }
 
 
@@ -405,6 +407,7 @@ int DataManager::retrieveAirportConfigJson(const std::string& oaci)
 		{
 			if (!alreadyDownloaded)
 			{
+				airportConfigJson_.clear();
 				bool downloadOk = neoVSID_->downloadAirportConfig(oaci);
 				if (!downloadOk) return -1;
 				alreadyDownloaded = true;
@@ -438,9 +441,11 @@ int DataManager::retrieveAirportConfigJson(const std::string& oaci)
 		{
 			if (!alreadyDownloaded)
 			{
+				airportConfigJson_.clear();
 				bool downloadOk = neoVSID_->downloadAirportConfig(oaci);
 				if (!downloadOk) return -1;
 				alreadyDownloaded = true;
+				std::this_thread::sleep_for(std::chrono::milliseconds(300));
 				continue;
 			}
 			{
@@ -456,7 +461,6 @@ int DataManager::retrieveAirportConfigJson(const std::string& oaci)
 
 		const std::string versionRead = tempJson["version"].get<std::string>();
 		std::string version = neoVSID_->getConfigVersion();
-		LOG_DEBUG(Logger::LogLevel::Info, "Retrieved config version: " + versionRead + " for " + oaci + ", expected version: " + version);
 		if (!version.empty() && versionRead != version)
 		{
 			bool firstErrorForFile;
@@ -468,13 +472,13 @@ int DataManager::retrieveAirportConfigJson(const std::string& oaci)
 
 			if (firstErrorForFile)
 			{
-				DisplayMessageFromDataManager(
-					"Config version mismatch! Expected: " + version + ", Found: " + versionRead + " (" + fileName + ")", "DataManager");
+				DisplayMessageFromDataManager("Config version mismatch! Expected: " + version + ", Found: " + versionRead + " (" + fileName + ")", "DataManager");
 				loggerAPI_->log(Logger::LogLevel::Error, "Config version mismatch! Expected: " + version + ", Found: " + versionRead + " " + fileName);
 			}
 
 			if (!alreadyDownloaded)
 			{
+				airportConfigJson_.clear();
 				bool downloadOk = neoVSID_->downloadAirportConfig(oaci);
 				if (!downloadOk)
 				{
@@ -482,6 +486,7 @@ int DataManager::retrieveAirportConfigJson(const std::string& oaci)
 					return -1;
 				}
 				alreadyDownloaded = true;
+				std::this_thread::sleep_for(std::chrono::milliseconds(300));
 				continue;
 			}
 			return -1;
@@ -491,6 +496,11 @@ int DataManager::retrieveAirportConfigJson(const std::string& oaci)
 
 	{
 		std::lock_guard<std::mutex> lock(dataMutex_);
+		if (configsError_.contains(icaoLower)) {
+			configsError_.erase(icaoLower);
+			DisplayMessageFromDataManager("Successfully redownloaded config for: " + icaoLower, "DataManager");
+			loggerAPI_->log(Logger::LogLevel::Info, "Successfully redownloaded config for: " + icaoLower);
+		}
 		airportConfigJson_ = tempJson;
 		configsDownloaded_.insert(icaoLower);
 	}

@@ -46,6 +46,7 @@ void NeoVSID::Initialize(const PluginMetadata &metadata, CoreAPI *coreAPI, Clien
     callsignsScope.clear();
 	dataManager_->removeAllPilots();
 	dataManager_->populateActiveAirports();
+    configVersion = getLatestConfigVersion();
 
     try
     {
@@ -247,7 +248,6 @@ void vsid::NeoVSID::OnFlightplanRemoved(const Flightplan::FlightplanRemovedEvent
 }
 
 void NeoVSID::run() {
-	configVersion = getLatestConfigVersion();
 	int counter = 1;
     while (true) {
         counter += 1;
