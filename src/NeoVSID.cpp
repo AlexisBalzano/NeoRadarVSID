@@ -157,8 +157,8 @@ void vsid::NeoVSID::OnControllerDataUpdated(const ControllerData::ControllerData
     else {
         std::string request = getRequestAndIndex(event->callsign).first;
         if ((request == "clearance" && controllerDataBlock->clearanceIssued)
-            || (request == "push" && controllerDataBlock->groundStatus == ControllerData::GroundStatus::Push)
-            || (request == "taxi" && controllerDataBlock->groundStatus == ControllerData::GroundStatus::Taxi)) {
+            || (request == "push" && controllerDataBlock->groundStatus >= ControllerData::GroundStatus::Push)
+            || (request == "taxi" && controllerDataBlock->groundStatus >= ControllerData::GroundStatus::Taxi)) {
             updateRequest(event->callsign, "ReqNoReq");
         }
 
