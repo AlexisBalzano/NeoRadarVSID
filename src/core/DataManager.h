@@ -61,9 +61,9 @@ public:
 	void populateActiveAirports();
 	int retrieveAirportConfigJson(const std::string& oaci);
 	bool retrieveCorrectAirportConfigJson(const std::string& oaci);
-	bool isCorrectAirportJsonVersion(const std::string& config_version, const std::string& fileName);
 	void loadAircraftDataJson();
 	void loadConfigJson();
+	void loadCustomAssignJson();
 	void parseRules(const std::string& oaci);
 	void parseAreas(const std::string& oaci);
 	bool parseSettings();
@@ -71,6 +71,7 @@ public:
 	void setUpdateInterval(const int& interval) { updateInterval_ = interval; }
 	void setAlertMaxAltitude(const int& alt) { alertMaxAltitude_ = alt; }
 	void setMaxAircraftDistance(const double& dist) { maxAircraftDistance_ = dist; }
+	bool saveDownloadedAirportConfig(const nlohmann::ordered_json& json, std::string icao);
 
 	std::vector<std::string> getActiveAirports() const { return activeAirports; }
 	std::vector<std::string> getAllDepartureCallsigns();
@@ -83,6 +84,7 @@ public:
 	int getUpdateInterval() const { return updateInterval_; }
 	int getAlertMaxAltitude() const { return alertMaxAltitude_; }
 	double getMaxAircraftDistance() const { return maxAircraftDistance_; }
+	std::string getConfigUrl() const { return configUrl_; }
 
 	void switchRuleState(const std::string& oaci, const std::string& ruleName);
 	void switchAreaState(const std::string& oaci, const std::string& areaName);
@@ -98,6 +100,7 @@ public:
 	bool isMatchingAreas(const nlohmann::ordered_json waypointSidData, const std::vector<std::string> activeAreas, const std::string& letter, const std::string& variant, const Flightplan::Flightplan fp);
 	bool isMatchingEngineRestrictions(const nlohmann::ordered_json sidData, const std::string& aircraftType);
 	bool isRNAV(const std::string& aircraftType);
+	bool customAssignExists() const;
 
 	int fetchCFL(const Flightplan::Flightplan& flightplan, const std::vector<std::string> activeRules, const std::vector<std::string> activeAreas, const std::string& vsid, bool singleRwy);
 	sidData generateVSID(const Flightplan::Flightplan& flightplan, const std::string& depRwy);
@@ -114,6 +117,7 @@ private:
 	std::filesystem::path configPath_;
 	nlohmann::ordered_json airportConfigJson_;
 	nlohmann::json aircraftDataJson_;
+	nlohmann::json customAssignJson_;
 	nlohmann::json configJson_;
 	std::vector<std::string> activeAirports;
 	std::vector<Pilot> pilots;
@@ -123,8 +127,10 @@ private:
 	int updateInterval_;
 	int alertMaxAltitude_;
 	double maxAircraftDistance_;
+	std::string configUrl_;
 
-	std::unordered_set<std::string> configsError;
+	std::unordered_set<std::string> configsError_;
+	std::unordered_set<std::string> configsDownloaded_;
 
 	std::mutex dataMutex_;
 

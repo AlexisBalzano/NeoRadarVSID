@@ -8,7 +8,7 @@
 #include "core/DataManager.h"
 #include "utils/Color.h"
 
-constexpr const char* NEOVSID_VERSION = "v1.3.7";
+constexpr const char* NEOVSID_VERSION = "v1.3.9";
 
 using namespace PluginSDK;
 
@@ -35,6 +35,8 @@ namespace vsid {
 		// Plugin lifecycle methods
         void Initialize(const PluginMetadata& metadata, CoreAPI* coreAPI, ClientInformation info) override;
         std::pair<bool, std::string> newVersionAvailable();
+        bool downloadAirportConfig(std::string icao);
+		std::string getLatestConfigVersion();
         void Shutdown() override;
         void Reset();
         PluginMetadata GetMetadata() const override;
@@ -71,10 +73,16 @@ namespace vsid {
 		Tag::TagInterface* GetTagInterface() const { return tagInterface_; }
         DataManager* GetDataManager() const { return dataManager_.get(); }
 
+        // Getters
+		std::string getConfigVersion() const { return configVersion; }
+
     private:
         void runScopeUpdate();
         void run();
         std::pair<std::string, size_t> getRequestAndIndex(const std::string& callsign);
+        bool updateTagValueIfChanged(const std::string& callsign, const std::string& tagId, const std::string& value, Tag::TagContext& context);
+        void ClearTagCache(const std::string& callsign);
+        void ClearAllTagCache();
 
     public:
         // Command IDs
@@ -102,9 +110,19 @@ namespace vsid {
 		bool toggleModeState = true; // auto update every 5 seconds (should be true when standard ops)
         std::thread m_worker;
         bool m_stop;
+        std::mutex requestsMutex;
         std::vector<std::string> requestingClearance;
         std::vector<std::string> requestingPush;
         std::vector<std::string> requestingTaxi;
+		std::string configVersion = "";
+
+        struct TagRenderState {
+            std::string value;
+            Color colour;
+            Color background;
+        };
+        std::unordered_map<std::string, std::unordered_map<std::string, TagRenderState>> tagCache_;
+        std::mutex tagCacheMutex_;
 
         // APIs
         PluginMetadata metadata_;

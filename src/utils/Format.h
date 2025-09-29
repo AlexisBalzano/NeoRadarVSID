@@ -21,7 +21,7 @@ std::string formatCFL(const std::string& value, const int& transAlt) {
 	std::string cfl = value.substr(0, value.length() - 2);
     
     if (cfl.length() == 2) {
-        if (std::stoi(value) - transAlt < 0) {
+        if (std::stoi(value) - transAlt <= 0) {
 			return "A" + cfl;
         }
         return "0" + cfl;
