@@ -134,11 +134,10 @@ inline void NeoVSID::updateAlert(const std::string& callsign)
         groundStatus = controllerData->groundStatus;
     }
 
-    bool isReversing = false;
-    int headingDiff = std::abs(aircraftTrackHeading - aircraftHeading);
-    if (headingDiff >= 120 && headingDiff <= 240) {
-        isReversing = true;
-    }
+    int headingDiffRaw = std::abs(aircraftTrackHeading - aircraftHeading);
+    int headingDiff = headingDiffRaw % 360;
+    if (headingDiff > 180) headingDiff = 360 - headingDiff;
+    bool isReversing = headingDiff >= 100;
 
     bool isStopped = aircraft->position.stopped;
     bool onGround = aircraft->position.onGround;
@@ -151,7 +150,7 @@ inline void NeoVSID::updateAlert(const std::string& callsign)
         alert = "STAT RPA";
         tagContext.backgroundColour = dataManager_->getColor(vsid::ColorName::STATRPA);
     }
-    else if (aircraftSpeed > 0 && isReversing && groundStatus != ControllerData::GroundStatus::Push) {
+    else if (aircraftSpeed > 0 && isReversing && groundStatus < ControllerData::GroundStatus::Push) {
         alert = "NO PUSH CLR";
         tagContext.backgroundColour = dataManager_->getColor(vsid::ColorName::NOPUSH);
     }
