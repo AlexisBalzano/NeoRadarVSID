@@ -116,8 +116,10 @@ private:
 	Chat::ChatAPI* chatAPI_ = nullptr;
 	vsid::NeoVSID* neoVSID_ = nullptr;
 	PluginSDK::Logger::LoggerAPI* loggerAPI_ = nullptr;
+	Package::PackageAPI* packageAPI_ = nullptr;
 
 	std::filesystem::path configPath_;
+	std::filesystem::path datasetPath_;
 	nlohmann::ordered_json airportConfigJson_;
 	nlohmann::json aircraftDataJson_;
 	nlohmann::json customAssignJson_;

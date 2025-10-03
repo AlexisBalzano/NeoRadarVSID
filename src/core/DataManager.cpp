@@ -18,8 +18,10 @@ DataManager::DataManager(vsid::NeoVSID* neoVSID)
 	chatAPI_ = neoVSID_->GetChatAPI();
 	loggerAPI_ = neoVSID_->GetLogger();
 	controllerDataAPI_ = neoVSID_->GetControllerDataAPI();
+	packageAPI_ = neoVSID_->GetPackageAPI();
 
 	configPath_ = getDllDirectory();
+	datasetPath_ = packageAPI_->getPackagePath() / "datasets";
 	loadAircraftDataJson();
 	loadConfigJson();
 	loadCustomAssignJson();
