@@ -102,6 +102,10 @@ namespace vsid {
         std::string alertMaxAltCommandId_;
         std::string maxDistCommandId_;
 
+#ifdef DEV
+        std::string pushCommandId_;
+#endif  // DEV
+
     private:
         // Plugin state
         std::vector<std::string> callsignsScope;

@@ -85,6 +85,9 @@ public:
 	int getAlertMaxAltitude() const { return alertMaxAltitude_; }
 	double getMaxAircraftDistance() const { return maxAircraftDistance_; }
 	std::string getConfigUrl() const { return configUrl_; }
+#ifdef DEV
+	std::string getPushInfo(const std::string& callsign);
+#endif // DEV
 
 	void switchRuleState(const std::string& oaci, const std::string& ruleName);
 	void switchAreaState(const std::string& oaci, const std::string& areaName);

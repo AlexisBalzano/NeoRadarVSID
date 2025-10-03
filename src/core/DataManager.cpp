@@ -1024,6 +1024,26 @@ vsid::Color DataManager::getColor(const vsid::ColorName& colorName)
 	return white_; // Default to white if out of bounds
 }
 
+#ifdef DEV
+std::string DataManager::getPushInfo(const std::string& callsign)
+{
+	std::optional<Aircraft::Aircraft> aircraft = aircraftAPI_->getByCallsign(callsign);
+	if (!aircraft.has_value()) return "Aircraft could not be found.";
+
+	int aircraftSpeed = aircraft->position.groundSpeed;
+	int aircraftHeading = aircraft->position.reportedHeading;
+	int aircraftTrackHeading = aircraft->position.trackHeading;
+
+	int headingDiffRaw = std::abs(aircraftTrackHeading - aircraftHeading);
+	int headingDiff = headingDiffRaw % 360;
+	if (headingDiff > 180) headingDiff = 360 - headingDiff;
+	bool isReversing = headingDiff >= 100;
+
+	return "Speed: " + std::to_string(aircraftSpeed) + " Heading: " + std::to_string(aircraftHeading) + " Track: " + std::to_string(aircraftTrackHeading) + " Push: " + (isReversing ? "Yes":"No");
+}
+#endif // DEV
+
+
 void DataManager::switchRuleState(const std::string& oaci, const std::string& ruleName)
 {
 	{
