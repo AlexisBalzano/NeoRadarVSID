@@ -8,7 +8,7 @@
 #include "core/DataManager.h"
 #include "utils/Color.h"
 
-constexpr const char* NEOVSID_VERSION = "v1.4.0";
+constexpr const char* NEOVSID_VERSION = "v1.4.1";
 
 using namespace PluginSDK;
 
@@ -71,6 +71,7 @@ namespace vsid {
         Fsd::FsdAPI* GetFsdAPI() const { return fsdAPI_; }
         PluginSDK::ControllerData::ControllerDataAPI* GetControllerDataAPI() const { return controllerDataAPI_; }
 		Tag::TagInterface* GetTagInterface() const { return tagInterface_; }
+		Package::PackageAPI* GetPackageAPI() const { return packageAPI_; }
         DataManager* GetDataManager() const { return dataManager_.get(); }
 
         // Getters
@@ -101,6 +102,10 @@ namespace vsid {
         std::string updateIntervalCommandId_;
         std::string alertMaxAltCommandId_;
         std::string maxDistCommandId_;
+
+#ifdef DEV
+        std::string pushCommandId_;
+#endif  // DEV
 
     private:
         // Plugin state
@@ -134,6 +139,7 @@ namespace vsid {
         Fsd::FsdAPI* fsdAPI_ = nullptr;
         PluginSDK::Logger::LoggerAPI* logger_ = nullptr;
         PluginSDK::ControllerData::ControllerDataAPI* controllerDataAPI_ = nullptr;
+		PluginSDK::Package::PackageAPI* packageAPI_ = nullptr;
         Tag::TagInterface* tagInterface_ = nullptr;
         std::unique_ptr<DataManager> dataManager_;
         std::shared_ptr<NeoVSIDCommandProvider> CommandProvider_;

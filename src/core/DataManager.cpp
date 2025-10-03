@@ -18,13 +18,14 @@ DataManager::DataManager(vsid::NeoVSID* neoVSID)
 	chatAPI_ = neoVSID_->GetChatAPI();
 	loggerAPI_ = neoVSID_->GetLogger();
 	controllerDataAPI_ = neoVSID_->GetControllerDataAPI();
+	packageAPI_ = neoVSID_->GetPackageAPI();
 
 	configPath_ = getDllDirectory();
+	datasetPath_ = packageAPI_->getPackagePath() / "datasets";
 	loadAircraftDataJson();
 	loadConfigJson();
 	loadCustomAssignJson();
-	bool success = parseSettings();
-	if (!success) useDefaultColors();
+	if (!parseSettings()) useDefaultColors();
 	activeAirports.clear();
 	configsError_.clear();
 	configsError_.clear();
@@ -221,14 +222,7 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 
 	std::string firstWaypoint = flightplan.route.waypoints[0].identifier;
 	std::string suggestedSid = flightplan.route.suggestedSid;
-	if (suggestedSid.empty() || suggestedSid.length() < 2) {
-		DisplayMessageFromDataManager("SID not found for waypoint: " + firstWaypoint + " for: " + flightplan.callsign + " (incorrect suggested SID length)", "SID Assigner");
-		loggerAPI_->log(Logger::LogLevel::Warning, "suggested SID length incorrect " + firstWaypoint + " for: " + flightplan.callsign);
-		return { suggestedRwy, "CHECKFP", fetchCFL(flightplan, activeRules, activeAreas, "", singleRwy)};
-	}
-	std::string indicator = suggestedSid.substr(suggestedSid.length() - 2, 1);
-
-
+	
 	// Check if configJSON is already the right one, if not, retrieve it
 	if (!retrieveCorrectAirportConfigJson(oaci)) {
 		return { suggestedRwy, suggestedSid, fetchCFL(flightplan, activeRules, activeAreas, "", singleRwy)};
@@ -305,11 +299,21 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 					break;
 				}
 			}
-			
 			if (!rwyMatches) {
 				++variantIterator;
 				continue;
 			}
+
+			std::string indicator = getIndicatorFromUUIDs(oaci, depRwy, firstWaypoint, sidLetter);
+			if (indicator.empty()) {
+				if (suggestedSid.empty() || suggestedSid.length() < 2) {
+					DisplayMessageFromDataManager("SID not found for waypoint: " + firstWaypoint + " for: " + flightplan.callsign + " (incorrect suggested SID length after failed UUID)", "SID Assigner");
+					loggerAPI_->log(Logger::LogLevel::Warning, "suggested SID length incorrect " + firstWaypoint + " for: " + flightplan.callsign);
+					return { suggestedRwy, "CHECKFP", fetchCFL(flightplan, activeRules, activeAreas, "", singleRwy) };
+				}
+				indicator = suggestedSid.substr(suggestedSid.length() - 2, 1); // Fallback to suggested indicator
+			}
+
 
 			if (ruleActive) {
 				if (!isMatchingRules(waypointSidData, activeRules, sidLetter, variant)) {
@@ -739,6 +743,59 @@ bool DataManager::parseSettings()
 	return true;
 }
 
+bool DataManager::parseUUIDs()
+{
+	std::lock_guard<std::mutex> lock(dataMutex_);
+	sidUUIDs_.clear();
+
+	std::ifstream uuidFile(datasetPath_ / "sid.geojson");
+	if (!uuidFile.is_open()) {
+		loggerAPI_->log(Logger::LogLevel::Error, "Could not open sid.geojson file to parse UUIDs");
+		return false;
+	}
+	nlohmann::json uuidJson;
+	try {
+		uuidFile >> uuidJson;
+	}
+	catch (...) {
+		loggerAPI_->log(Logger::LogLevel::Error, "Error parsing sid.geojson file to parse UUIDs");
+		return false;
+	}
+
+	if (!uuidJson.contains("features") || !uuidJson["features"].is_array()) {
+		loggerAPI_->log(Logger::LogLevel::Error, "sid.geojson file does not contain features array");
+		return false;
+	}
+
+	std::vector<std::string> depAirports = getActiveAirports();
+
+	for (const auto& feature : uuidJson["features"]) {
+		if (!feature.contains("properties") || !feature["properties"].is_object()) {
+			continue;
+		}
+		const auto& properties = feature["properties"];
+		if (!properties.contains("uuid") || !properties["uuid"].is_string()) {
+			continue;
+		}
+		//uuid = sid-icao-sid-rwy-waypointNumberLetter
+		std::string uuid = properties["uuid"].get<std::string>();
+		std::string icao = uuid.substr(4, 4);
+		std::transform(icao.begin(), icao.end(), icao.begin(), ::toupper);
+
+
+		if (std::find(depAirports.begin(), depAirports.end(), icao) == depAirports.end()) {
+			continue;
+		}
+
+		if (sidUUIDs_.find(uuid) == sidUUIDs_.end()) {
+			sidUUIDs_.insert(uuid);
+		}
+	}
+
+	LOG_DEBUG(Logger::LogLevel::Info, "Parsed " + std::to_string(sidUUIDs_.size()) + " UUIDs from sid.geojson");
+	return true;
+}
+
 void DataManager::useDefaultColors()
 {
 	loggerAPI_->log(Logger::LogLevel::Warning, "Using default colors for NeoVSID");
@@ -1023,6 +1080,46 @@ vsid::Color DataManager::getColor(const vsid::ColorName& colorName)
     }
 	return white_; // Default to white if out of bounds
 }
+
+std::string DataManager::getIndicatorFromUUIDs(std::string icao, std::string rwy, std::string waypoint, std::string letter)
+{
+	std::transform(icao.begin(), icao.end(), icao.begin(), ::tolower);
+	std::transform(rwy.begin(), rwy.end(), rwy.begin(), ::tolower);
+	std::transform(waypoint.begin(), waypoint.end(), waypoint.begin(), ::tolower);
+	std::transform(letter.begin(), letter.end(), letter.begin(), ::tolower);
+
+	//uuid = sid-icao-sid-rwy-waypoint+number+letter
+	for (const auto& uuid : sidUUIDs_) {
+		if (uuid.back() != letter[0]) continue;
+		if (uuid.find("-" + icao + "-") == std::string::npos) continue;
+		if (uuid.find("-" + rwy + "-") == std::string::npos) continue;
+		if (uuid.find(waypoint) == std::string::npos) continue;
+
+		return uuid.substr(uuid.size() - 2, 1); // Return the number
+	}
+	LOG_DEBUG(Logger::LogLevel::Warning, "Could not find UUID for ICAO: " + icao + " RWY: " + rwy + " WP: " + waypoint + " Letter: " + letter);
+	return ""; // Not found
+}
+
+#ifdef DEV
+std::string DataManager::getPushInfo(const std::string& callsign)
+{
+	std::optional<Aircraft::Aircraft> aircraft = aircraftAPI_->getByCallsign(callsign);
+	if (!aircraft.has_value()) return "Aircraft could not be found.";
+
+	int aircraftSpeed = aircraft->position.groundSpeed;
+	int aircraftHeading = aircraft->position.reportedHeading;
+	int aircraftTrackHeading = aircraft->position.trackHeading;
+
+	int headingDiffRaw = std::abs(aircraftTrackHeading - aircraftHeading);
+	int headingDiff = headingDiffRaw % 360;
+	if (headingDiff > 180) headingDiff = 360 - headingDiff;
+	bool isReversing = headingDiff >= 100;
+
+	return "Speed: " + std::to_string(aircraftSpeed) + " Heading: " + std::to_string(aircraftHeading) + " Track: " + std::to_string(aircraftTrackHeading) + " Push: " + (isReversing ? "Yes":"No");
+}
+#endif // DEV
+
 
 void DataManager::switchRuleState(const std::string& oaci, const std::string& ruleName)
 {

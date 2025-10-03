@@ -80,6 +80,14 @@ void NeoVSID::RegisterCommand() {
 
         removeCommandId_ = chatAPI_->registerCommand(definition.name, definition, CommandProvider_);
 
+#ifdef DEV
+        definition.name = "vsid push";
+        definition.description = "print aircraft psuh status";
+        definition.lastParameterHasSpaces = false;
+
+		pushCommandId_ = chatAPI_->registerCommand(definition.name, definition, CommandProvider_);
+#endif
+
         definition.name = "vsid position";
         definition.description = "print aircraft coordinates inside NeoRadar";
         definition.lastParameterHasSpaces = false;
@@ -179,6 +187,9 @@ inline void NeoVSID::unegisterCommand()
         chatAPI_->unregisterCommand(updateIntervalCommandId_);
         chatAPI_->unregisterCommand(alertMaxAltCommandId_);
         chatAPI_->unregisterCommand(maxDistCommandId_);
+#ifdef DEV
+		chatAPI_->unregisterCommand(pushCommandId_);
+#endif  // DEV
         CommandProvider_.reset();
 	}
 }
@@ -342,7 +353,7 @@ Chat::CommandResult NeoVSIDCommandProvider::Execute( const std::string &commandI
     else if (commandId == neoVSID_->positionCommandId_)
     {
         if (args.empty() || args[0].empty() || args[1].empty()) {
-            std::string error = "CALLSIGN and AREANAME are required. Use .vsid rule <oaci> <areaname>";
+            std::string error = "CALLSIGN and AREANAME are required. Use .vsid position <callsign> <areaname>";
             neoVSID_->DisplayMessage(error);
             return { true, std::nullopt };
         }
@@ -480,15 +491,30 @@ Chat::CommandResult NeoVSIDCommandProvider::Execute( const std::string &commandI
 		neoVSID_->GetDataManager()->loadAircraftDataJson();
 		neoVSID_->GetDataManager()->loadConfigJson();
 		neoVSID_->GetDataManager()->loadCustomAssignJson();
-        bool success = neoVSID_->GetDataManager()->parseSettings();
-        if (!success) {
+        if (!neoVSID_->GetDataManager()->parseSettings()) {
             neoVSID_->GetDataManager()->useDefaultColors();
             neoVSID_->DisplayMessage("Failed to parse colors from config.json, using default colors.", "NeoVSID");
 		}
         neoVSID_->GetDataManager()->populateActiveAirports();
+        neoVSID_->GetDataManager()->parseUUIDs();
         neoVSID_->Reset();
         return { true, std::nullopt };
 	}
+#ifdef DEV
+    else if (commandId == neoVSID_->pushCommandId_)
+    {
+        if (args.empty() || args[0].empty()) {
+            std::string error = "CALLSIGN is required. Use .vsid psuh <callsign>";
+            neoVSID_->DisplayMessage(error);
+            return { true, std::nullopt };
+        }
+        std::string callsign = args[0];
+        std::transform(callsign.begin(), callsign.end(), callsign.begin(), ::toupper);
+        std::string message = neoVSID_->GetDataManager()->getPushInfo(callsign);
+		neoVSID_->DisplayMessage(message);
+		return { true, std::nullopt };
+    }
+#endif // DEV
     else {
         std::string error = "Invalid command. Use .vsid <command> <param>";
         neoVSID_->DisplayMessage(error);
