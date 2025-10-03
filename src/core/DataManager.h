@@ -67,6 +67,7 @@ public:
 	void parseRules(const std::string& oaci);
 	void parseAreas(const std::string& oaci);
 	bool parseSettings();
+	bool parseUUIDs();
 	void useDefaultColors();
 	void setUpdateInterval(const int& interval) { updateInterval_ = interval; }
 	void setAlertMaxAltitude(const int& alt) { alertMaxAltitude_ = alt; }
@@ -85,6 +86,7 @@ public:
 	int getAlertMaxAltitude() const { return alertMaxAltitude_; }
 	double getMaxAircraftDistance() const { return maxAircraftDistance_; }
 	std::string getConfigUrl() const { return configUrl_; }
+	std::string getIndicatorFromUUIDs(std::string icao, std::string rwy, std::string waypoint, std::string letter);
 #ifdef DEV
 	std::string getPushInfo(const std::string& callsign);
 #endif // DEV
@@ -136,6 +138,7 @@ private:
 
 	std::unordered_set<std::string> configsError_;
 	std::unordered_set<std::string> configsDownloaded_;
+	std::unordered_set<std::string> sidUUIDs_;
 
 	std::mutex dataMutex_;
 

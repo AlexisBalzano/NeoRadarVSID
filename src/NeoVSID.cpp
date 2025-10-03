@@ -34,6 +34,7 @@ void NeoVSID::Initialize(const PluginMetadata &metadata, CoreAPI *coreAPI, Clien
     controllerDataAPI_ = &lcoreAPI->controllerData();
     logger_ = &lcoreAPI->logger();
     tagInterface_ = lcoreAPI->tag().getInterface();
+	packageAPI_ = &lcoreAPI->package();
 	dataManager_ = std::make_unique<DataManager>(this);
 
 #ifndef DEV
@@ -46,6 +47,7 @@ void NeoVSID::Initialize(const PluginMetadata &metadata, CoreAPI *coreAPI, Clien
     callsignsScope.clear();
 	dataManager_->removeAllPilots();
 	dataManager_->populateActiveAirports();
+	dataManager_->parseUUIDs();
     configVersion = getLatestConfigVersion();
 
     try
@@ -171,6 +173,7 @@ void NeoVSID::OnAirportConfigurationsUpdated(const Airport::AirportConfiguration
     dataManager_->removeAllPilots();
     ClearAllTagCache();
     dataManager_->populateActiveAirports();
+    dataManager_->parseUUIDs();
 	LOG_DEBUG(Logger::LogLevel::Info, "Airport configurations updated.");
 }
 

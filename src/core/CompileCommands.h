@@ -491,12 +491,12 @@ Chat::CommandResult NeoVSIDCommandProvider::Execute( const std::string &commandI
 		neoVSID_->GetDataManager()->loadAircraftDataJson();
 		neoVSID_->GetDataManager()->loadConfigJson();
 		neoVSID_->GetDataManager()->loadCustomAssignJson();
-        bool success = neoVSID_->GetDataManager()->parseSettings();
-        if (!success) {
+        if (!neoVSID_->GetDataManager()->parseSettings()) {
             neoVSID_->GetDataManager()->useDefaultColors();
             neoVSID_->DisplayMessage("Failed to parse colors from config.json, using default colors.", "NeoVSID");
 		}
         neoVSID_->GetDataManager()->populateActiveAirports();
+        neoVSID_->GetDataManager()->parseUUIDs();
         neoVSID_->Reset();
         return { true, std::nullopt };
 	}
