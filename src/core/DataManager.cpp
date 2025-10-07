@@ -350,7 +350,31 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 				}
 			}
 
-			
+			std::string aircraftWTC = flightplan.wakeCategory;
+			if (waypointSidData[sidLetter][variant].contains("wtc")) {
+				std::string requiredWTC = waypointSidData[sidLetter][variant]["wtc"].get<std::string>();
+				if (requiredWTC.find(aircraftWTC) == std::string::npos) {
+					++variantIterator;
+					continue; // Skip this variant if WTC does not match
+				}
+			}
+
+			int aircraftRFL = flightplan.plannedAltitude;
+			if (waypointSidData[sidLetter][variant].contains("RFLmin")) {
+				int rflMin= waypointSidData[sidLetter][variant]["RFLmin"].get<int>();
+				if (aircraftRFL < rflMin) {
+					++variantIterator;
+					continue; // Skip this variant if aircraft RFL is below minimum
+				}
+			}
+
+			if (waypointSidData[sidLetter][variant].contains("RFLmax")) {
+				int rflMax = waypointSidData[sidLetter][variant]["RFLmax"].get<int>();
+				if (aircraftRFL > rflMax) {
+					++variantIterator;
+					continue; // Skip this variant if aircraft RFL is above maximum
+				}
+			}
 
 			if (waypointSidData[sidLetter][variant].contains("engineType")) {
 				if (!isMatchingEngineRestrictions(waypointSidData[sidLetter][variant], flightplan.acType)) {
