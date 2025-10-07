@@ -344,9 +344,10 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 			}
 
 			if (waypointSidData[sidLetter][variant].contains("equip") && waypointSidData[sidLetter][variant]["equip"].contains("RNAV")) {
-				if (!isRNAV(flightplan.acType)) {
+				bool rnavRequired = waypointSidData[sidLetter][variant]["equip"]["RNAV"].get<bool>();
+				if (isRNAV(flightplan.acType) != rnavRequired) {
 					++variantIterator;
-					continue; // Skip this variant if RNAV is required but aircraft does not support it
+					continue; // Skip this variant if RNAV is required but aircraft does not support it or if RNAV is prohibited but aircraft is RNAV
 				}
 			}
 
