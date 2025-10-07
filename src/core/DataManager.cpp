@@ -344,13 +344,38 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 			}
 
 			if (waypointSidData[sidLetter][variant].contains("equip") && waypointSidData[sidLetter][variant]["equip"].contains("RNAV")) {
-				if (!isRNAV(flightplan.acType)) {
+				bool rnavRequired = waypointSidData[sidLetter][variant]["equip"]["RNAV"].get<bool>();
+				if (isRNAV(flightplan.acType) != rnavRequired) {
 					++variantIterator;
-					continue; // Skip this variant if RNAV is required but aircraft does not support it
+					continue; // Skip this variant if RNAV is required but aircraft does not support it or if RNAV is prohibited but aircraft is RNAV
 				}
 			}
 
-			
+			std::string aircraftWTC = flightplan.wakeCategory;
+			if (waypointSidData[sidLetter][variant].contains("wtc")) {
+				std::string requiredWTC = waypointSidData[sidLetter][variant]["wtc"].get<std::string>();
+				if (requiredWTC.find(aircraftWTC) == std::string::npos) {
+					++variantIterator;
+					continue; // Skip this variant if WTC does not match
+				}
+			}
+
+			int aircraftRFL = flightplan.plannedAltitude;
+			if (waypointSidData[sidLetter][variant].contains("RFLmin")) {
+				int rflMin= waypointSidData[sidLetter][variant]["RFLmin"].get<int>();
+				if (aircraftRFL < rflMin) {
+					++variantIterator;
+					continue; // Skip this variant if aircraft RFL is below minimum
+				}
+			}
+
+			if (waypointSidData[sidLetter][variant].contains("RFLmax")) {
+				int rflMax = waypointSidData[sidLetter][variant]["RFLmax"].get<int>();
+				if (aircraftRFL > rflMax) {
+					++variantIterator;
+					continue; // Skip this variant if aircraft RFL is above maximum
+				}
+			}
 
 			if (waypointSidData[sidLetter][variant].contains("engineType")) {
 				if (!isMatchingEngineRestrictions(waypointSidData[sidLetter][variant], flightplan.acType)) {
@@ -1093,7 +1118,7 @@ std::string DataManager::getIndicatorFromUUIDs(std::string icao, std::string rwy
 		if (uuid.back() != letter[0]) continue;
 		if (uuid.find("-" + icao + "-") == std::string::npos) continue;
 		if (uuid.find("-" + rwy + "-") == std::string::npos) continue;
-		if (uuid.find(waypoint) == std::string::npos) continue;
+		if (uuid.find(waypoint.substr(0,4)) == std::string::npos) continue;
 
 		return uuid.substr(uuid.size() - 2, 1); // Return the number
 	}
