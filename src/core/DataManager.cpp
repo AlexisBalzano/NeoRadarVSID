@@ -1117,7 +1117,7 @@ std::string DataManager::getIndicatorFromUUIDs(std::string icao, std::string rwy
 		if (uuid.back() != letter[0]) continue;
 		if (uuid.find("-" + icao + "-") == std::string::npos) continue;
 		if (uuid.find("-" + rwy + "-") == std::string::npos) continue;
-		if (uuid.find(waypoint) == std::string::npos) continue;
+		if (uuid.find(waypoint.substr(0,4)) == std::string::npos) continue;
 
 		return uuid.substr(uuid.size() - 2, 1); // Return the number
 	}
