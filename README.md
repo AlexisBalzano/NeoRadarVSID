@@ -1,7 +1,14 @@
 # NeoRadarVSID
 vSID adaptation for *NeoRadar* ATC Client <br>
 <br>
+## RWY, SID & CFL determination and colouring
 <img width="565" height="154" alt="VSIDillustrationImage" src="https://github.com/user-attachments/assets/19cf296e-ca41-4fa3-a2b1-c3852d1df9a3" />
+
+## Ground Alerts
+<img width="483" height="343" alt="image" src="https://github.com/user-attachments/assets/470c1be6-5c48-4d90-8108-427acac0a8ce" />
+
+## Request Menu
+<img width="95" height="234" alt="image" src="https://github.com/user-attachments/assets/1ba6d545-2089-4538-a4cb-f29b60a1ab87" />
 
 # Installation
 - Download the latest release from the [Releases] according to your platform (Windows, Linux, MacOS).
