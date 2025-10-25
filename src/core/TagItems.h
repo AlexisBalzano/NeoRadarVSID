@@ -39,6 +39,7 @@ void NeoVSID::RegisterTagItems()
 
     tagDef.name = "REQUEST";
     tagDef.defaultValue = "";
+    tagDef.allowedActions = { requestMenuId_ };
     tagID = tagInterface_->RegisterTagItem(tagDef);
     requestId_ = tagID;
 }

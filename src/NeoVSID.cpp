@@ -52,8 +52,8 @@ void NeoVSID::Initialize(const PluginMetadata &metadata, CoreAPI *coreAPI, Clien
 
     try
     {
-        this->RegisterTagItems();
         this->RegisterTagActions();
+        this->RegisterTagItems();
         this->RegisterCommand();
 
         initialized_ = true;
