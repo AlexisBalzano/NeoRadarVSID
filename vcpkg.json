@@ -1,6 +1,7 @@
 {
   "dependencies": [
     "nlohmann-json",
-    "openssl"
+    "openssl",
+    "cpp-httplib"
   ]
 }

@@ -39,6 +39,7 @@ include_directories(
 )
 
 # Find external dependencies
+find_package(httplib CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(OpenSSL REQUIRED)
 
@@ -59,10 +60,17 @@ add_library(${PROJECT_NAME} SHARED ${SOURCES}  "src/core/DataManager.cpp" "src/u
 # Link dependencies
 target_link_libraries(${PROJECT_NAME} PRIVATE 
     nlohmann_json::nlohmann_json
+    httplib::httplib
     OpenSSL::SSL
     OpenSSL::Crypto
     NeoRadarSDK::NeoRadarSDK
 )
+
+# Link Apple frameworks required by httplib's macOS code path
+if(APPLE)
+    # Prefer explicit framework flags for portability on CI / Xcode
+    target_link_libraries(${PROJECT_NAME} PRIVATE "-framework CoreFoundation" "-framework CFNetwork")
+endif()
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/External/httplib)
 target_compile_definitions(${PROJECT_NAME} PRIVATE CPPHTTPLIB_OPENSSL_SUPPORT)
