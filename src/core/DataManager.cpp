@@ -993,6 +993,9 @@ bool DataManager::isMatchingRules(const nlohmann::ordered_json waypointSidData, 
 {
 	std::lock_guard	<std::mutex> lock(dataMutex_);
 	std::vector<std::string> ruleNames;
+	if (waypointSidData[letter][variant].contains("customRule") == false) {
+		return false;
+	}
 	if (waypointSidData[letter][variant]["customRule"].is_array()) {
 		for (const auto& rule : waypointSidData[letter][variant]["customRule"]) {
 			ruleNames.push_back(rule.get<std::string>());
@@ -1041,6 +1044,9 @@ bool DataManager::isMatchingAreas(const nlohmann::ordered_json waypointSidData, 
 			})) {
 			return false;
 		}
+	}
+	else {
+		return false;
 	}
 	return true;
 }
