@@ -1,0 +1,61 @@
+{
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "windows-base",
+      "hidden": true,
+      "generator": "Visual Studio 17 2022",
+      "architecture": "x64",
+      "binaryDir": "${sourceDir}/out/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/vcpkg/scripts/buildsystems/vcpkg.cmake",
+        "VCPKG_TARGET_TRIPLET": "x64-windows-static"
+      }
+    },
+    {
+      "name": "Release",
+      "displayName": "Release",
+      "description": "Release build with static libraries",
+      "inherits": "windows-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "DevRelease",
+      "displayName": "Dev Release",
+      "description": "Development Release build",
+      "inherits": "windows-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "DEV": "1"
+      }
+    },
+    {
+      "name": "Debug",
+      "displayName": "Debug",
+      "description": "Debug build with static libraries",
+      "inherits": "windows-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "Release",
+      "configurePreset": "Release",
+      "configuration": "Release"
+    },
+    {
+      "name": "DevRelease",
+      "configurePreset": "DevRelease",
+      "configuration": "Release"
+    },
+    {
+      "name": "Debug",
+      "configurePreset": "Debug",
+      "configuration": "RelWithDebInfo"
+    }
+  ]
+}

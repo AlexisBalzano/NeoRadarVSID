@@ -7,7 +7,7 @@
       "inheritEnvironments": [ "msvc_x64" ],
       "buildRoot": "${projectDir}\\out\\build\\${name}",
       "installRoot": "${projectDir}\\out\\install\\${name}",
-      "cmakeCommandArgs": "",
+      "cmakeCommandArgs": "-DVCPKG_TARGET_TRIPLET=x64-windows-static",
       "buildCommandArgs": "",
       "ctestCommandArgs": ""
     },
@@ -17,7 +17,7 @@
       "configurationType": "Release",
       "buildRoot": "${projectDir}\\out\\build\\${name}",
       "installRoot": "${projectDir}\\out\\install\\${name}",
-      "cmakeCommandArgs": "-DDEV=1",
+      "cmakeCommandArgs": "-DDEV=1 -DVCPKG_TARGET_TRIPLET=x64-windows-static",
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
       "inheritEnvironments": [ "msvc_x64" ]
@@ -28,7 +28,7 @@
       "configurationType": "RelWithDebInfo",
       "buildRoot": "${projectDir}\\out\\build\\${name}",
       "installRoot": "${projectDir}\\out\\install\\${name}",
-      "cmakeCommandArgs": "",
+      "cmakeCommandArgs": "-DVCPKG_TARGET_TRIPLET=x64-windows-static",
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
       "inheritEnvironments": [ "msvc_x64_x64" ]

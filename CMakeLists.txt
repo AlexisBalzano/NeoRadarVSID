@@ -1,13 +1,16 @@
 cmake_minimum_required(VERSION 3.14)
 
 # Use static libraries from vcpkg on Windows to avoid DLL dependencies
-if(MINGW)
-    set(VCPKG_TARGET_TRIPLET "x64-mingw-static" CACHE STRING "")
-elseif(WIN32)
-    set(VCPKG_TARGET_TRIPLET "x64-windows-static" CACHE STRING "")
+# Must be set BEFORE project() and CMAKE_TOOLCHAIN_FILE
+if(NOT DEFINED VCPKG_TARGET_TRIPLET)
+    if(MINGW)
+        set(VCPKG_TARGET_TRIPLET "x64-mingw-static" CACHE STRING "" FORCE)
+    elseif(WIN32)
+        set(VCPKG_TARGET_TRIPLET "x64-windows-static" CACHE STRING "" FORCE)
+    endif()
 endif()
 
-set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake)
+set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake CACHE FILEPATH "" FORCE)
 project(NeoVSID VERSION "1.4.6")
 
 set(CMAKE_CXX_STANDARD 20)

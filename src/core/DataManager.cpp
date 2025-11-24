@@ -1134,7 +1134,7 @@ std::string vsid::DataManager::getIndicatorFromUUIDs(std::string icao, std::stri
 }
 
 #ifdef DEV
-std::string DataManager::getPushInfo(const std::string& callsign)
+std::string vsid::DataManager::getPushInfo(const std::string& callsign)
 {
 	std::optional<Aircraft::Aircraft> aircraft = aircraftAPI_->getByCallsign(callsign);
 	if (!aircraft.has_value()) return "Aircraft could not be found.";
