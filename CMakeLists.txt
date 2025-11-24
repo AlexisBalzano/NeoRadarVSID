@@ -1,10 +1,27 @@
 cmake_minimum_required(VERSION 3.14)
+
+# Use static libraries from vcpkg on Windows to avoid DLL dependencies
+if(MINGW)
+    set(VCPKG_TARGET_TRIPLET "x64-mingw-static" CACHE STRING "")
+elseif(WIN32)
+    set(VCPKG_TARGET_TRIPLET "x64-windows-static" CACHE STRING "")
+endif()
+
 set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake)
 project(NeoVSID VERSION "1.4.6")
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")  # forces /MD
+
+# For MinGW, use static linking to avoid runtime DLL dependencies
+if(MINGW)
+    # Target Windows 10 for httplib compatibility
+    add_compile_definitions(_WIN32_WINNT=0x0A00 WINVER=0x0A00)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libgcc -static-libstdc++")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libgcc -static-libstdc++ -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -static-libgcc -static-libstdc++ -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive")
+endif()
 
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
