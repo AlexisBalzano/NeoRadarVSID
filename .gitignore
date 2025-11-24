@@ -1,6 +1,8 @@
 # Prerequisites
 *.d
 
+build/
+
 release
 !release/<PROJECT_NAME>/** 
 

@@ -42,7 +42,19 @@ include_directories(
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(OpenSSL REQUIRED)
 
+# Temporarily override MSVC detection for MinGW when building the SDK
+# This prevents the SDK from adding MSVC-style /INCLUDE: flags
+if(MINGW)
+    set(_SAVED_WIN32 ${WIN32})
+    set(WIN32 FALSE)
+endif()
+
 add_subdirectory(External/NeoRadarSDK)
+
+# Restore WIN32 variable
+if(MINGW)
+    set(WIN32 ${_SAVED_WIN32})
+endif()
 
 # Source files
 # To set after starting development
@@ -56,13 +68,40 @@ add_library(${PROJECT_NAME} SHARED ${SOURCES}  "src/core/DataManager.cpp" "src/u
 
 #set_property(TARGET ${PROJECT_NAME}  PROPERTY CXX_STANDARD 20)
 
-# Link dependencies
-target_link_libraries(${PROJECT_NAME} PRIVATE 
-    nlohmann_json::nlohmann_json
-    OpenSSL::SSL
-    OpenSSL::Crypto
-    NeoRadarSDK::NeoRadarSDK
-)
+# Link dependencies - use NeoRadarSDK directly (not alias) when using MinGW to avoid INTERFACE_LINK_OPTIONS
+if(WIN32 AND MINGW)
+    target_link_libraries(${PROJECT_NAME} PRIVATE 
+        nlohmann_json::nlohmann_json
+        OpenSSL::SSL
+        OpenSSL::Crypto
+        NeoRadarSDK  # Link to the actual target, not the alias
+    )
+    # Manually include the SDK headers since we're not using the alias
+    target_include_directories(${PROJECT_NAME} PRIVATE 
+        ${CMAKE_SOURCE_DIR}/External/NeoRadarSDK/include
+    )
+    # Add MinGW-compatible undefined symbol flags
+    target_link_options(${PROJECT_NAME} PRIVATE
+        "-Wl,--undefined=GetPluginSDKVersionMajor"
+        "-Wl,--undefined=GetPluginSDKVersionMinor"
+        "-Wl,--undefined=GetPluginSDKVersionPatch"
+    )
+else()
+    target_link_libraries(${PROJECT_NAME} PRIVATE 
+        nlohmann_json::nlohmann_json
+        OpenSSL::SSL
+        OpenSSL::Crypto
+        NeoRadarSDK::NeoRadarSDK
+    )
+endif()
+
+# Add Windows-specific libraries for httplib and SSL support
+if(WIN32)
+    target_link_libraries(${PROJECT_NAME} PRIVATE 
+        ws2_32
+        crypt32
+    )
+endif()
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/External/httplib)
 target_compile_definitions(${PROJECT_NAME} PRIVATE CPPHTTPLIB_OPENSSL_SUPPORT)
