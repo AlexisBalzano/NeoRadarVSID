@@ -10,7 +10,8 @@
 #define LOG_DEBUG(loglevel, message) void(0)
 #endif
 
-DataManager::DataManager(vsid::NeoVSID* neoVSID)
+
+vsid::DataManager::DataManager(vsid::NeoVSID* neoVSID)
 	: neoVSID_(neoVSID) {
 	aircraftAPI_ = neoVSID_->GetAircraftAPI();
 	flightplanAPI_ = neoVSID_->GetFlightplanAPI();
@@ -33,14 +34,14 @@ DataManager::DataManager(vsid::NeoVSID* neoVSID)
 }
 
 
-std::filesystem::path DataManager::getDllDirectory()
+std::filesystem::path vsid::DataManager::getDllDirectory()
 {
 	std::filesystem::path documents = neoVSID_->GetClientInformation().documentsPath;
 	std::filesystem::path configDir = documents / "plugins" / "NeoVSID";
 	return configDir;
 }
 
-void DataManager::clearData()
+void vsid::DataManager::clearData()
 {
 	pilots.clear();
 	activeAirports.clear();
@@ -55,7 +56,7 @@ void DataManager::clearData()
 		airportAPI_ = nullptr;
 }
 
-void DataManager::clearJson()
+void vsid::DataManager::clearJson()
 {
 	std::lock_guard<std::mutex> lock(dataMutex_);
 	airportConfigJson_.clear();
@@ -68,7 +69,7 @@ void DataManager::clearJson()
 	configsDownloaded_.clear();
 }
 
-void DataManager::DisplayMessageFromDataManager(const std::string& message, const std::string& sender)
+void vsid::DataManager::DisplayMessageFromDataManager(const std::string& message, const std::string& sender)
 {
 	Chat::ClientTextMessageEvent textMessage;
 	textMessage.sentFrom = "NeoVSID";
@@ -78,7 +79,7 @@ void DataManager::DisplayMessageFromDataManager(const std::string& message, cons
 	chatAPI_->sendClientMessage(textMessage);
 }
 
-void DataManager::populateActiveAirports()
+void vsid::DataManager::populateActiveAirports()
 {
 	std::vector<Airport::AirportConfig> allAirports = airportAPI_->getConfigurations();
 	{
@@ -99,7 +100,7 @@ void DataManager::populateActiveAirports()
 	}
 }
 
-int DataManager::fetchCFL(const Flightplan::Flightplan& flightplan, const std::vector<std::string> activeRules, const std::vector<std::string> activeAreas, const std::string& vsid, bool singleRwy)
+int vsid::DataManager::fetchCFL(const Flightplan::Flightplan& flightplan, const std::vector<std::string> activeRules, const std::vector<std::string> activeAreas, const std::string& vsid, bool singleRwy)
 {
 	std::string oaci = flightplan.origin;
 	// Check if configJSON is already the right one, if not, retrieve it
@@ -182,7 +183,7 @@ int DataManager::fetchCFL(const Flightplan::Flightplan& flightplan, const std::v
 	return 0; // No valid CFL found
 }
 
-sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, const std::string& depRwy)
+vsid::sidData vsid::DataManager::generateVSID(const Flightplan::Flightplan& flightplan, const std::string& depRwy)
 {
 	std::string oaci = flightplan.origin;
 	std::vector<std::string> activeRules;
@@ -398,7 +399,7 @@ sidData DataManager::generateVSID(const Flightplan::Flightplan& flightplan, cons
 	return { suggestedRwy, "CHECKFP", fetchCFL(flightplan, activeRules, activeAreas, "", singleRwy)};
 }
 	
-int DataManager::retrieveAirportConfigJson(const std::string& oaci)
+int vsid::DataManager::retrieveAirportConfigJson(const std::string& oaci)
 {
 	std::string icaoLower = oaci;
 	std::transform(icaoLower.begin(), icaoLower.end(), icaoLower.begin(), ::tolower);
@@ -521,7 +522,7 @@ int DataManager::retrieveAirportConfigJson(const std::string& oaci)
 }
 
 
-bool DataManager::retrieveCorrectAirportConfigJson(const std::string& oaci)
+bool vsid::DataManager::retrieveCorrectAirportConfigJson(const std::string& oaci)
 {
 	if (!airportConfigJson_.contains(oaci) || airportConfigJson_.empty()) {
 		if (retrieveAirportConfigJson(oaci) == -1) return false;
@@ -529,7 +530,7 @@ bool DataManager::retrieveCorrectAirportConfigJson(const std::string& oaci)
 	return true;
 }
 
-void DataManager::loadAircraftDataJson()
+void vsid::DataManager::loadAircraftDataJson()
 {
 	std::lock_guard<std::mutex> lock(dataMutex_);
 	std::filesystem::path jsonPath = configPath_ / "AircraftData.json";
@@ -549,7 +550,7 @@ void DataManager::loadAircraftDataJson()
 	}
 }
 
-void DataManager::loadConfigJson()
+void vsid::DataManager::loadConfigJson()
 {
 	std::lock_guard<std::mutex> lock(dataMutex_);
 	std::filesystem::path jsonPath = configPath_ / "config.json";
@@ -569,7 +570,7 @@ void DataManager::loadConfigJson()
 	}
 }
 
-void DataManager::loadCustomAssignJson()
+void vsid::DataManager::loadCustomAssignJson()
 {
 	std::lock_guard<std::mutex> lock(dataMutex_);
 	std::filesystem::path jsonPath = configPath_ / "customAssign.json";
@@ -592,7 +593,7 @@ void DataManager::loadCustomAssignJson()
 	}
 }
 
-void DataManager::parseRules(const std::string& oaci)
+void vsid::DataManager::parseRules(const std::string& oaci)
 {
 	if (!retrieveCorrectAirportConfigJson(oaci)) {
 		return;
@@ -621,7 +622,7 @@ void DataManager::parseRules(const std::string& oaci)
 	}
 }
 
-void DataManager::parseAreas(const std::string& oaci)
+void vsid::DataManager::parseAreas(const std::string& oaci)
 {
 	if (!retrieveCorrectAirportConfigJson(oaci)) {
 		return;
@@ -664,7 +665,7 @@ void DataManager::parseAreas(const std::string& oaci)
 	}
 }
 
-bool DataManager::parseSettings()
+bool vsid::DataManager::parseSettings()
 {
 	std::lock_guard<std::mutex> lock(dataMutex_);
 
@@ -768,7 +769,7 @@ bool DataManager::parseSettings()
 	return true;
 }
 
-bool DataManager::parseUUIDs()
+bool vsid::DataManager::parseUUIDs()
 {
 	std::lock_guard<std::mutex> lock(dataMutex_);
 	sidUUIDs_.clear();
@@ -821,7 +822,7 @@ bool DataManager::parseUUIDs()
 	return true;
 }
 
-void DataManager::useDefaultColors()
+void vsid::DataManager::useDefaultColors()
 {
 	loggerAPI_->log(Logger::LogLevel::Warning, "Using default colors for NeoVSID");
 	colors_[static_cast<size_t>(vsid::ColorName::CONFIRMED)] = green_;
@@ -837,7 +838,7 @@ void DataManager::useDefaultColors()
 	colors_[static_cast<size_t>(vsid::ColorName::REQUESTTEXT)] = red_;
 }
 
-Pilot DataManager::getPilotByCallsign(std::string callsign)
+vsid::Pilot vsid::DataManager::getPilotByCallsign(std::string callsign)
 {
 	std::lock_guard<std::mutex> lock(dataMutex_);
 	if (callsign.empty())
@@ -850,7 +851,7 @@ Pilot DataManager::getPilotByCallsign(std::string callsign)
 	return Pilot{};
 }
 
-bool DataManager::saveDownloadedAirportConfig(const nlohmann::ordered_json& json, std::string icao)
+bool vsid::DataManager::saveDownloadedAirportConfig(const nlohmann::ordered_json& json, std::string icao)
 {
 	std::lock_guard<std::mutex> lock(dataMutex_);
 	std::transform(icao.begin(), icao.end(), icao.begin(), ::tolower);
@@ -876,7 +877,7 @@ bool DataManager::saveDownloadedAirportConfig(const nlohmann::ordered_json& json
 	return true;
 }
 
-std::vector<std::string> DataManager::getAllDepartureCallsigns() {
+std::vector<std::string> vsid::DataManager::getAllDepartureCallsigns() {
 	std::vector<PluginSDK::Flightplan::Flightplan> flightplans = flightplanAPI_->getAll();
 	std::vector<std::string> callsigns;
 
@@ -919,7 +920,7 @@ std::vector<std::string> DataManager::getAllDepartureCallsigns() {
 	return callsigns;
 }
 
-bool DataManager::isDepartureAirport(const std::string& oaci)
+bool vsid::DataManager::isDepartureAirport(const std::string& oaci)
 {
 	std::lock_guard<std::mutex> lock(dataMutex_);
 	if (oaci.empty())
@@ -933,7 +934,7 @@ bool DataManager::isDepartureAirport(const std::string& oaci)
 	return false;
 }
 
-bool DataManager::aircraftExists(const std::string& callsign) const
+bool vsid::DataManager::aircraftExists(const std::string& callsign) const
 {
 	if (callsign.empty())
 		return false;
@@ -943,7 +944,7 @@ bool DataManager::aircraftExists(const std::string& callsign) const
 	return false;
 }
 
-bool DataManager::pilotExists(const std::string& callsign)
+bool vsid::DataManager::pilotExists(const std::string& callsign)
 {
 	std::lock_guard<std::mutex> lock(dataMutex_);
 	if (std::find_if(pilots.begin(), pilots.end(), [&](const Pilot& p) { return p.callsign == callsign; }) != pilots.end())
@@ -951,7 +952,7 @@ bool DataManager::pilotExists(const std::string& callsign)
 	return false;
 }
 
-bool DataManager::isInArea(const double& latitude, const double& longitude, const std::string& oaci, const std::string& areaName)
+bool vsid::DataManager::isInArea(const double& latitude, const double& longitude, const std::string& oaci, const std::string& areaName)
 {
 	std::vector<double> latitudes, longitudes;
 
@@ -989,7 +990,7 @@ bool DataManager::isInArea(const double& latitude, const double& longitude, cons
 	return inside;
 }
 
-bool DataManager::isMatchingRules(const nlohmann::ordered_json waypointSidData, const std::vector<std::string> activeRules, const std::string& letter, const std::string& variant)
+bool vsid::DataManager::isMatchingRules(const nlohmann::ordered_json waypointSidData, const std::vector<std::string> activeRules, const std::string& letter, const std::string& variant)
 {
 	std::lock_guard	<std::mutex> lock(dataMutex_);
 	std::vector<std::string> ruleNames;
@@ -1013,7 +1014,7 @@ bool DataManager::isMatchingRules(const nlohmann::ordered_json waypointSidData, 
 	return true;
 }
 
-bool DataManager::isMatchingAreas(const nlohmann::ordered_json waypointSidData, const std::vector<std::string> activeAreas, const std::string& letter, const std::string& variant, const Flightplan::Flightplan fp)
+bool vsid::DataManager::isMatchingAreas(const nlohmann::ordered_json waypointSidData, const std::vector<std::string> activeAreas, const std::string& letter, const std::string& variant, const Flightplan::Flightplan fp)
 {
 	std::lock_guard<std::mutex> lock(dataMutex_);
 	std::vector<std::string> aircraftAreas;
@@ -1051,7 +1052,7 @@ bool DataManager::isMatchingAreas(const nlohmann::ordered_json waypointSidData, 
 	return true;
 }
 
-bool DataManager::isMatchingEngineRestrictions(const nlohmann::ordered_json sidData, const std::string& aircraftType)
+bool vsid::DataManager::isMatchingEngineRestrictions(const nlohmann::ordered_json sidData, const std::string& aircraftType)
 {
 	std::lock_guard<std::mutex> lock(dataMutex_);
 	std::string engineType = "J"; // Defaulting to Jet if no type is found
@@ -1067,7 +1068,7 @@ bool DataManager::isMatchingEngineRestrictions(const nlohmann::ordered_json sidD
 	return false;
 }
 
-bool DataManager::isRNAV(const std::string& aircraftType)
+bool vsid::DataManager::isRNAV(const std::string& aircraftType)
 {
 	std::lock_guard<std::mutex> lock(dataMutex_);
 	if (aircraftDataJson_.contains(aircraftType)) {
@@ -1082,14 +1083,14 @@ bool DataManager::isRNAV(const std::string& aircraftType)
 	return false;
 }
 
-bool DataManager::customAssignExists() const
+bool vsid::DataManager::customAssignExists() const
 {
 	if (customAssignJson_.empty())
 		return false;
 	return true;
 }
 
-int DataManager::getTransAltitude(const std::string& oaci)
+int vsid::DataManager::getTransAltitude(const std::string& oaci)
 {
 	if (!retrieveCorrectAirportConfigJson(oaci)) {
 		loggerAPI_->log(Logger::LogLevel::Warning, "Failed to retrieve config when retrieving Trans Alt for: " + oaci);
@@ -1102,7 +1103,7 @@ int DataManager::getTransAltitude(const std::string& oaci)
 	return 5000; // Fallback transition altitude
 }
 
-vsid::Color DataManager::getColor(const vsid::ColorName& colorName)
+vsid::Color vsid::DataManager::getColor(const vsid::ColorName& colorName)
 {
 	std::lock_guard<std::mutex> lock(dataMutex_);
     size_t idx = static_cast<size_t>(colorName);
@@ -1112,7 +1113,7 @@ vsid::Color DataManager::getColor(const vsid::ColorName& colorName)
 	return white_; // Default to white if out of bounds
 }
 
-std::string DataManager::getIndicatorFromUUIDs(std::string icao, std::string rwy, std::string waypoint, std::string letter)
+std::string vsid::DataManager::getIndicatorFromUUIDs(std::string icao, std::string rwy, std::string waypoint, std::string letter)
 {
 	std::transform(icao.begin(), icao.end(), icao.begin(), ::tolower);
 	std::transform(rwy.begin(), rwy.end(), rwy.begin(), ::tolower);
@@ -1152,7 +1153,7 @@ std::string DataManager::getPushInfo(const std::string& callsign)
 #endif // DEV
 
 
-void DataManager::switchRuleState(const std::string& oaci, const std::string& ruleName)
+void vsid::DataManager::switchRuleState(const std::string& oaci, const std::string& ruleName)
 {
 	{
 		std::lock_guard<std::mutex> lock(dataMutex_);
@@ -1171,7 +1172,7 @@ void DataManager::switchRuleState(const std::string& oaci, const std::string& ru
 	removeAllPilots();
 }
 
-void DataManager::switchAreaState(const std::string& oaci, const std::string& areaName)
+void vsid::DataManager::switchAreaState(const std::string& oaci, const std::string& areaName)
 {
 	{
 		std::lock_guard<std::mutex> lock(dataMutex_);
@@ -1190,7 +1191,7 @@ void DataManager::switchAreaState(const std::string& oaci, const std::string& ar
 	removeAllPilots();
 }
 
-void DataManager::addPilot(const std::string& callsign)
+void vsid::DataManager::addPilot(const std::string& callsign)
 {
 	auto flightplan = flightplanAPI_->getByCallsign(callsign);
 
@@ -1212,7 +1213,7 @@ void DataManager::addPilot(const std::string& callsign)
 	pilots.push_back(Pilot{ flightplan->callsign, vsidData.rwy, vsidData.sid, flightplan->origin, vsidData.cfl });
 }
 
-bool DataManager::removePilot(const std::string& callsign)
+bool vsid::DataManager::removePilot(const std::string& callsign)
 {
 	std::lock_guard<std::mutex> lock(dataMutex_);
 	if (callsign.empty())
@@ -1224,7 +1225,7 @@ bool DataManager::removePilot(const std::string& callsign)
 	return true;
 }
 
-void DataManager::removeAllPilots()
+void vsid::DataManager::removeAllPilots()
 {
 	std::lock_guard<std::mutex> lock(dataMutex_);
 	pilots.clear();

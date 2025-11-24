@@ -8,7 +8,7 @@
 #include "core/DataManager.h"
 #include "utils/Color.h"
 
-constexpr const char* NEOVSID_VERSION = "v1.4.5";
+constexpr const char* NEOVSID_VERSION = "v1.4.6";
 
 using namespace PluginSDK;
 
@@ -139,6 +139,7 @@ namespace vsid {
         Fsd::FsdAPI* fsdAPI_ = nullptr;
         PluginSDK::Logger::LoggerAPI* logger_ = nullptr;
         PluginSDK::ControllerData::ControllerDataAPI* controllerDataAPI_ = nullptr;
+        PluginSDK::Tag::TagAPI* tagAPI_ = nullptr;
 		PluginSDK::Package::PackageAPI* packageAPI_ = nullptr;
         Tag::TagInterface* tagInterface_ = nullptr;
         std::unique_ptr<DataManager> dataManager_;

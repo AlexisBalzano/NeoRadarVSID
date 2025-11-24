@@ -23,35 +23,38 @@ NeoVSID::~NeoVSID() = default;
 
 void NeoVSID::Initialize(const PluginMetadata &metadata, CoreAPI *coreAPI, ClientInformation info)
 {
-    metadata_ = metadata;
-    clientInfo_ = info;
-    CoreAPI *lcoreAPI = coreAPI;
-    aircraftAPI_ = &lcoreAPI->aircraft();
-    airportAPI_ = &lcoreAPI->airport();
-    chatAPI_ = &lcoreAPI->chat();
-    flightplanAPI_ = &lcoreAPI->flightplan();
-    fsdAPI_ = &lcoreAPI->fsd();
-    controllerDataAPI_ = &lcoreAPI->controllerData();
-    logger_ = &lcoreAPI->logger();
-    tagInterface_ = lcoreAPI->tag().getInterface();
-	packageAPI_ = &lcoreAPI->package();
-	dataManager_ = std::make_unique<DataManager>(this);
-
-#ifndef DEV
-	std::pair<bool, std::string> updateAvailable = newVersionAvailable();
-	if (updateAvailable.first) {
-		DisplayMessage("A new version of NeoVSID is available: " + updateAvailable.second + " (current version: " + NEOVSID_VERSION + ")", "");
-	}
-#endif // !DEV
-
-    callsignsScope.clear();
-	dataManager_->removeAllPilots();
-	dataManager_->populateActiveAirports();
-	dataManager_->parseUUIDs();
-    configVersion = getLatestConfigVersion();
-
     try
     {
+        metadata_ = metadata;
+        clientInfo_ = info;
+        CoreAPI *lcoreAPI = coreAPI;
+        if (!lcoreAPI)
+        {
+            throw std::runtime_error("CoreAPI pointer is null");
+	    }
+
+        aircraftAPI_ = &lcoreAPI->aircraft();
+        airportAPI_ = &lcoreAPI->airport();
+        chatAPI_ = &lcoreAPI->chat();
+        flightplanAPI_ = &lcoreAPI->flightplan();
+        fsdAPI_ = &lcoreAPI->fsd();
+        controllerDataAPI_ = &lcoreAPI->controllerData();
+        logger_ = &lcoreAPI->logger();
+        tagAPI_ = &lcoreAPI->tag();
+		tagInterface_ = tagAPI_->getInterface();
+	    packageAPI_ = &lcoreAPI->package();
+	    dataManager_ = std::make_unique<DataManager>(this);
+
+#ifndef DEV
+	    std::pair<bool, std::string> updateAvailable = newVersionAvailable();
+	    if (updateAvailable.first) {
+	    	DisplayMessage("A new version of NeoVSID is available: " + updateAvailable.second + " (current version: " + NEOVSID_VERSION + ")", "");
+	    }
+#endif // !DEV
+
+        callsignsScope.clear();
+    	dataManager_->removeAllPilots();
+
         this->RegisterTagActions();
         this->RegisterTagItems();
         this->RegisterCommand();
@@ -60,11 +63,15 @@ void NeoVSID::Initialize(const PluginMetadata &metadata, CoreAPI *coreAPI, Clien
     }
     catch (const std::exception &e)
     {
-        logger_->error("Failed to initialize NeoVSID: " + std::string(e.what()));
+        if (logger_) {
+            logger_->error("Failed to initialize NeoVSID: " + std::string(e.what()));
+        }
     }
 
-    this->m_stop = false;
-    this->m_worker = std::thread(&NeoVSID::run, this);
+    if (initialized_) {
+        this->m_stop = false;
+        this->m_worker = std::thread(&NeoVSID::run, this);
+    }
 }
 
 std::pair<bool, std::string> vsid::NeoVSID::newVersionAvailable()
@@ -251,6 +258,9 @@ void vsid::NeoVSID::OnFlightplanRemoved(const Flightplan::FlightplanRemovedEvent
 }
 
 void NeoVSID::run() {
+    dataManager_->populateActiveAirports();
+    dataManager_->parseUUIDs();
+    configVersion = getLatestConfigVersion();
 	int counter = 1;
     while (true) {
         counter += 1;

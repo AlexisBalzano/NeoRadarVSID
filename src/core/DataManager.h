@@ -7,13 +7,13 @@
 
 #include "./utils/Color.h"
 
+using namespace PluginSDK;
 namespace vsid
 {
 	// Default settings values
 	constexpr int DEFAULT_UPDATE_INTERVAL = 5; // seconds
 	constexpr int ALERT_MAX_ALTITUDE = 5000; // Max altitude to show ground alerts
 	constexpr double MAX_DISTANCE = 4.; //Max distance from origin airport for auto assigning SID/CFL/RWY
-}
 
 struct Pilot {
 	std::string callsign;
@@ -46,7 +46,6 @@ struct areaData {
 	bool active = false; 
 };
 
-using namespace PluginSDK;
 
 class DataManager {
 public:
@@ -150,3 +149,4 @@ private:
 	vsid::Color alertBackground_ = std::array<unsigned int, 3>({ 234, 171, 24 });
 	vsid::Color strongAlertBackground_ = std::array<unsigned int, 3>({ 88, 8, 9 });
 };
+} // namespace vsid
